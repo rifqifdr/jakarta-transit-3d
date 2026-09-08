@@ -8,6 +8,9 @@ dist/
 # ships from it. `--source=walk` is the one thing that reads it back.
 data/build/
 
+# Server output redirected while probing; not a record of anything.
+scratchpad/*.log
+
 # NOT ignored, though both are generated. Two deliberate exceptions:
 #
 #   public/artifacts/  is what the browser downloads, and what the deploy
