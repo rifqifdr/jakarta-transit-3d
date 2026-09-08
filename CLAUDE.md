@@ -883,6 +883,14 @@ Worker and caching in IndexedDB. Measured against the real artifacts:
   - **Dev and preview serve it the same way**, through a twelve-line Vite
     middleware. Without it the local path silently takes the fallback on every
     file: working, twice as slow, and not what production does.
+  - **The two hosts genuinely disagree, so the answer is asked once and
+    remembered.** Netlify honours the header; **Cloudflare Workers strips it**
+    while applying every other rule in the same `_headers` block — measured, not
+    assumed. Whether a host honours it is a property of the origin, so one
+    mismatch disables the brotli path for the rest of the session and writes
+    `localStorage`, which is already scoped per origin. Without that, the host
+    that says no pays sixteen wasted round trips instead of one, and this
+    change would have made it *slower* than doing nothing.
 - **Buffers are transferred, not cloned.** The worker takes ownership, so
   anything needing to survive a decode must be copied first — a structured clone
   of the payload would cost more than the decode it saved.

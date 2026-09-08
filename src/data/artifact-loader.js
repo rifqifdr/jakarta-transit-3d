@@ -22,7 +22,31 @@ const DB_NAME = 'jakarta-transit-artifacts',
     STORE = 'files',
 
     // Only the manifest may be stale, so only the manifest is revalidated.
-    MANIFEST = 'manifest.json';
+    MANIFEST = 'manifest.json',
+
+    // Where the answer to "does this origin honour Content-Encoding?" is kept.
+    // Scoped to the origin by localStorage itself, which is the right scope:
+    // the same build is served by two hosts that answer differently.
+    BROTLI_FLAG = 'jakarta-transit-brotli';
+
+// Both wrapped, like every other storage call here: private browsing and
+// blocked site data make even the read throw, and this is an optimisation
+// rather than something to fail over.
+function readFlag() {
+    try {
+        return localStorage.getItem(BROTLI_FLAG);
+    } catch {
+        return null;
+    }
+}
+
+function writeFlag(value) {
+    try {
+        localStorage.setItem(BROTLI_FLAG, value);
+    } catch {
+        // Nothing to do. The cost is one wasted request per visit.
+    }
+}
 
 export default class ArtifactLoader {
 
@@ -42,6 +66,13 @@ export default class ArtifactLoader {
         // Counted rather than inferred, so a claim about cache behaviour can be
         // checked instead of believed.
         me.stats = {fetched: 0, fromCache: 0, bytes: 0, decodeMs: 0};
+        // Whether this host serves the pre-compressed aliases with a
+        // Content-Encoding the browser will act on. Assumed until disproved,
+        // because the only way to find out is to ask for one — and remembered
+        // once disproved, because it is a fact about the origin rather than
+        // about this visit. Netlify honours the header and Cloudflare Workers
+        // strips it, so both answers are real.
+        me._brotli = readFlag() !== 'no';
     }
 
     // ---- boot -------------------------------------------------------------
@@ -204,11 +235,22 @@ export default class ArtifactLoader {
         // can find out from here — and a host that strips it hands back raw
         // brotli, which is the wrong length and would decode as noise. One
         // wasted request is a far better failure than a map that never loads.
-        let buffer = expected && name.endsWith('.bin')
+        let buffer = me._brotli && expected && name.endsWith('.bin')
             ? await me._fetch(`${name}.br`, expected)
             : null;
 
         if (!buffer) {
+            // One strike. Whether a host honours the header is a property of
+            // the host, not of the file, so the answer is the same for all
+            // sixteen of them — and the two hosts this deploys to genuinely
+            // differ: Netlify honours it, Cloudflare Workers strips it while
+            // still applying every other rule in the same `_headers` block.
+            // Asking again per file would turn a 1.3 MB saving into sixteen
+            // wasted round trips on the host that says no.
+            if (me._brotli && expected && name.endsWith('.bin')) {
+                me._brotli = false;
+                writeFlag('no');
+            }
             buffer = await me._fetch(name, 0);
         }
 
