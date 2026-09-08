@@ -364,10 +364,14 @@ equivalent for Netlify.
   runs against, and that suite is the control for every data bug found so far —
   a clone that cannot run it is not a clone of this project. `data/build/`
   stays ignored: it is intermediate and nothing ships from it.
-- **`manifest.json` is the one file that must not be cached.** Everything else
-  under `/artifacts/` is content-hashed and immutable; the manifest is how they
-  are discovered, so a stale one pins a visitor to an old dataset. It is listed
-  first in `_headers` because the first matching rule wins.
+- **No host agrees that the first matching rule wins**, so `_headers` must not
+  depend on it. `manifest.json` was kept out of an immutable `/artifacts/*`
+  wildcard by being listed first: Netlify let the wildcard win outright, and
+  Cloudflare concatenated the two into `max-age=31536000, immutable,
+  max-age=0, must-revalidate`. Every rule is now written to match only what it
+  means to match. What actually guarantees the manifest is the loader fetching
+  it with `cache: 'no-cache'`, which it has always done — a header nobody can
+  test before deploying is not something to rely on alone.
 - **The Mapbox token is compiled into the bundle** and always will be — that is
   how Mapbox GL works. The deployed site therefore wants its *own* public token
   with a URL restriction, not the one in `.env`. What binds first is Mapbox's
@@ -862,6 +866,23 @@ Worker and caching in IndexedDB. Measured against the real artifacts:
 - **Mode toggles must gate loading, not just drawing.** Loading one mode fetches
   exactly its own files; a mode never asked for costs nothing. That is the whole
   reason artifacts are sliced per mode.
+- **The `.bin` artifacts are fetched as `.br`, because no CDN will compress
+  them.** Netlify and Cloudflare both decide by content type and neither
+  compresses `application/octet-stream`, so `shapes-bus` shipped **1,299 KB
+  where its brotli is 248** — 1.3 MB a visit across the set, to an audience
+  mostly on a phone. `npm run transform` already wrote a `.br` beside every
+  artifact and nothing used them. Measured in a real browser after: **664 KB
+  transferred for 2,512 KB decoded**, 16 brotli requests, no fallbacks.
+  - **The guard is the manifest's own byte count.** Whether a host honours
+    `Content-Encoding` from a `_headers` file cannot be found out from the
+    browser, and one that strips it returns raw brotli — the wrong length,
+    which would decode as noise. A length mismatch refetches the plain file, so
+    the worst case is one wasted request rather than a map that never loads.
+  - **Brotli is safe to assume.** The build targets es2022, whose floor
+    (Chrome 94, Safari 15.4) is years past brotli's (Chrome 50, Safari 11).
+  - **Dev and preview serve it the same way**, through a twelve-line Vite
+    middleware. Without it the local path silently takes the fallback on every
+    file: working, twice as slow, and not what production does.
 - **Buffers are transferred, not cloned.** The worker takes ownership, so
   anything needing to survive a decode must be copied first — a structured clone
   of the payload would cost more than the decode it saved.

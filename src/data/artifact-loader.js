@@ -57,7 +57,7 @@ export default class ArtifactLoader {
         me.manifest = await (await fetch(me.base + MANIFEST, {cache: 'no-cache'})).json();
 
         onProgress('Memuat jaringan…');
-        me.core = JSON.parse(new TextDecoder().decode(await me._file(me.manifest.core.file)));
+        me.core = JSON.parse(new TextDecoder().decode(await me._file(me.manifest.core)));
 
         // Patterns are asked for by index during decode; hoist the stop counts
         // once rather than reaching through the pattern list per trip.
@@ -65,10 +65,10 @@ export default class ArtifactLoader {
         // without them; the walk table is what makes interchange possible.
         // Both are mode-independent, which is why they load with core.
         me._patternStops = Uint16Array.from(me.core.patterns.map(p => p.stops));
-        me.patternsBuffer = await me._file(me.manifest.patterns.file);
+        me.patternsBuffer = await me._file(me.manifest.patterns);
 
         if (me.manifest.walk) {
-            me.walkEdges = (await me._decode('walk', me.manifest.walk.file)).edges;
+            me.walkEdges = (await me._decode('walk', me.manifest.walk)).edges;
         }
         return me.core;
     }
@@ -123,10 +123,10 @@ export default class ArtifactLoader {
 
         // Shapes and every service day in parallel; they are independent files.
         const [shapes, ...services] = await Promise.all([
-            me._decode('shapes', entry.shapes.file),
+            me._decode('shapes', entry.shapes),
             ...Object.entries(entry.services).map(async ([service, file]) => ({
                 service,
-                ...await me._decode(file.kind === 'frequency' ? 'frequency' : 'trips', file.file)
+                ...await me._decode(file.kind === 'frequency' ? 'frequency' : 'trips', file)
             }))
         ]);
 
@@ -148,8 +148,36 @@ export default class ArtifactLoader {
 
     // ---- fetching and caching ---------------------------------------------
 
-    async _file(name) {
+    /**
+     * Fetches one file, or returns null when it does not arrive as promised.
+     *
+     * `expected` non-zero means "this is the compressed alias, and it must
+     * decompress to exactly this many bytes" — a wrong length is how a
+     * stripped `Content-Encoding` presents, and it is recoverable. Zero means
+     * this is the last resort, so a failure is thrown rather than swallowed.
+     */
+    async _fetch(name, expected) {
+        const response = await fetch(this.base + name);
+
+        if (!response.ok) {
+            if (expected) {
+                return null;
+            }
+            throw new Error(`${name}: HTTP ${response.status}`);
+        }
+
+        const buffer = await response.arrayBuffer();
+
+        return expected && buffer.byteLength !== expected ? null : buffer;
+    }
+
+    async _file(entry) {
         const me = this,
+            name = typeof entry === 'string' ? entry : entry.file,
+            // What the manifest says this file measures once decompressed.
+            // Absent on the legacy string form, which then skips the brotli
+            // path entirely rather than guessing.
+            expected = typeof entry === 'string' ? 0 : entry.bytes,
             cached = me.useCache ? await me._fromCache(name) : null;
 
         if (cached) {
@@ -158,13 +186,31 @@ export default class ArtifactLoader {
             return cached;
         }
 
-        const response = await fetch(me.base + name);
+        // The `.bin` artifacts are the ones no CDN will compress: both hosts
+        // decide by content type and `application/octet-stream` is on neither
+        // list, so `shapes-bus` shipped 1,299 KB where its brotli is 248 —
+        // 1.3 MB a visit across the set, on a map whose audience is mostly on
+        // a phone. `npm run transform` already writes a `.br` beside every
+        // artifact, so ask for that instead and let the browser inflate it.
+        // Only the transfer encoding changes; the bytes that arrive are the
+        // same bytes.
+        //
+        // Brotli is safe to assume here. The build targets es2022, whose floor
+        // (Chrome 94, Safari 15.4) is years past brotli's (Chrome 50,
+        // Safari 11), so nothing that can run this app cannot inflate it.
+        //
+        // The guard is the manifest's own byte count. Whether a host honours
+        // `Content-Encoding` from a `_headers` file is not something this code
+        // can find out from here — and a host that strips it hands back raw
+        // brotli, which is the wrong length and would decode as noise. One
+        // wasted request is a far better failure than a map that never loads.
+        let buffer = expected && name.endsWith('.bin')
+            ? await me._fetch(`${name}.br`, expected)
+            : null;
 
-        if (!response.ok) {
-            throw new Error(`${name}: HTTP ${response.status}`);
+        if (!buffer) {
+            buffer = await me._fetch(name, 0);
         }
-
-        const buffer = await response.arrayBuffer();
 
         me.stats.fetched++;
         me.stats.bytes += buffer.byteLength;
@@ -177,9 +223,9 @@ export default class ArtifactLoader {
         return buffer;
     }
 
-    async _decode(kind, name) {
+    async _decode(kind, entry) {
         const me = this,
-            buffer = await me._file(name),
+            buffer = await me._file(entry),
             started = performance.now(),
 
             // The worker takes ownership of the buffer, so anything that needs

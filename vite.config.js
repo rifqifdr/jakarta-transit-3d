@@ -1,5 +1,39 @@
 import {defineConfig, loadEnv} from 'vite';
 
+/**
+ * Serves `*.bin.br` the way the CDNs are asked to, so dev, preview and
+ * production take the same path through the artifact loader.
+ *
+ * Without this the loader's brotli request succeeds locally and hands back
+ * raw compressed bytes, which are the wrong length, which trips its own guard
+ * and quietly costs a second request on every file — working, twice as slow,
+ * and different from production. Divergence between the two is worth more
+ * than the twelve lines.
+ */
+function precompressedArtifacts() {
+    const middleware = (req, res, next) => {
+        if (req.url && req.url.split('?')[0].endsWith('.bin.br')) {
+            res.setHeader('Content-Encoding', 'br');
+            res.setHeader('Content-Type', 'application/octet-stream');
+        }
+        next();
+    };
+
+    return {
+        name: 'precompressed-artifacts',
+        // Block bodies, deliberately. `middlewares.use()` returns the connect
+        // app, which is itself a function — and a function returned from
+        // either of these hooks is treated as a post-hook and called with no
+        // arguments, which crashes the server before it listens.
+        configureServer(server) {
+            server.middlewares.use(middleware);
+        },
+        configurePreviewServer(server) {
+            server.middlewares.use(middleware);
+        }
+    };
+}
+
 // The project's .env predates this app and uses a bare MAPBOX_ACCESS_TOKEN
 // rather than Vite's VITE_ prefix, so inject it explicitly instead of asking
 // the user to rename their variable.
@@ -52,6 +86,7 @@ export default defineConfig(({mode}) => {
     }
 
     return {
+        plugins: [precompressedArtifacts()],
         define: {
             __MAPBOX_TOKEN__: JSON.stringify(token)
         },

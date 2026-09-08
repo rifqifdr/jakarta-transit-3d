@@ -1,17 +1,53 @@
-# Cache rules, honoured by both Netlify and Cloudflare Pages. Copied into
-# dist/ by Vite along with everything else in public/.
+# Cache rules, read by Netlify, Cloudflare Pages and Cloudflare Workers static
+# assets alike. Copied into dist/ by Vite along with everything else in public/.
 #
-# The order matters: the first matching rule wins, so the one mutable file has
-# to be listed before the directory it lives in.
+# Do not assume "the first matching rule wins" — no host here agrees on that.
+# An earlier version relied on it to keep manifest.json out of an immutable
+# wildcard: Netlify let the wildcard win outright and Cloudflare concatenated
+# the two into one contradictory Cache-Control. Every rule below is written so
+# that it matches only what it means to match.
 
 # The only file in the build that is not content-hashed. Everything else is
 # discovered through it, so a stale one pins a visitor to an old dataset.
 /artifacts/manifest.json
   Cache-Control: public, max-age=0, must-revalidate
 
+# The pre-compressed aliases the loader actually asks for. Neither host will
+# compress `application/octet-stream` on its own, so `shapes-bus` would ship
+# 1,299 KB where its brotli is 248 — 1.3 MB a visit across the set. These are
+# the same bytes with a transfer encoding declared, and the loader checks the
+# decompressed length against the manifest, so a host that ignores this header
+# costs one wasted request rather than a broken map.
+/artifacts/*.br
+  Content-Encoding: br
+  Content-Type: application/octet-stream
+  Cache-Control: public, max-age=31536000, immutable
+
 # Content-hashed by `npm run transform`: the filename changes when the bytes
 # do, so these can be cached until the heat death of the browser.
-/artifacts/*
+#
+# The manifest is excluded by naming rather than by ordering. Neither host
+# honours "first match wins" — Netlify let this wildcard beat the exact path
+# outright, and Cloudflare concatenated both into one contradictory header —
+# so the rule that must not apply to it is written so that it cannot. The
+# loader also fetches the manifest with `cache: 'no-cache'`, which is what
+# actually guarantees it, this being a header nobody can test before deploying.
+/artifacts/core-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/artifacts/cameras-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/artifacts/patterns-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/artifacts/shapes-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/artifacts/trips-*
+  Cache-Control: public, max-age=31536000, immutable
+
+/artifacts/walk-*
   Cache-Control: public, max-age=31536000, immutable
 
 # Content-hashed by Vite.
