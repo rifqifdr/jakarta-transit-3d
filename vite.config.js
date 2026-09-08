@@ -31,6 +31,26 @@ export default defineConfig(({mode}) => {
         ].join('\n'));
     }
 
+    // A secret token in a browser bundle is a published secret: the bundle is
+    // 2.4 MB of world-readable JavaScript on a CDN. Mapbox GL rejects `sk.`
+    // tokens at runtime, but by then the token has already shipped — the error
+    // in the console is the *second* thing that went wrong. Failing the build
+    // is the only place this can still be caught.
+    //
+    // A token turns secret the moment any secret scope is ticked while
+    // creating it (`tokens:write`, `uploads:write`, `styles:write`,
+    // `downloads:read`). The public default scopes are what this needs.
+    if (!token.startsWith('pk.')) {
+        throw new Error([
+            `MAPBOX_ACCESS_TOKEN starts with "${token.slice(0, 3)}", not "pk.".`,
+            '  Mapbox GL needs a PUBLIC token. This one is compiled into a',
+            '  browser bundle that anyone can download, so shipping a secret',
+            '  token publishes it — revoke it rather than only replacing it.',
+            '  Create a new token keeping the default public scopes only, and',
+            '  give it a URL restriction for the deployed domain.'
+        ].join('\n'));
+    }
+
     return {
         define: {
             __MAPBOX_TOKEN__: JSON.stringify(token)

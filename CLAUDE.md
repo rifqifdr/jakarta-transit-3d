@@ -361,6 +361,16 @@ equivalent for Netlify.
   how Mapbox GL works. The deployed site therefore wants its *own* public token
   with a URL restriction, not the one in `.env`. What binds first is Mapbox's
   50,000 monthly map loads, not the host's bandwidth.
+- **A secret token in that bundle is a published secret, and the build now
+  refuses one.** An `sk.` token shipped to both live hosts once: Mapbox GL
+  rejects it at runtime with a clear message, but by then 2.4 MB of
+  world-readable JavaScript on a CDN was carrying it, so the console error is
+  the *second* thing that has gone wrong. A token turns secret the moment any
+  secret scope is ticked at creation (`tokens:write`, `uploads:write`,
+  `styles:write`, `downloads:read`) — the public defaults are all this needs.
+  `vite.config.js` fails the build on anything not starting with `pk.`, which
+  is the last place it can still be caught. Replacing such a token is not
+  enough; it has to be revoked.
 - **A build host has no `.env`, and Cloudflare has two kinds of variable.**
   The first Pages build failed on `MAPBOX_ACCESS_TOKEN is missing from .env`,
   which is true and useless — there is no `.env` on a build host and there is

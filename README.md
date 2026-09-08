@@ -553,6 +553,11 @@ Two things worth knowing before the first deploy:
 - **Use a separate Mapbox token, restricted by URL.** It ends up in the
   bundle, where anyone can read it. A restricted public token that only works
   on the deployed domain costs nothing and cannot be spent elsewhere.
+- **It must be a public (`pk.`) token, and the build enforces that.** A token
+  becomes secret the moment any secret scope is ticked at creation
+  (`tokens:write`, `uploads:write`, `styles:write`, `downloads:read`); keep the
+  public defaults. A secret token here is a published secret rather than a
+  misconfiguration, so it would need revoking, not just replacing.
 - **A visit is about 1.7 MB.** 665 KB of bundle plus ~1 MB of artifacts for the
   modes actually shown, and `hls.js` (179 KB gzipped) only if someone opens a
   camera. Mapbox's own tiles and its free tier's 50,000 monthly map loads are
