@@ -55,6 +55,17 @@ artifact pipeline.
 `GTFS_DIR=/path/to/gtfs npm run build-data` to point at a different feed.
 
 ```bash
+npm run check-token                     # is the Mapbox token valid, revoked or restricted?
+npm run check-token -- https://site/    # ...and is it allowed from that origin?
+```
+
+**Three Mapbox failures look identical from the browser** — the map never
+paints and the console says 401 — and each has a different fix: the token is
+secret, the token is revoked, or the token is URL-restricted and the origin is
+not on the list. Only `api.mapbox.com/tokens/v2` tells them apart, which is
+what `check-token` asks. All three have now cost a deploy cycle here.
+
+```bash
 npm run ingest -- --status              # newest snapshot per source, and its age
 npm run ingest -- --source=osm          # one source
 npm run ingest -- --source=all          # all of them, cheapest first

@@ -553,6 +553,11 @@ Two things worth knowing before the first deploy:
 - **Use a separate Mapbox token, restricted by URL.** It ends up in the
   bundle, where anyone can read it. A restricted public token that only works
   on the deployed domain costs nothing and cannot be spent elsewhere.
+- **Check the token before deploying, not after.** `npm run check-token` says
+  whether it is valid, revoked or restricted — three failures that are
+  identical from the browser (the map never paints, the console says 401) and
+  have three different fixes. Pass the deployed origins to test URL
+  restrictions too: `npm run check-token -- https://example.netlify.app`.
 - **It must be a public (`pk.`) token, and the build enforces that.** A token
   becomes secret the moment any secret scope is ticked at creation
   (`tokens:write`, `uploads:write`, `styles:write`, `downloads:read`); keep the

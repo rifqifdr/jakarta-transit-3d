@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test-routing": "node scripts/test-routing.mjs",
-    "test-transform": "node scripts/test-transform.mjs"
+    "test-transform": "node scripts/test-transform.mjs",
+    "check-token": "node scripts/check-token.mjs"
   },
   "dependencies": {
     "hls.js": "^1.7.2",
