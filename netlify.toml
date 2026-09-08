@@ -1,0 +1,15 @@
+# Netlify. Cloudflare Pages needs no file — the same two settings go in its
+# dashboard (build command `npm run build`, output directory `dist`), and it
+# reads `public/_headers` just as Netlify does.
+#
+# Either host needs MAPBOX_ACCESS_TOKEN set as an environment variable. It is
+# compiled into the browser bundle, so use a public token restricted to the
+# deployed domain rather than the one you develop with.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Vite 8 wants 20.19+ or 22.12+.
+  NODE_VERSION = "22"

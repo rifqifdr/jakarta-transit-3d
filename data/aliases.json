@@ -1,0 +1,9 @@
+{
+  "_comment": "Operator station id or name -> the name OpenStreetMap uses. Editorial decisions that two names mean one place, not data derivable from either side. Keep the table small: if it grows past a dozen rows, the normalisation in scripts/transform/join.mjs is what needs fixing instead. Verified 2026-09-06 — KRL joins 83/83 and MRT 13/13 with these three rows. UI and UP used to live here and no longer need to: expanding UNIV. to UNIVERSITAS in the normaliser handles both, and one rule beats two exceptions.",
+
+  "SUDB": "BNI City",
+  "TPK": "Tanjung Priuk",
+
+  "_blok_a": "Too short for the containment fallback (5 characters, guard is 6), so it needs saying explicitly. Lowering the guard instead would put every five-letter station name at risk of a confident wrong match.",
+  "stasiun-blok-a": "Blok A VISA"
+}

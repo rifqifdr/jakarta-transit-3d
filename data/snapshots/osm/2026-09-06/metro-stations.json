@@ -1,0 +1,2077 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-05T17:17:07Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 3693188489,
+  "lat": -6.2007864,
+  "lon": 106.8227462,
+  "tags": {
+    "alt_name": "Stasiun Dukuh Atas",
+    "name": "Dukuh Atas BNI",
+    "name:th": "ดูกุฮ์อาตัซ",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3859688994,
+  "lat": -6.2783627,
+  "lon": 106.7973012,
+  "tags": {
+    "name": "Cipete Raya TUKU",
+    "name:th": "จีเปเต",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3859689022,
+  "lat": -6.2149854,
+  "lon": 106.8179059,
+  "tags": {
+    "name": "Bendungan Hilir",
+    "name:th": "เบินดูงันฮีลีร์",
+    "network": "MRT Jakarta",
+    "note": "tidak perlu menambahkan naming rights",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 3859689032,
+  "lat": -6.2090486,
+  "lon": 106.8216409,
+  "tags": {
+    "name": "Setiabudi Astra",
+    "name:th": "เซอตียาบูดี",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 4695686975,
+  "lat": -6.2387737,
+  "lon": 106.7984457,
+  "tags": {
+    "alt_name": "Stasiun ASEAN",
+    "name": "ASEAN Headquarters",
+    "name:th": "สำนักงานเลขาธิการอาเซียน",
+    "network": "MRT Jakarta",
+    "operator": "MRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "SSM",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365133",
+    "wikipedia": "id:Stasiun MRT ASEAN"
+  }
+},
+{
+  "type": "node",
+  "id": 4907843137,
+  "lat": -6.2929088,
+  "lon": 106.8805584,
+  "tags": {
+    "addr:city": "Jakarta",
+    "addr:postcode": "13650",
+    "addr:street": "Jalan Taman Mini I",
+    "light_rail": "yes",
+    "name": "Taman Mini",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "source": "HOT_InAWARESurvey_2017",
+    "station": "light_rail",
+    "wikidata": "Q19726721",
+    "wikipedia": "id:Stasiun LRT TMII"
+  }
+},
+{
+  "type": "node",
+  "id": 4909917394,
+  "lat": -6.2529813,
+  "lon": 106.9904133,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Bekasi Barat",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 4982025827,
+  "lat": -6.2529239,
+  "lon": 106.9904367,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Bekasi Barat",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 5015723484,
+  "lat": -6.2783724,
+  "lon": 106.7973416,
+  "tags": {
+    "name": "Cipete Raya TUKU",
+    "name:th": "จีเปเต",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5256472871,
+  "lat": -6.1196773,
+  "lon": 106.6652196,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 3",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 5256472872,
+  "lat": -6.1199075,
+  "lon": 106.6650680,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 3",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 5850566188,
+  "lat": -6.2008018,
+  "lon": 106.8228278,
+  "tags": {
+    "alt_name": "Stasiun Dukuh Atas",
+    "name": "Dukuh Atas BNI",
+    "name:th": "ดูกุฮ์อาตัซ",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 5984702926,
+  "lat": -6.1594082,
+  "lon": 106.9060240,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Boulevard Utara Summarecon Mall",
+    "network": "LRT Jakarta",
+    "operator": "PT LRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q65760424",
+    "wikipedia": "id:Stasiun LRT Boulevard Utara Summarecon Mall"
+  }
+},
+{
+  "type": "node",
+  "id": 5984702927,
+  "lat": -6.1691934,
+  "lon": 106.8998732,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Boulevard Selatan",
+    "network": "LRT Jakarta",
+    "operator": "PT LRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q9970006",
+    "wikipedia": "id:Stasiun LRT Boulevard Selatan"
+  }
+},
+{
+  "type": "node",
+  "id": 5984702928,
+  "lat": -6.1773105,
+  "lon": 106.8933929,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pulomas",
+    "network": "LRT Jakarta",
+    "operator": "PT LRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q9971976",
+    "wikipedia": "id:Stasiun LRT Pulomas"
+  }
+},
+{
+  "type": "node",
+  "id": 5984702929,
+  "lat": -6.1835534,
+  "lon": 106.8913536,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Equestrian",
+    "network": "LRT Jakarta",
+    "operator": "PT LRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q25329601",
+    "wikipedia": "id:Stasiun LRT Equestrian"
+  }
+},
+{
+  "type": "node",
+  "id": 5984702930,
+  "lat": -6.1921316,
+  "lon": 106.8911771,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Velodrome",
+    "network": "LRT Jakarta",
+    "operator": "PT LRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "train": "yes",
+    "wikidata": "Q20462389",
+    "wikipedia": "id:Stasiun LRT Velodrome"
+  }
+},
+{
+  "type": "node",
+  "id": 5984702931,
+  "lat": -6.1572135,
+  "lon": 106.9142091,
+  "tags": {
+    "addr:city": "DKI Jakarta",
+    "addr:country": "ID",
+    "light_rail": "yes",
+    "name": "Kelapa Gading",
+    "network": "LRT Jakarta",
+    "old_name": "Pegangsaan Dua",
+    "operator": "PT LRT Jakarta",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "KPG",
+    "station": "light_rail",
+    "wikidata": "Q8708716"
+  }
+},
+{
+  "type": "node",
+  "id": 6124539277,
+  "lat": -6.2090950,
+  "lon": 106.8217621,
+  "tags": {
+    "name": "Setiabudi Astra",
+    "name:th": "เซอตียาบูดี",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6124539585,
+  "lat": -6.2223339,
+  "lon": 106.8085784,
+  "tags": {
+    "alt_name": "Stasiun Istora",
+    "name": "Istora Mandiri",
+    "name:th": "อิสโตรา",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583567,
+  "lat": -6.1918487,
+  "lon": 106.8230619,
+  "tags": {
+    "name": "Bundaran HI Bank Jakarta",
+    "name:th": "บันดารัน",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583568,
+  "lat": -6.1918519,
+  "lon": 106.8229594,
+  "tags": {
+    "name": "Bundaran HI Bank Jakarta",
+    "name:th": "บันดารัน",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583569,
+  "lat": -6.2150625,
+  "lon": 106.8179950,
+  "tags": {
+    "name": "Bendungan Hilir",
+    "name:th": "เบินดูงันฮีลีร์",
+    "network": "MRT Jakarta",
+    "note": "tidak perlu menambahkan naming rights",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583570,
+  "lat": -6.2224417,
+  "lon": 106.8086648,
+  "tags": {
+    "alt_name": "Stasiun Istora",
+    "name": "Istora Mandiri",
+    "name:th": "อิสโตรา",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583571,
+  "lat": -6.2267836,
+  "lon": 106.8025236,
+  "tags": {
+    "name": "Senayan Mastercard",
+    "name:th": "เซอนายัน",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583572,
+  "lat": -6.2266833,
+  "lon": 106.8024556,
+  "tags": {
+    "name": "Senayan Mastercard",
+    "name:th": "เซอนายัน",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583573,
+  "lat": -6.2387709,
+  "lon": 106.7984696,
+  "tags": {
+    "alt_name": "Sisingamangaraja",
+    "name": "ASEAN Headquarters",
+    "name:th": "สำนักงานเลขาธิการอาเซียน",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195583574,
+  "lat": -6.2387703,
+  "lon": 106.7984239,
+  "tags": {
+    "alt_name": "Sisingamangaraja",
+    "name": "ASEAN Headquarters",
+    "name:th": "สำนักงานเลขาธิการอาเซียน",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584486,
+  "lat": -6.2444226,
+  "lon": 106.7982388,
+  "tags": {
+    "name": "Blok M BCA",
+    "name:th": "บลกเอ็ม",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "3",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584487,
+  "lat": -6.2444225,
+  "lon": 106.7981203,
+  "tags": {
+    "name": "Blok M BCA",
+    "name:th": "บลกเอ็ม",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "2",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584488,
+  "lat": -6.2444225,
+  "lon": 106.7980099,
+  "tags": {
+    "name": "Blok M BCA",
+    "name:th": "บลกเอ็ม",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "1",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584499,
+  "lat": -6.2557872,
+  "lon": 106.7971718,
+  "tags": {
+    "name": "Blok A VISA",
+    "name:th": "บลกอา",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584500,
+  "lat": -6.2557819,
+  "lon": 106.7971191,
+  "tags": {
+    "name": "Blok A VISA",
+    "name:th": "บลกอา",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584505,
+  "lat": -6.2666958,
+  "lon": 106.7973445,
+  "tags": {
+    "name": "Haji Nawi",
+    "name:th": "ฮาจีนาวี",
+    "network": "MRT Jakarta",
+    "note": "tidak perlu menambahkan naming rights",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584506,
+  "lat": -6.2666928,
+  "lon": 106.7973045,
+  "tags": {
+    "name": "Haji Nawi",
+    "name:th": "ฮาจีนาวี",
+    "network": "MRT Jakarta",
+    "note": "tidak perlu menambahkan naming rights",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584511,
+  "lat": -6.2924711,
+  "lon": 106.7924632,
+  "tags": {
+    "name": "Fatmawati Indomaret",
+    "name:th": "ฟัตมาวาตี",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584512,
+  "lat": -6.2924285,
+  "lon": 106.7924656,
+  "tags": {
+    "name": "Fatmawati Indomaret",
+    "name:th": "ฟัตมาวาตี",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584521,
+  "lat": -6.2892957,
+  "lon": 106.7749323,
+  "tags": {
+    "name": "Lebak Bulus Bank Syariah Indonesia",
+    "name:th": "เลอบักบูลุซ",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6195584522,
+  "lat": -6.2892542,
+  "lon": 106.7749374,
+  "tags": {
+    "name": "Lebak Bulus Bank Syariah Indonesia",
+    "name:th": "เลอบักบูลุซ",
+    "network": "MRT Jakarta",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "subway": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107719,
+  "lat": -6.1918644,
+  "lon": 106.8230084,
+  "tags": {
+    "addr:city": "Central Jakarta",
+    "addr:street": "Jalan M.H. Thamrin",
+    "alt_name": "Stasiun Bundaran HI",
+    "name": "Bundaran HI Bank Jakarta",
+    "name:th": "บันดารัน",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "BHI",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q52906919",
+    "wikipedia": "id:Stasiun MRT Bundaran Hotel Indonesia"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107720,
+  "lat": -6.2007957,
+  "lon": 106.8227880,
+  "tags": {
+    "alt_name": "Stasiun Dukuh Atas",
+    "name": "Dukuh Atas BNI",
+    "name:th": "ดูกุฮ์อาตัซ",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "DKA",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365190",
+    "wikipedia": "id:Stasiun MRT Dukuh Atas"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107721,
+  "lat": -6.2090648,
+  "lon": 106.8216945,
+  "tags": {
+    "addr:city": "South Jakarta",
+    "addr:street": "Jalan Jend. Sudirman",
+    "alt_name": "Stasiun Setiabudi",
+    "internet_access": "yes",
+    "name": "Setiabudi Astra",
+    "name:th": "เซอตียาบูดี",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "STB",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365174",
+    "wikipedia": "id:Stasiun MRT Setiabudi"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107722,
+  "lat": -6.2150263,
+  "lon": 106.8179484,
+  "tags": {
+    "alt_name": "Stasiun Bendungan Hilir",
+    "amenity": "bus_station",
+    "name": "Bendungan Hilir",
+    "name:th": "เบินดูงันฮีลีร์",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "note": "tidak perlu menambahkan naming rights",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "BNH",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365164",
+    "wikipedia": "id:Stasiun MRT Bendungan Hilir"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107723,
+  "lat": -6.2223900,
+  "lon": 106.8086229,
+  "tags": {
+    "addr:city": "South Jakarta",
+    "addr:street": "Jalan Jend. Sudirman",
+    "alt_name": "Stasiun Istora",
+    "description": "North-South Line",
+    "internet_access": "yes",
+    "name": "Istora Mandiri",
+    "name:th": "อิสโตรา",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "IST",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365156",
+    "wikipedia": "id:Stasiun MRT Istora"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107724,
+  "lat": -6.2267337,
+  "lon": 106.8024926,
+  "tags": {
+    "alt_name": "Stasiun Senayan",
+    "name": "Senayan Mastercard",
+    "name:th": "เซอนายัน",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "SNY",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365153",
+    "wikipedia": "id:Stasiun MRT Senayan",
+    "wikipedia:en": "en:Senayan Mastercard MRT station"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107726,
+  "lat": -6.2444643,
+  "lon": 106.7981332,
+  "tags": {
+    "alt_name": "Stasiun Blok M",
+    "name": "Blok M BCA",
+    "name:th": "บลกเอ็ม",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "BLM",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365118",
+    "wikipedia": "id:Stasiun MRT Blok M"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107727,
+  "lat": -6.2557793,
+  "lon": 106.7971403,
+  "tags": {
+    "alt_name": "Stasiun Blok A",
+    "name": "Blok A VISA",
+    "name:th": "บลกอา",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "BLA",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365108",
+    "wikipedia": "id:Stasiun MRT Blok A"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107728,
+  "lat": -6.2666947,
+  "lon": 106.7973262,
+  "tags": {
+    "alt_name": "Stasiun Haji Nawi",
+    "name": "Haji Nawi",
+    "name:th": "ฮาจีนาวี",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "note": "tidak perlu menambahkan naming rights",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "HJN",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365102",
+    "wikipedia": "id:Stasiun MRT Haji Nawi"
+  }
+},
+{
+  "type": "node",
+  "id": 6196107729,
+  "lat": -6.2783596,
+  "lon": 106.7973159,
+  "tags": {
+    "alt_name": "Stasiun Cipete Raya",
+    "name": "Cipete Raya TUKU",
+    "name:th": "จีเปเต",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "CPR",
+    "station": "subway",
+    "subway": "yes",
+    "wikidata": "Q61365099",
+    "wikipedia": "id:Stasiun MRT Cipete Raya"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137576,
+  "lat": -6.1923177,
+  "lon": 106.8911730,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Velodrome",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137577,
+  "lat": -6.1919263,
+  "lon": 106.8912180,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Velodrome",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137578,
+  "lat": -6.1837401,
+  "lon": 106.8913085,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Equestrian",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137579,
+  "lat": -6.1833748,
+  "lon": 106.8913929,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Equestrian",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137580,
+  "lat": -6.1770771,
+  "lon": 106.8935721,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pulomas",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137581,
+  "lat": -6.1773887,
+  "lon": 106.8933292,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pulomas",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137582,
+  "lat": -6.1596233,
+  "lon": 106.9058583,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Boulevard Utara Summarecon Mall",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "S-02",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137583,
+  "lat": -6.1592804,
+  "lon": 106.9061340,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Boulevard Utara Summarecon Mall",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "ref": "S-02",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196137584,
+  "lat": -6.1694141,
+  "lon": 106.8997119,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Boulevard Selatan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6196138085,
+  "lat": -6.1690222,
+  "lon": 106.8999998,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Boulevard Selatan",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 6577753462,
+  "lat": -6.2924511,
+  "lon": 106.7924644,
+  "tags": {
+    "alt_name": "Stasiun Fatmawati",
+    "internet_access": "yes",
+    "name": "Fatmawati Indomaret",
+    "name:th": "ฟัตมาวาตี",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "FTM",
+    "station": "subway",
+    "subway": "yes",
+    "website": "https://jakartamrt.co.id/",
+    "wikidata": "Q61365063",
+    "wikipedia": "id:Stasiun MRT Fatmawati"
+  }
+},
+{
+  "type": "node",
+  "id": 6577753463,
+  "lat": -6.2892744,
+  "lon": 106.7749355,
+  "tags": {
+    "alt_name": "Stasiun Lebak Bulus",
+    "name": "Lebak Bulus Bank Syariah Indonesia",
+    "name:th": "เลอบักบูลุซ",
+    "network": "MRT Jakarta",
+    "network:short": "MRTJ",
+    "network:wikidata": "Q3333785",
+    "operator": "MRT Jakarta",
+    "operator:wikidata": "Q3333785",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "LBB",
+    "station": "subway",
+    "subway": "yes",
+    "wheelchair": "yes",
+    "wikidata": "Q61365057",
+    "wikipedia": "id:Stasiun MRT Lebak Bulus"
+  }
+},
+{
+  "type": "node",
+  "id": 6720467131,
+  "lat": -6.2434718,
+  "lon": 106.8570718,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Cikoko",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q10166205",
+    "wikipedia": "id:Stasiun LRT Cikoko"
+  }
+},
+{
+  "type": "node",
+  "id": 6720467132,
+  "lat": -6.2421415,
+  "lon": 106.8385146,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Pancoran",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q10166185",
+    "wikipedia": "id:Stasiun LRT Pancoran"
+  }
+},
+{
+  "type": "node",
+  "id": 6720467135,
+  "lat": -6.2093224,
+  "lon": 106.8302343,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Setiabudi",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q21177475",
+    "wikipedia": "id:Stasiun LRT Setiabudi"
+  }
+},
+{
+  "type": "node",
+  "id": 6720467136,
+  "lat": -6.2216089,
+  "lon": 106.8322373,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Rasuna Said",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q25580740",
+    "wikipedia": "id:Stasiun LRT Rasuna Said"
+  }
+},
+{
+  "type": "node",
+  "id": 6720467137,
+  "lat": -6.3095494,
+  "lon": 106.8843804,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Kampung Rambutan",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q19752040",
+    "wikipedia": "id:Stasiun LRT Kampung Rambutan"
+  }
+},
+{
+  "type": "node",
+  "id": 6720467138,
+  "lat": -6.3738926,
+  "lon": 106.8956698,
+  "tags": {
+    "addr:city": "Depok",
+    "light_rail": "yes",
+    "name": "Harjamukti",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q28163959",
+    "wikipedia": "id:Stasiun LRT Harjamukti"
+  }
+},
+{
+  "type": "node",
+  "id": 6842437300,
+  "lat": -6.1304408,
+  "lon": 106.6556805,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 1",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 6842437301,
+  "lat": -6.1301314,
+  "lon": 106.6560793,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 1",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 6842437302,
+  "lat": -6.1232225,
+  "lon": 106.6529358,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 2",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 6842437303,
+  "lat": -6.1230094,
+  "lon": 106.6530946,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 2",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 7616402144,
+  "lat": -6.2641077,
+  "lon": 107.0216701,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Jatimulya",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q19741279",
+    "wikipedia": "id:Stasiun LRT Jati Mulya"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072563,
+  "lat": -6.2529489,
+  "lon": 106.9904237,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Bekasi Barat",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q33022844",
+    "wikipedia": "id:Stasiun LRT Bekasi Barat"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072564,
+  "lat": -6.2546502,
+  "lon": 106.9632112,
+  "tags": {
+    "addr:city": "Jakarta",
+    "addr:street": "Jalan Batu Mulia",
+    "light_rail": "yes",
+    "name": "Cikunir 2",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q33022543",
+    "wikipedia": "id:Stasiun LRT Cikunir 2"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072565,
+  "lat": -6.2566001,
+  "lon": 106.9518734,
+  "tags": {
+    "addr:city": "Kota Bekasi",
+    "addr:street": "Jalan Caman Raya",
+    "light_rail": "yes",
+    "name": "Cikunir 1",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q33022012",
+    "wikipedia": "id:Stasiun LRT Cikunir 1"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072566,
+  "lat": -6.2577476,
+  "lon": 106.9279199,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Jatibening Baru",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q33020703",
+    "wikipedia": "id:Stasiun LRT Jati Bening Baru"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072567,
+  "lat": -6.2287727,
+  "lon": 106.8332031,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Kuningan",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q10166373",
+    "wikipedia": "id:Stasiun LRT Kuningan"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072568,
+  "lat": -6.3237693,
+  "lon": 106.8866433,
+  "tags": {
+    "addr:city": "Jakarta",
+    "addr:postcode": "13650",
+    "light_rail": "yes",
+    "name": "Ciracas",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "source": "HOT_InAWARESurvey_2017",
+    "station": "light_rail",
+    "wikidata": "Q19726743",
+    "wikipedia": "id:Stasiun LRT Ciracas"
+  }
+},
+{
+  "type": "node",
+  "id": 8174072570,
+  "lat": -6.2048280,
+  "lon": 106.8255301,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Dukuh Atas Bank Syariah Indonesia",
+    "name:th": "ดูกุฮ์อาตัซ",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "old_name": "Dukuh Atas",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q19740981",
+    "wikipedia": "id:Stasiun LRT Dukuh Atas BNI"
+  }
+},
+{
+  "type": "node",
+  "id": 8487603262,
+  "lat": -6.2434461,
+  "lon": 106.8639705,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Ciliwung",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q10166356",
+    "wikipedia": "id:Stasiun LRT Ciliwung"
+  }
+},
+{
+  "type": "node",
+  "id": 9124364689,
+  "lat": -6.2093350,
+  "lon": 106.8302634,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Setiabudi",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 9124369223,
+  "lat": -6.2434289,
+  "lon": 106.8639717,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Ciliwung",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 9124369263,
+  "lat": -6.2093428,
+  "lon": 106.8302180,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Setiabudi",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 9124369397,
+  "lat": -6.2434643,
+  "lon": 106.8639697,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Ciliwung",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 9761865798,
+  "lat": -6.2458656,
+  "lon": 106.8872875,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Halim",
+    "network": "LRT Jabodebek",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "railway:ref": "HAL",
+    "station": "light_rail",
+    "wikidata": "Q111590566",
+    "wikipedia": "id:Stasiun Halim"
+  }
+},
+{
+  "type": "node",
+  "id": 10273871243,
+  "lat": -6.1269460,
+  "lon": 106.6527726,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Stasiun Kereta Api Bandara",
+    "name:en": "Train Station",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 10273871244,
+  "lat": -6.1272863,
+  "lon": 106.6530568,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Stasiun Kereta Api Bandara",
+    "name:en": "Train Station",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189467,
+  "lat": -6.3738897,
+  "lon": 106.8956864,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Harjamukti",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189468,
+  "lat": -6.3738957,
+  "lon": 106.8956519,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Harjamukti",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189470,
+  "lat": -6.3237685,
+  "lon": 106.8866163,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Ciracas",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189485,
+  "lat": -6.3095464,
+  "lon": 106.8844039,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Kampung Rambutan",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189486,
+  "lat": -6.3095525,
+  "lon": 106.8843581,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Kampung Rambutan",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189487,
+  "lat": -6.2929044,
+  "lon": 106.8805779,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Taman Mini",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189488,
+  "lat": -6.2929106,
+  "lon": 106.8805429,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Taman Mini",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189489,
+  "lat": -6.2641263,
+  "lon": 107.0216652,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Jatimulya",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189490,
+  "lat": -6.2640876,
+  "lon": 107.0216705,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Jatimulya",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189491,
+  "lat": -6.2546804,
+  "lon": 106.9631801,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cikunir 2",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189492,
+  "lat": -6.2546488,
+  "lon": 106.9631700,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cikunir 2",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189493,
+  "lat": -6.2566172,
+  "lon": 106.9518542,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cikunir 1",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189494,
+  "lat": -6.2565806,
+  "lon": 106.9518783,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cikunir 1",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189495,
+  "lat": -6.2577426,
+  "lon": 106.9279154,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Jatibening Baru",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189497,
+  "lat": -6.2458773,
+  "lon": 106.8872969,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Halim",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189498,
+  "lat": -6.2458520,
+  "lon": 106.8872795,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Halim",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189499,
+  "lat": -6.2048511,
+  "lon": 106.8255247,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Dukuh Atas Bank Syariah Indonesia",
+    "name:th": "ดูกุฮ์อาตัซ",
+    "old_name": "Dukuh Atas",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189500,
+  "lat": -6.2048049,
+  "lon": 106.8255355,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Dukuh Atas Bank Syariah Indonesia",
+    "name:th": "ดูกุฮ์อาตัซ",
+    "old_name": "Dukuh Atas",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189501,
+  "lat": -6.2216446,
+  "lon": 106.8322200,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Rasuna Said",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189502,
+  "lat": -6.2216294,
+  "lon": 106.8322652,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Rasuna Said",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189503,
+  "lat": -6.2287823,
+  "lon": 106.8332233,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Kuningan",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040189504,
+  "lat": -6.2287874,
+  "lon": 106.8331817,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Kuningan",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204405,
+  "lat": -6.2421580,
+  "lon": 106.8385133,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pancoran",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204406,
+  "lat": -6.2421132,
+  "lon": 106.8385223,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pancoran",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204407,
+  "lat": -6.2434471,
+  "lon": 106.8570727,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cikoko",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204408,
+  "lat": -6.2434874,
+  "lon": 106.8570720,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cikoko",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204409,
+  "lat": -6.2458886,
+  "lon": 106.8712341,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cawang",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204410,
+  "lat": -6.2459260,
+  "lon": 106.8712235,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cawang",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204411,
+  "lat": -6.2460197,
+  "lon": 106.8711496,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cawang",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11040204412,
+  "lat": -6.2457911,
+  "lon": 106.8712568,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Cawang",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11179200375,
+  "lat": -6.1920041,
+  "lon": 106.8710899,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pramuka",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 11630425911,
+  "lat": -6.1572100,
+  "lon": 106.9142841,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Kelapa Gading",
+    "old_name": "Pegangsaan Dua",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 11630425912,
+  "lat": -6.1572054,
+  "lon": 106.9141377,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Kelapa Gading",
+    "old_name": "Pegangsaan Dua",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 12260707174,
+  "lat": -6.2459070,
+  "lon": 106.8712296,
+  "tags": {
+    "addr:city": "Jakarta",
+    "light_rail": "yes",
+    "name": "Cawang",
+    "network": "LRT Jabodebek",
+    "network:wikidata": "Q20427104",
+    "operator": "PT Kereta Api Indonesia (Persero), Divisi LRT Jabodebek",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q19726745",
+    "wikipedia": "id:Stasiun LRT Cawang"
+  }
+},
+{
+  "type": "node",
+  "id": 12578386108,
+  "lat": -6.3237692,
+  "lon": 106.8866634,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Ciracas",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 12578386110,
+  "lat": -6.2577040,
+  "lon": 106.9279159,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Jatibening Baru",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 13257085881,
+  "lat": -6.1271283,
+  "lon": 106.6529471,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Bandara Soekarno-Hatta",
+    "name:en": "SHIA Railway Station",
+    "network": "Kalayang Bandar Udara",
+    "operator": "Injourney Airports",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail"
+  }
+},
+{
+  "type": "node",
+  "id": 13257085882,
+  "lat": -6.1302909,
+  "lon": 106.6558160,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 1",
+    "network": "Kalayang Bandar Udara",
+    "operator": "Injourney Airports",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 13257085883,
+  "lat": -6.1231346,
+  "lon": 106.6530206,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 2",
+    "network": "Kalayang Bandar Udara",
+    "operator": "Injourney Airports",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 13257085884,
+  "lat": -6.1197896,
+  "lon": 106.6651182,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Terminal 3",
+    "network": "Kalayang Bandar Udara",
+    "operator": "Injourney Airports",
+    "public_transport": "station",
+    "railway": "station",
+    "station": "light_rail",
+    "wikidata": "Q55075145",
+    "wikipedia": "id:Kalayang Bandara Soekarno–Hatta"
+  }
+},
+{
+  "type": "node",
+  "id": 14073320424,
+  "lat": -6.1930793,
+  "lon": 106.8821790,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Rawamangun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 14073320425,
+  "lat": -6.1931875,
+  "lon": 106.8827680,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Rawamangun",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 14074121187,
+  "lat": -6.1919948,
+  "lon": 106.8707091,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pramuka",
+    "public_transport": "stop_position",
+    "railway": "stop",
+    "train": "yes"
+  }
+},
+{
+  "type": "node",
+  "id": 14074121194,
+  "lat": -6.1958767,
+  "lon": 106.8587521,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pasar Pramuka",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 14074121197,
+  "lat": -6.1957417,
+  "lon": 106.8590504,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Pasar Pramuka",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 14122057556,
+  "lat": -6.2087483,
+  "lon": 106.8459040,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Manggarai",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+},
+{
+  "type": "node",
+  "id": 14122057557,
+  "lat": -6.2085640,
+  "lon": 106.8454986,
+  "tags": {
+    "light_rail": "yes",
+    "name": "Manggarai",
+    "public_transport": "stop_position",
+    "railway": "stop"
+  }
+}
+
+  ]
+}

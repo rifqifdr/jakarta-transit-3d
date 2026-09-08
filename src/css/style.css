@@ -1,0 +1,785 @@
+:root {
+  --bg: #0b0f14;
+  --panel: rgba(17, 23, 31, 0.86);
+  --panel-solid: #11171f;
+  --border: rgba(255, 255, 255, 0.11);
+  --text: #eef2f7;
+  --muted: #93a1b3;
+  --accent: #35a7ff;
+  --live: #2fd07a;
+  --radius: 12px;
+  --shadow: 0 10px 32px rgba(0, 0, 0, 0.45);
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+
+#map { position: absolute; inset: 0; }
+
+/* ---------------------------------------------------------------- loader */
+
+#loader {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(120% 90% at 50% 40%, #16202c 0%, #080b10 70%);
+  transition: opacity 0.6s ease, visibility 0.6s;
+}
+#loader.hidden { opacity: 0; visibility: hidden; }
+.loader-inner { text-align: center; }
+.loader-mark { display: flex; gap: 6px; justify-content: center; margin-bottom: 20px; }
+.loader-mark span {
+  width: 12px; height: 30px; border-radius: 3px; background: var(--accent);
+  animation: pulse 1.1s ease-in-out infinite;
+}
+.loader-mark span:nth-child(2) { background: #CE0037; animation-delay: 0.14s; }
+.loader-mark span:nth-child(3) { background: #0E6938; animation-delay: 0.28s; }
+@keyframes pulse {
+  0%, 100% { transform: scaleY(0.5); opacity: 0.45; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+.loader-title { font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+.loader-subtitle { margin-top: 6px; font-size: 13px; color: var(--muted); }
+.loader-status { margin-top: 10px; font-size: 12px; color: var(--muted); opacity: 0.75; }
+
+/* ---------------------------------------------------------------- panels */
+
+.panel {
+  position: absolute;
+  z-index: 10;
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ------------------------------------------------------------ clock bar */
+
+/* The clock moved right when the left column was introduced (JAKAR-25). It is
+   a persistent read-out rather than something you act on, so it is the one
+   panel that can sit away from the flow of finding and planning. */
+#clock {
+  right: 12px;
+  top: 12px;
+  width: 288px;
+  padding: 12px 14px;
+}
+
+/* The right column: things you read, not things you act on. Layanan sits
+   under the clock because it is a filter you set once and then forget. */
+#right-rail {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 288px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 24px);
+  pointer-events: none;
+}
+#right-rail > .panel {
+  position: static;
+  width: 100%;
+  margin: 0;
+  pointer-events: auto;
+  flex: 0 0 auto;
+}
+#right-rail > #layers { flex: 0 1 auto; overflow-y: auto; }
+.clock-top { display: flex; align-items: baseline; gap: 10px; }
+.clock-time {
+  font-family: var(--mono);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.clock-date { font-size: 12px; color: var(--muted); }
+.clock-live {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--live);
+  color: var(--live);
+  cursor: pointer;
+  background: none;
+  font-family: var(--font);
+}
+.clock-live.off { border-color: var(--border); color: var(--muted); }
+
+.clock-controls { display: flex; align-items: center; gap: 8px; margin-top: 11px; }
+.clock-scrub { flex: 1; }
+.scrub-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+.scrub-wrap canvas {
+  position: absolute; left: 0; right: 0; bottom: 50%; width: 100%;
+  transform: translateY(50%); pointer-events: none;
+}
+.scrub-wrap input[type=range] { position: relative; z-index: 1; background: rgba(255,255,255,0.10); }
+
+button.icon {
+  width: 30px; height: 30px;
+  display: grid; place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+}
+button.icon:hover { background: rgba(255, 255, 255, 0.12); }
+
+.speed-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 9px; font-size: 11px; color: var(--muted);
+}
+.speed-row output { font-family: var(--mono); color: var(--text); min-width: 46px; }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.16);
+  outline: none; margin: 0; width: 100%;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--text); cursor: pointer; border: none;
+}
+input[type=range]::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--text); cursor: pointer; border: none;
+}
+
+.clock-count {
+  margin-top: 9px; padding-top: 9px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px; color: var(--muted);
+}
+.clock-count b { color: var(--text); font-family: var(--mono); font-size: 13px; }
+
+/* ------------------------------------------------------------- layers */
+
+#layers { padding: 12px 14px; }
+#layers .panel-title { cursor: pointer; display: flex; align-items: center; margin-bottom: 0; }
+#layers .layer-body { margin-top: 10px; }
+#layers.folded .layer-body { display: none; }
+.chevron {
+  margin-left: auto;
+  width: 6px; height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg) translate(-2px, -2px);
+  transition: transform 0.18s ease;
+}
+#layers.folded .chevron { transform: rotate(-135deg) translate(-1px, -1px); }
+.panel-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 10px;
+}
+.cat {
+  display: flex; align-items: center; gap: 9px;
+  padding: 5px 0; cursor: pointer; font-size: 12.5px; user-select: none;
+}
+.cat .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.cat .name { flex: 1; }
+.cat .n { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.cat.off { opacity: 0.38; }
+.layer-sep { height: 1px; background: var(--border); margin: 10px 0; }
+/* While colouring by frequency the category swatches no longer describe the
+   lines, so they step back to being filters rather than a key. */
+#layers.by-headway .cat .dot { opacity: 0.35; }
+
+/* Mode above category (JAKAR-39). The header is the group's own control, so
+   it reads as a row rather than as a caption. */
+.mode-group + .mode-group { margin-top: 8px; }
+.mode-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 0 4px; cursor: pointer;
+  border-bottom: 1px solid var(--border); margin-bottom: 3px;
+}
+.mode-name {
+  flex: 1; font-size: 10.5px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
+}
+.mode-head:hover .mode-name { color: var(--text); }
+.mode-head .n { font-size: 10.5px; color: var(--muted); font-family: var(--mono); }
+.mode-group.off .mode-name, .mode-group.off .mode-head .n { opacity: 0.4; }
+/* Categories sit under their mode, so they are indented to read as children. */
+.mode-group .cat { padding-left: 3px; }
+/* By frequency the categories stop meaning anything, and so do their modes. */
+#layers.by-headway .mode-group { display: none; }
+.headway-legend:not(:empty) {
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.cat.static { cursor: default; }
+.toggle { display: flex; align-items: center; gap: 9px; padding: 5px 0; cursor: pointer; font-size: 12.5px; }
+.toggle input { accent-color: var(--accent); margin: 0; }
+
+/* ------------------------------------------------------------- search */
+
+/* ------------------------------------------------------------- left rail */
+/*
+   Search and the detail card in one column, in the order you
+   use them: find a stop, inspect it, plan from it. They used to sit at opposite
+   corners — search top left, its own result top right — which cost about
+   1,300 px of eye travel twice over for a single find-and-plan action.
+
+   Absolutely positioned panels cannot stack, so they are re-parented into
+   this flex column at boot. `display: none` on a closed panel removes it from
+   the flow, so the column collapses to whatever is actually open.
+*/
+#left-rail {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  width: 288px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100vh - 24px);
+  /* The gaps between panels must not swallow clicks meant for the map. */
+  pointer-events: none;
+}
+#left-rail > .panel {
+  position: static;
+  width: 100%;
+  margin: 0;
+  pointer-events: auto;
+  flex: 0 0 auto;
+}
+/* The card is the part that grows, so it is the part that scrolls. */
+#left-rail > #detail {
+  max-height: none;
+  min-height: 0;
+  flex: 0 1 auto;
+  overflow-y: auto;
+}
+
+#search { left: 12px; top: 12px; width: 288px; padding: 0; overflow: hidden; z-index: 20; }
+
+/* Mode first, so the result list below is never ambiguous about what it is
+   listing. */
+.finder-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.finder-tab {
+  flex: 1; padding: 9px 0; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.01em; background: none; border: none; cursor: pointer;
+  color: var(--muted); font-family: var(--font);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.finder-tab:hover { color: var(--text); }
+.finder-tab.on { color: var(--text); border-bottom-color: var(--accent); }
+
+.finder-pane[hidden] { display: none; }
+.field {
+  display: flex; align-items: center; gap: 9px; padding: 0 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.finder-pane .field:last-child { border-bottom: none; }
+.field input {
+  flex: 1; min-width: 0; padding: 10px 0; border: none; outline: none;
+  background: transparent; color: var(--text); font-size: 13.5px; font-family: var(--font);
+}
+.field input::placeholder { color: var(--muted); }
+/* Safari draws its own clear affordance on type=search and it collides. */
+.field input::-webkit-search-cancel-button { display: none; }
+.jb-dot.line { background: var(--accent); }
+.field-swap, .field-clear {
+  flex: none; width: 22px; height: 22px; padding: 0; cursor: pointer;
+  background: none; border: none; color: var(--muted);
+  font-size: 14px; line-height: 1; border-radius: 5px; font-family: var(--font);
+}
+.field-swap:hover, .field-clear:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.results { max-height: 320px; overflow-y: auto; border-top: 1px solid var(--border); }
+.results:empty { display: none; }
+.result {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 13px; cursor: pointer; font-size: 12.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.result:hover { background: rgba(255, 255, 255, 0.07); }
+.badge {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+  padding: 3px 6px; border-radius: 5px; flex: none; min-width: 34px; text-align: center;
+  color: #fff;
+}
+.result .meta { color: var(--muted); font-size: 11px; }
+
+/* ------------------------------------------------------------- detail */
+
+#detail {
+  right: 12px; top: 12px; width: 316px; padding: 14px; display: none;
+  /* Stops short of the zoom and compass controls in the corner below. */
+  max-height: calc(100vh - 172px);
+  overflow-y: auto;
+}
+#detail.open { display: block; }
+.detail-head { display: flex; align-items: flex-start; gap: 10px; }
+.detail-title { font-size: 15px; font-weight: 650; line-height: 1.3; }
+.detail-sub { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.detail-close {
+  margin-left: auto; background: none; border: none; color: var(--muted);
+  cursor: pointer; font-size: 17px; line-height: 1; padding: 2px 4px;
+}
+.detail-body { margin-top: 12px; font-size: 12.5px; }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.row .k { color: var(--muted); flex: none; }
+.row .v { text-align: right; }
+
+.fare { font-weight: 650; }
+/* Free services are the larger half of the network; worth calling out. */
+.fare.free { color: var(--live); }
+.fare-note { font-size: 10.5px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+.progress { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.13); margin: 11px 0 4px; }
+.progress span { display: block; height: 100%; border-radius: 2px; background: var(--accent); }
+
+.stoplist { margin-top: 10px; max-height: 168px; overflow-y: auto; }
+.stoprow {
+  display: flex; align-items: center; gap: 9px; padding: 5px 0;
+  font-size: 12px; color: var(--muted);
+}
+.stoprow .tick {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  border: 1.5px solid var(--muted); background: transparent;
+}
+.stoprow.done { opacity: 0.42; }
+.stoprow.now { color: var(--text); font-weight: 600; }
+.stoprow.now .tick { background: var(--accent); border-color: var(--accent); }
+.stoprow .t { margin-left: auto; font-family: var(--mono); font-size: 11px; }
+
+.access-tag { color: #35d08a; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+
+.track-btn {
+  width: 100%; margin-top: 12px; padding: 8px;
+  border-radius: 8px; border: 1px solid var(--accent);
+  background: rgba(53, 167, 255, 0.14); color: var(--accent);
+  font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font);
+}
+.track-btn.on { background: var(--accent); color: #06121e; }
+
+/* ------------------------------------------------------------- journey */
+
+/* The origin/destination dots outlived the bar they were built for — the
+   finder's two fields wear them now. */
+.jb-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.jb-dot.from { background: var(--live); }
+.jb-dot.to { background: var(--accent); }
+
+.journey-ends { display: flex; gap: 6px; margin-top: 14px; }
+.end-btn {
+  flex: 1; padding: 8px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--accent); background: rgba(53,167,255,0.14);
+  color: var(--accent); font-size: 12.5px; font-weight: 600; font-family: var(--font);
+}
+.end-btn:hover { background: var(--accent); color: #06121e; }
+
+.sorts { display: flex; gap: 5px; margin-top: 12px; }
+.sorts button {
+  flex: 1; padding: 5px 4px; font-size: 10.5px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: none; color: var(--muted);
+  font-family: var(--font);
+}
+.sorts button.on { border-color: var(--accent); color: var(--accent); background: rgba(53,167,255,0.12); }
+
+.itin {
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 11px; margin-top: 9px; cursor: pointer;
+}
+.itin:hover { background: rgba(255,255,255,0.04); }
+.itin.on { border-color: var(--accent); background: rgba(53,167,255,0.08); cursor: default; }
+.itin-top { display: flex; align-items: baseline; gap: 8px; }
+.itin-time { font-size: 17px; font-weight: 650; }
+.itin-clock { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.itin-fare { margin-left: auto; font-size: 12.5px; font-weight: 600; }
+.itin-fare.free { color: var(--live); }
+.itin-legs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.leg {
+  font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+  padding: 3px 6px; border-radius: 5px; color: #fff;
+}
+.leg.walk { background: rgba(255,255,255,0.1); color: var(--muted); font-weight: 500; }
+.leg-sep { color: var(--muted); font-size: 11px; }
+.itin-meta { margin-top: 7px; font-size: 11px; color: var(--muted); }
+
+.steps { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border); }
+.step { display: flex; gap: 9px; padding: 7px 0; font-size: 12px; align-items: flex-start; }
+.step .t { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.step-sub { color: var(--muted); font-size: 11px; margin: 2px 0; }
+.step.walk { color: var(--muted); align-items: center; }
+.step-icon { width: 20px; text-align: center; flex: none; }
+
+/* ----------------------------------------------------------- jangkauan */
+
+.end-btn.wide { width: 100%; margin-top: 6px; }
+.free-toggle { margin: 4px 0 10px; }
+.reach-legend { border-top: 1px solid var(--border); padding-top: 10px; }
+.reach-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 12.5px; }
+.reach-dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+.reach-row .t { margin-left: auto; font-family: var(--mono); font-size: 12px; }
+.reach-note {
+  margin-top: 11px; padding: 9px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.05); font-size: 11.5px; line-height: 1.45;
+}
+.reach-note.muted { color: var(--muted); background: none; padding: 9px 0 0; }
+
+.hours-note {
+  margin-top: 9px; padding: 8px 10px; border-radius: 8px;
+  font-size: 11.5px; line-height: 1.4;
+}
+.hours-note.soon { background: rgba(224,139,0,0.16); color: #ffc061; }
+.hours-note.gone { background: rgba(212,20,90,0.16); color: #ff87b0; }
+
+/* --------------------------------------------------------- di sekitar */
+
+.near { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.near-top { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; }
+.near-name { flex: 1; }
+.near-top .t { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.near-deps { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.near-wait { font-size: 11px; color: var(--muted); margin-right: 8px; }
+
+/* --------------------------------------------------------- ride-along */
+
+/* Bottom centre: the only free edge, and where a heads-up display belongs. */
+#ride {
+  left: 50%; transform: translateX(-50%); bottom: 16px;
+  width: min(560px, calc(100% - 24px)); padding: 12px 14px; display: none;
+  z-index: 30;
+}
+#ride.open { display: block; }
+.ride-main { display: flex; align-items: center; gap: 11px; }
+.ride-text { flex: 1; min-width: 0; }
+.ride-title { font-size: 14.5px; font-weight: 650; }
+.ride-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.ride-eta { text-align: right; flex: none; }
+.ride-eta .js-eta { font-size: 15px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.ride-arrive { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+
+.ride-progress { display: flex; gap: 3px; margin-top: 11px; }
+.ride-seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); }
+.ride-seg.walk { flex: 0 0 14px; }
+.ride-seg.done { background: rgba(255,255,255,0.4); }
+.ride-seg.now { background: var(--accent); }
+
+.ride-controls { display: flex; align-items: center; gap: 7px; margin-top: 11px; }
+.ride-step { flex: 1; font-size: 11px; color: var(--muted); }
+.ride-controls button {
+  padding: 5px 11px; font-size: 11.5px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: rgba(255,255,255,0.05);
+  color: var(--text); font-family: var(--font);
+}
+.ride-controls button:hover { background: rgba(255,255,255,0.14); }
+.ride-controls button.on {
+  border-color: var(--accent); color: var(--accent); background: rgba(53,167,255,0.14);
+}
+
+@media (max-width: 700px) {
+  #ride { bottom: 12px; }
+}
+
+/* --------------------------------------------------------------- misc */
+
+.mapboxgl-ctrl-group { background: var(--panel) !important; border: 1px solid var(--border); }
+.mapboxgl-ctrl-group button + button { border-top: 1px solid var(--border); }
+.mapboxgl-ctrl-group button .mapboxgl-ctrl-icon { filter: invert(1); }
+.mapboxgl-ctrl-attrib { background: rgba(11,15,20,0.7) !important; }
+.mapboxgl-ctrl-attrib a { color: var(--muted) !important; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 4px; }
+
+@media (max-width: 700px) {
+  #search, #clock { width: calc(100% - 24px); }
+  #left-rail, #right-rail { width: calc(100% - 24px); }
+  #right-rail { top: auto; }
+  #layers { display: none; }
+  #detail {
+    width: calc(100% - 24px); right: 12px; top: auto; bottom: 12px;
+    max-height: 52vh;
+  }
+}
+
+/* --------------------------------------------------- line preview card */
+
+/* A line's stops, as a line. The connector is drawn on the node rather than
+   as a separate element so the list stays one node per stop. */
+.line-stops { padding: 4px 0 2px; }
+.line-stop { display: flex; align-items: center; gap: 11px; padding: 5px 0; font-size: 12.5px; }
+.line-node {
+  position: relative; flex: none;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--line-color, #666);
+}
+.line-stop.end .line-node { background: var(--line-color, #666); }
+.line-stop:not(:last-child) .line-node::after {
+  content: ''; position: absolute; left: 50%; top: 100%;
+  width: 2px; height: 13px; margin-left: -1px;
+  background: var(--line-color, #666); opacity: 0.55;
+}
+.line-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.line-stop.end .line-name { font-weight: 600; }
+
+/* ------------------------------------------------------- follow controls */
+
+/* Same slot as the ride HUD — they are never open together, and following is
+   the same kind of view: the camera is locked to something moving, so the
+   controls belong under it rather than out at the side. */
+#follow-hud {
+  left: 50%; transform: translateX(-50%); bottom: 16px;
+  width: min(560px, calc(100% - 24px)); padding: 11px 14px; display: none;
+  z-index: 30;
+}
+#follow-hud.open { display: block; }
+
+.fh-id { display: flex; align-items: center; gap: 11px; }
+.fh-text { flex: 1; min-width: 0; }
+.fh-badge {
+  flex: none; min-width: 30px; padding: 3px 7px; border-radius: 6px;
+  font-size: 11.5px; font-weight: 700; text-align: center; color: #fff;
+}
+.fh-headsign {
+  font-size: 14px; font-weight: 650;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.fh-next {
+  font-size: 11.5px; color: var(--muted); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.fh-controls {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.fh-speed {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--muted); min-width: 0;
+}
+.fh-speed output { font-family: var(--mono); color: var(--text); min-width: 46px; }
+.fh-btn {
+  flex: none; padding: 6px 12px; font-size: 12px; border-radius: 7px;
+  border: 1px solid var(--border); background: rgba(255, 255, 255, 0.05);
+  color: var(--muted); cursor: pointer; font-family: var(--font);
+}
+.fh-btn:hover { background: rgba(255, 255, 255, 0.12); color: var(--text); }
+.fh-btn.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.fh-btn.stop { color: var(--text); }
+.fh-btn.stop:hover { background: rgba(255, 90, 90, 0.22); border-color: rgba(255, 90, 90, 0.5); }
+
+@media (max-width: 700px) {
+  #follow-hud { bottom: 12px; }
+  .fh-speed span { display: none; }
+}
+
+/* ---------------------------------------------------------------- cameras */
+
+/* The one thing in this interface showing the real world rather than the
+   simulation, so it is allowed to look live: the badge borrows --live, which
+   is otherwise the clock's. */
+.cam-badge {
+  background: var(--live);
+  color: #06210f;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* 16:9 held by aspect-ratio so the card does not jump when the first frame
+   arrives — a stream that resizes its own panel on load reads as broken. */
+.cam-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.cam-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* `display` beats the `hidden` attribute, so the overlay needs this or it is
+   permanently visible over the video it is meant to explain the absence of. */
+.cam-error[hidden] { display: none; }
+
+.cam-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  background: rgba(11, 15, 20, 0.92);
+}
+
+.cam-note {
+  margin: 10px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.cam-note strong { color: var(--text); font-weight: 600; }
+
+.cam-credit {
+  margin: 8px 0 0;
+  font-size: 10.5px;
+  color: var(--muted);
+  opacity: 0.75;
+}
+
+/* Outside live mode the toggle is disabled rather than hidden: a control that
+   vanishes teaches nothing, one that greys out with a reason does. */
+.toggle.disabled { opacity: 0.45; cursor: not-allowed; }
+
+.cam-hint {
+  font-size: 10.5px;
+  color: var(--muted);
+  padding: 0 0 4px 27px;
+  margin-top: -3px;
+}
+
+/* The camera, opened large over the map. */
+.cam-stage { cursor: zoom-in; }
+
+.cam-expand {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: rgba(11, 15, 20, 0.7);
+  color: #fff;
+  font-size: 13px;
+  line-height: 1;
+  cursor: zoom-in;
+}
+
+.cam-stage:hover .cam-expand { background: rgba(11, 15, 20, 0.9); }
+
+.cam-channels { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+
+.cam-ch {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 6px;
+  padding: 4px 9px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cam-ch.on { background: var(--accent); border-color: var(--accent); color: #04121e; font-weight: 600; }
+
+/* Estimated positions are called out rather than blended into the note below:
+   it is a statement about this camera, not about the map in general. */
+.cam-approx {
+  margin: 10px 0 0;
+  padding: 7px 9px;
+  border-left: 2px solid var(--accent);
+  background: rgba(53, 167, 255, 0.08);
+  border-radius: 0 6px 6px 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.cam-approx strong { color: var(--text); font-weight: 600; }
+
+/* A link that asked for something this card could not give it. Warmer than
+   .cam-approx because it is about the link rather than about the camera. */
+.cam-notice {
+  margin: 10px 0 0;
+  padding: 7px 9px;
+  border-left: 2px solid #e0a340;
+  background: rgba(224, 163, 64, 0.1);
+  border-radius: 0 6px 6px 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.cam-notice strong { color: var(--text); font-weight: 600; }
+
+.cam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(6, 9, 13, 0.86);
+  backdrop-filter: blur(3px);
+}
+
+.cam-overlay-inner {
+  width: min(1200px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cam-overlay-head { display: flex; align-items: center; gap: 10px; }
+.cam-overlay-title { font-size: 15px; font-weight: 600; flex: 1; }
+
+.cam-overlay-close {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.cam-overlay-close:hover { color: var(--text); }
+
+.cam-overlay-stage {
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}
+
+/* The same element as in the card — it is moved, not copied — so it has to
+   fill whichever of the two it currently lives in. */
+.cam-overlay-stage .cam-video { width: 100%; height: 100%; object-fit: contain; cursor: default; }
+
+.cam-overlay-foot { font-size: 11.5px; color: var(--muted); }
+
+/* Toll cameras answer a different question from street ones, and the badge
+   says so before the picture loads. */
+.cam-badge.toll { background: #f0a94a; color: #2a1802; }

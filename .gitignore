@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.env
+.DS_Store
+.idea/
+
+# Intermediate only — `npm run transform -- --json` rewrites it, and nothing
+# ships from it. `--source=walk` is the one thing that reads it back.
+data/build/
+
+# NOT ignored, though both are generated. Two deliberate exceptions:
+#
+#   public/artifacts/  is what the browser downloads, and what the deploy
+#                      serves. Committing it means the bytes that go live are
+#                      the bytes that were verified locally, and the host's
+#                      build step stays `npm run build` with nothing else in
+#                      it. Regenerate with `npm run transform`.
+#
+#   public/data/       is the legacy bus-only bundle, which `npm run
+#                      test-routing` runs against. That suite is the control
+#                      for every data bug this project has found, so a fresh
+#                      clone has to be able to run it. Regenerate with
+#                      `npm run build-data`.

@@ -1,0 +1,80 @@
+{
+  "_comment": "Approximate positions for the JakCCTV portal cameras on dki-jkt.balitower.co.id, which no source geolocates. The key is the site token from the stream name. `street` names an OpenStreetMap feature the ingest adapter fetches; sites sharing a street are spread evenly along it, in camera-number order, because which end of Gatot Subroto camera C11 sits on is not knowable from the name. `lat`/`lon` pin a site outright and override the street. These are ESTIMATES and ship marked as such — correcting one is a one-line edit here, and that is the point of the file.",
+  "_verified": "2026-09-07. 26 of 46 streams live. Street names checked against Overpass within the DKI bbox; Jalan Jati Baru has no way of that name anywhere in OSM, hence the explicit pin.",
+  "FLYOVER-LADOKGI-C01": {
+    "street": "Rumah Sakit Gigi dan Mulut Ladokgi TNI AL R.E Martadinata"
+  },
+  "JL.-GERBANG-PEMUDA-C02": {
+    "street": "Jalan Gerbang Pemuda"
+  },
+  "JL.-GERBANG-PEMUDA-C03": {
+    "street": "Jalan Gerbang Pemuda"
+  },
+  "JL.-GERBANG-PEMUDA-C04": {
+    "street": "Jalan Gerbang Pemuda"
+  },
+  "JL.-JATI-BARU-RAYA-C02": {
+    "lat": -6.1859,
+    "lon": 106.8123
+  },
+  "JL.-JEND.-GATOT-SUBROTO-C11": {
+    "street": "Jalan Jenderal Gatot Subroto"
+  },
+  "JL.-JEND.-GATOT-SUBROTO-C13": {
+    "street": "Jalan Jenderal Gatot Subroto"
+  },
+  "JL.-JEND.-GATOT-SUBROTO-C14": {
+    "street": "Jalan Jenderal Gatot Subroto"
+  },
+  "JL.-KH.-MAS-MANSYUR-C02": {
+    "street": "Jalan Kyai Haji Mas Mansyur"
+  },
+  "JL.-LETJEN.-S.-PARMAN-C01": {
+    "street": "Jalan Letnan Jenderal Siswondo Parman"
+  },
+  "JL.-MANGGARAI-UTARA-2-C01": {
+    "street": "Jalan Manggarai Utara II"
+  },
+  "JL.-MH.-THAMRIN-C01": {
+    "street": "Jalan Mohammad Husni Thamrin"
+  },
+  "JL.-MH.-THAMRIN-C02": {
+    "street": "Jalan Mohammad Husni Thamrin"
+  },
+  "JL.-TENTARA-PELAJAR-C04": {
+    "street": "Jalan Tentara Pelajar"
+  },
+  "JPO-JL.-CIDENG-TIMUR-C02": {
+    "street": "Jalan Cideng Timur"
+  },
+  "JPO-JL.-GATOT-SUBROTO-7": {
+    "street": "Jalan Jenderal Gatot Subroto"
+  },
+  "PASAR-TANAH-ABANG-C02": {
+    "street": "Jalan Pasar Tanah Abang"
+  },
+  "SIMPANG-JL.-LETJEN.-S.-PARMAN-C02": {
+    "street": "Jalan Letnan Jenderal Siswondo Parman"
+  },
+  "SIMPANG-JL.-LETJEN.-S.-PARMAN-C07": {
+    "street": "Jalan Letnan Jenderal Siswondo Parman"
+  },
+  "SIMPANG-JL.-LETJEN.-S.-PARMAN-C08": {
+    "street": "Jalan Letnan Jenderal Siswondo Parman"
+  },
+  "SIMPANG-JL.-MH.-THAMRIN-C07": {
+    "street": "Jalan Mohammad Husni Thamrin"
+  },
+  "SIMPANG-JL.-MH.-THAMRIN-C08": {
+    "street": "Jalan Mohammad Husni Thamrin"
+  },
+  "SIMPANG-JL.-MH.-THAMRIN-C09": {
+    "street": "Jalan Mohammad Husni Thamrin"
+  },
+  "TAMAN-LITERASI-C01": {
+    "street": "Taman Literasi Martha Tiahahu"
+  },
+  "UOB-PLAZA-C01": {
+    "street": "UOB Plaza Thamrin Nine"
+  }
+}

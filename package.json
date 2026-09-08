@@ -1,0 +1,24 @@
+{
+  "name": "jakarta-transit-3d",
+  "version": "1.0.0",
+  "description": "A real-time 3D map of public transport across Greater Jakarta — bus, MRT, LRT and Commuter Line",
+  "type": "module",
+  "scripts": {
+    "build-data": "node scripts/build-data.mjs",
+    "ingest": "node scripts/ingest/index.mjs",
+    "transform": "node scripts/transform/index.mjs",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test-routing": "node scripts/test-routing.mjs",
+    "test-transform": "node scripts/test-transform.mjs"
+  },
+  "dependencies": {
+    "hls.js": "^1.7.2",
+    "mapbox-gl": "^3.30.0",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}
