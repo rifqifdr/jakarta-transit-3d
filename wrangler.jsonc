@@ -1,0 +1,32 @@
+/**
+ * Cloudflare Workers, serving the build as static assets.
+ *
+ * Not Pages. Cloudflare now steers new projects to Workers, and the two are
+ * configured differently: Pages needs nothing in the repo (build command and
+ * output directory live in its dashboard), while Workers Builds runs the build
+ * and then `npx wrangler deploy`, which reads this file. Without it the build
+ * succeeds, the deploy fails, and the Hello World template stays live at the
+ * URL — which is exactly what "latest build failed" looked like from outside.
+ *
+ * `netlify.toml` is the equivalent for Netlify. Neither obliges the other.
+ */
+{
+    "name": "jakarta-transit-3d",
+    "compatibility_date": "2026-09-09",
+
+    // No `main`: there is no Worker script, only files. An assets-only Worker
+    // is a first-class thing and serves them directly, with no request ever
+    // reaching JavaScript.
+    "assets": {
+        "directory": "./dist",
+
+        // Deliberately *not* "single-page-application". This app is one page
+        // and its deep links are query strings (`?stop=`, `?cam=`, `?t=`), so
+        // it has nothing to gain from an SPA rewrite — and something to lose:
+        // that setting answers every unknown path with index.html and a 200,
+        // so a mistyped or swept artifact hash would hand the loader a page of
+        // HTML to parse as JSON instead of an honest 404. A missing file
+        // should look missing.
+        "not_found_handling": "none"
+    }
+}

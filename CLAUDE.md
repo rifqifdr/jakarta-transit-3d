@@ -333,9 +333,18 @@ between cards do not swallow clicks meant for the map.
 ## Shipping it
 
 The build is static and the host runs `npm run build` into `dist/`, with
-`MAPBOX_ACCESS_TOKEN` in its environment and nothing else. `netlify.toml` has
-that for Netlify; Cloudflare Pages takes the same two settings in its
-dashboard. `public/_headers` is read by both.
+`MAPBOX_ACCESS_TOKEN` in its environment and nothing else. `public/_headers`
+is read by all three of the hosts below.
+
+**Cloudflare Workers and Cloudflare Pages are different products, and a
+`*.workers.dev` URL means Workers.** Pages takes its build command and output
+directory from a dashboard and needs nothing in the repo; Workers Builds runs
+the build and then `npx wrangler deploy`, which reads `wrangler.jsonc`. With no
+such file the build *succeeds*, the deploy fails, and whatever was deployed
+before stays live — on a new project that is the Hello World template, so the
+URL answers `Hello world` on every path while the dashboard says the latest
+build failed. Nothing in the build log says any of this. `netlify.toml` is the
+equivalent for Netlify.
 
 - **Two generated directories are checked in on purpose**, against the usual
   rule. `public/artifacts/` is what the browser downloads, so committing it
@@ -372,7 +381,11 @@ dashboard. `public/_headers` is read by both.
   it. `customAttribution` is read at construction only; adding a second control
   instead prints Mapbox's credits twice. The last line of it says the fleet is
   a scheduled simulation, which is the one place a casual visitor will see it.
-- **No redirect rules.** Deep links are query strings on one page, not paths.
+- **No redirect rules, and `not_found_handling` stays `none`.** Deep links are
+  query strings on one page, not paths, so an SPA rewrite has nothing to do —
+  and it would answer every unknown path with `index.html` and a 200, handing
+  the artifact loader a page of HTML to parse as JSON where a swept hash should
+  have produced an honest 404.
 
 ## Traps this codebase has already fallen into
 

@@ -519,14 +519,26 @@ Mapbox token.
 | Node version | 22 |
 | Environment variable | `MAPBOX_ACCESS_TOKEN` |
 
-**Cloudflare Pages** and **Netlify** both work from those four lines.
-`netlify.toml` carries them for Netlify; Cloudflare Pages takes them in its
-dashboard.
+Three hosts are configured, and **Cloudflare has two products that are not
+the same thing**:
 
-Two ways the first Cloudflare build fails, both of which look like a broken
-repo and are not:
+| Host | What it reads | Deploy command |
+| --- | --- | --- |
+| Cloudflare **Workers** | `wrangler.jsonc` | `npx wrangler deploy` |
+| Cloudflare **Pages** | its own dashboard | — |
+| Netlify | `netlify.toml` | — |
 
-- **The variable has to be a *build* variable.** Cloudflare separates build
+A `*.workers.dev` URL means Workers, and Workers Builds runs the build and
+then `npx wrangler deploy`, which needs `wrangler.jsonc` to know what to
+upload. Without it the build succeeds, the deploy fails, and whatever was
+deployed before — the Hello World template, on a new project — stays live at
+the URL. From outside that reads as "latest build failed" with no clue why.
+
+Three ways a first Cloudflare build fails, none of which is a broken repo:
+
+- **No `wrangler.jsonc`, on Workers.** Fixed in this repo; the deploy command
+  in the dashboard still has to be `npx wrangler deploy`.
+- **The token has to be a *build* variable.** Cloudflare separates build
   variables from runtime ones on two different screens, and only the build ones
   reach `vite build`.
 - **Connecting the repository fires a deployment immediately**, before there is
@@ -546,9 +558,12 @@ Two things worth knowing before the first deploy:
   camera. Mapbox's own tiles and its free tier's 50,000 monthly map loads are
   the limit that binds first, not the host's bandwidth.
 
-No redirect rules are needed. Deep links are query strings on one page
-(`?stop=`, `?cam=`, `?t=`), not paths, so there is nothing for an SPA rewrite
-to do.
+No redirect rules are needed, and `not_found_handling` is deliberately left at
+`none`. Deep links are query strings on one page (`?stop=`, `?cam=`, `?t=`),
+not paths, so an SPA rewrite has nothing to do — and it would do harm: it
+answers every unknown path with `index.html` and a 200, so a mistyped or swept
+artifact hash would hand the loader a page of HTML to parse as JSON instead of
+an honest 404.
 
 ## Known limits
 
