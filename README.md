@@ -521,7 +521,17 @@ Mapbox token.
 
 **Cloudflare Pages** and **Netlify** both work from those four lines.
 `netlify.toml` carries them for Netlify; Cloudflare Pages takes them in its
-dashboard. `public/_headers` is honoured by both, and is where the caching
+dashboard.
+
+Two ways the first Cloudflare build fails, both of which look like a broken
+repo and are not:
+
+- **The variable has to be a *build* variable.** Cloudflare separates build
+  variables from runtime ones on two different screens, and only the build ones
+  reach `vite build`.
+- **Connecting the repository fires a deployment immediately**, before there is
+  anywhere to have put the token. Save the variable, then retry that first
+  deployment. `public/_headers` is honoured by both, and is where the caching
 lives: everything under `/artifacts/` and `/assets/` is content-hashed and
 cached for a year, except `manifest.json`, which is the one mutable file and
 must revalidate — a stale manifest pins a visitor to an old dataset.

@@ -352,6 +352,15 @@ dashboard. `public/_headers` is read by both.
   how Mapbox GL works. The deployed site therefore wants its *own* public token
   with a URL restriction, not the one in `.env`. What binds first is Mapbox's
   50,000 monthly map loads, not the host's bandwidth.
+- **A build host has no `.env`, and Cloudflare has two kinds of variable.**
+  The first Pages build failed on `MAPBOX_ACCESS_TOKEN is missing from .env`,
+  which is true and useless — there is no `.env` on a build host and there is
+  not supposed to be. Two things are behind it: Cloudflare separates *build*
+  variables from *runtime* ones on different screens and only the build ones
+  reach `vite build`, and connecting a repository fires a deployment
+  immediately, before there is anywhere to have put the token. `vite.config.js`
+  now says all of that in the error itself, because a build log is the only
+  place anyone will read it.
 - **`build-data.mjs` no longer points at a folder on one laptop.** It defaults
   to the newest Transjakarta snapshot in the repo, so the control suite runs on
   a fresh clone. That snapshot is the 252-route mirror, not the 240-route
