@@ -1,0 +1,165 @@
+{
+  "when": "2026-09-09T16:11:16.025Z",
+  "url": "http://localhost:4173/",
+  "sampleMs": 4000,
+  "rounds": 7,
+  "note": "Emulated phone metrics on a desktop GPU. The canvas shape, the pixel count and the lever costs are real; the GPU is not a phone GPU and no number here stands in for one.",
+  "environment": {
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+    "vendor": "Google Inc. (Apple)"
+  },
+  "results": [
+    {
+      "group": "levers",
+      "viewId": "street",
+      "scale": 3,
+      "throttle": 4,
+      "label": "shipped (3D, default theme)",
+      "show3d": true,
+      "theme": "default",
+      "p50": 52.799999999995634,
+      "meanFps": 18.58643933386201,
+      "p99": 89.20000000001164,
+      "spreadMs": 16.500000000014552,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 6140,
+      "rounds": 7
+    },
+    {
+      "group": "levers",
+      "viewId": "street",
+      "scale": 3,
+      "throttle": 4,
+      "label": "Gedung 3D off",
+      "show3d": false,
+      "theme": "default",
+      "p50": 39.20000000001164,
+      "meanFps": 25.460536168938145,
+      "p99": 60.29999999999927,
+      "spreadMs": 4,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 6129,
+      "rounds": 7
+    },
+    {
+      "group": "levers",
+      "viewId": "street",
+      "scale": 3,
+      "throttle": 4,
+      "label": "monochrome theme",
+      "show3d": true,
+      "theme": "monochrome",
+      "p50": 49.20000000001164,
+      "meanFps": 19.60103215561734,
+      "p99": 77.89999999999418,
+      "spreadMs": 10.699999999982538,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 6120,
+      "rounds": 7
+    },
+    {
+      "group": "levers",
+      "viewId": "street",
+      "scale": 3,
+      "throttle": 4,
+      "label": "both levers",
+      "show3d": false,
+      "theme": "monochrome",
+      "p50": 41.30000000001746,
+      "meanFps": 24.25622493935954,
+      "p99": 67.70000000001164,
+      "spreadMs": 8.89999999999418,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 6107,
+      "rounds": 7
+    },
+    {
+      "group": "default-view",
+      "viewId": "default",
+      "scale": 3,
+      "throttle": 4,
+      "label": "shipped (3D, default theme)",
+      "show3d": true,
+      "theme": "default",
+      "p50": 17.29999999998836,
+      "meanFps": 56.11421477343266,
+      "p99": 35.5,
+      "spreadMs": 4.599999999947613,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 5938,
+      "rounds": 7
+    },
+    {
+      "group": "default-view",
+      "viewId": "default",
+      "scale": 3,
+      "throttle": 4,
+      "label": "both levers",
+      "show3d": false,
+      "theme": "monochrome",
+      "p50": 17.599999999976717,
+      "meanFps": 55.405103232378124,
+      "p99": 35.5,
+      "spreadMs": 1.5,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 5931,
+      "rounds": 7
+    },
+    {
+      "group": "unthrottled",
+      "viewId": "street",
+      "scale": 3,
+      "throttle": 1,
+      "label": "shipped (3D, default theme)",
+      "show3d": true,
+      "theme": "default",
+      "p50": 14.200000000011642,
+      "meanFps": 66.49794054885595,
+      "p99": 35,
+      "spreadMs": 1.099999999976717,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 5829,
+      "rounds": 7
+    },
+    {
+      "group": "unthrottled",
+      "viewId": "street",
+      "scale": 3,
+      "throttle": 1,
+      "label": "both levers",
+      "show3d": false,
+      "theme": "monochrome",
+      "p50": 12.600000000034925,
+      "meanFps": 75.88532883642561,
+      "p99": 31.800000000046566,
+      "spreadMs": 0.8000000000465661,
+      "canvas": [
+        1170,
+        2532
+      ],
+      "fleet": 6067,
+      "rounds": 7
+    }
+  ]
+}

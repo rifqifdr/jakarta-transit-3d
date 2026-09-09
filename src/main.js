@@ -20,6 +20,12 @@ import Ride from './ui/ride';
 import {applyState, readState, startSync} from './url-state';
 import {StreamPlayer, cameraIcon, loadCameras} from './cameras';
 
+// Read at module load, not at the point of use: `startSync` writes the query
+// string from app state on its first tick, so any flag it does not serialise
+// is gone by the time the app is built. `?bench` is not app state and never
+// should be — it is an instrument, not a view worth sharing.
+const WANTS_BENCH = new URLSearchParams(location.search).has('bench');
+
 const RAD = Math.PI / 180,
     // How close to a bus, in screen pixels, a click has to land.
     PICK_RADIUS = 18,
@@ -239,6 +245,16 @@ async function main() {
 
     // Exposed for debugging and automated checks.
     window.__tj = app;
+
+    // `?bench` runs the on-device render benchmark (JAKAR-60). Dynamically
+    // imported, so a visitor who never asks for it downloads none of it —
+    // the same arrangement `hls.js` has. Failure is deliberately silent
+    // beyond the console: a debug flag must never be able to break a boot.
+    if (WANTS_BENCH) {
+        import('./bench.js')
+            .then(module => module.default(app))
+            .catch(error => console.error('bench failed', error));
+    }
 
     document.getElementById('loader').classList.add('hidden');
     loop(app);
