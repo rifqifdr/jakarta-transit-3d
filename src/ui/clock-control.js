@@ -48,6 +48,8 @@ export default class ClockControl {
             <div class="clock-top">
                 <div class="clock-time">00:00:00</div>
                 <button class="clock-live" type="button">LIVE</button>
+                <button class="clock-fold js-fold" type="button"
+                        title="Sembunyikan kontrol waktu"><span class="chevron"></span></button>
             </div>
             <div class="clock-date"></div>
             <div class="clock-controls">
@@ -75,6 +77,13 @@ export default class ClockControl {
         me._play = el.querySelector('.js-play');
         me._count = el.querySelector('.clock-count b');
         me._profileCanvas = el.querySelector('.js-profile');
+
+        // Folding exists for the phone, where this panel is 169px of a 674px
+        // screen and everything below the time is a control you touch once.
+        // The button is hidden above the mobile breakpoint rather than built
+        // conditionally, so a rotation or a resize never leaves the clock
+        // folded with no way to open it.
+        el.querySelector('.js-fold').addEventListener('click', () => me.fold());
 
         me._live.addEventListener('click', () => {
             me.clock.goLive();
@@ -147,6 +156,18 @@ export default class ClockControl {
      * day entirely — 682 buses at 04:30 against 6,138 at the evening peak. With
      * the curve on it you can see where the peaks are and drag straight to one.
      */
+    /**
+     * Collapses to the time and the LIVE badge, which is all this panel has to
+     * say when it is not being used. Mirrors `LayerPanel.toggle` deliberately:
+     * two panels sharing a rail that fold by different rules is worse than
+     * either rule on its own.
+     */
+    fold(folded = !this.el.classList.contains('folded')) {
+        this.el.classList.toggle('folded', folded);
+        return folded;
+    }
+
+
     drawProfile(dayOfWeek) {
         const me = this,
             canvas = me._profileCanvas;

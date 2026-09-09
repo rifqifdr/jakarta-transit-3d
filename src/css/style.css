@@ -185,6 +185,7 @@ input[type=range]::-moz-range-thumb {
 #layers .layer-body { margin-top: 10px; }
 #layers.folded .layer-body { display: none; }
 .chevron {
+  display: block;
   margin-left: auto;
   width: 6px; height: 6px;
   border-right: 1.5px solid currentColor;
@@ -498,7 +499,9 @@ input[type=range]::-moz-range-thumb {
 }
 
 @media (max-width: 700px) {
-  #ride { bottom: 12px; }
+  /* 34px, not 12: the bottom strip is reserved for the Mapbox wordmark and
+     the attribution badge, which nothing is allowed to cover. */
+  #ride { bottom: 34px; }
 }
 
 /* --------------------------------------------------------------- misc */
@@ -512,15 +515,110 @@ input[type=range]::-moz-range-thumb {
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 4px; }
 
+/* ------------------------------------------------------------- one column
+
+   A phone has one column, and the two rails are a two-column idea. The first
+   attempt at this squeezed both to full width and set `#right-rail { top:
+   auto }` to move the clock out of the way — but `top: auto` with no `bottom`
+   does not move an absolutely positioned box, it returns it to its static
+   origin. Both rails landed at the top with the same z-index, so the clock
+   painted over the finder and over the top of the detail card, close control
+   and all: a card you could open by tapping the map and then could not shut
+   (JAKAR-62).
+
+   So: read at the top, act at the bottom. The order the rails already imply,
+   stacked instead of side by side.
+*/
 @media (max-width: 700px) {
-  #search, #clock { width: calc(100% - 24px); }
-  #left-rail, #right-rail { width: calc(100% - 24px); }
-  #right-rail { top: auto; }
-  #layers { display: none; }
-  #detail {
-    width: calc(100% - 24px); right: 12px; top: auto; bottom: 12px;
-    max-height: 52vh;
+  #left-rail, #right-rail {
+    left: 12px;
+    right: 12px;
+    width: auto;
   }
+
+  /* The header. Short by default — see the fold rules below — so the map is
+     still the largest thing on the screen. */
+  #right-rail {
+    top: 12px;
+    bottom: auto;
+    max-height: 45vh;
+  }
+
+  /* The working surface. It grows downward from whatever is open, and #detail
+     already carries `flex: 0 1 auto; overflow-y: auto`, so a long card
+     scrolls inside the sheet rather than pushing the finder off screen. */
+  #left-rail {
+    top: auto;
+    bottom: 34px;
+    max-height: 58vh;
+  }
+
+  /* Layanan was `display: none` here, which removed the mode filters, the
+     live camera layer, the accessibility filter and Gedung 3D from every
+     phone at once — four features, to save a corner. It folds to its own
+     title bar, so it costs 36px and keeps all four reachable. That matters
+     more since JAKAR-60: Gedung 3D off is the one lever measured to help a
+     phone, and this was the rule that put it out of reach. */
+  #layers { display: block; }
+
+  /* The bottom edge belongs to the sheet, so the map's own controls and its
+     attribution move to the right edge below the header. Attribution stays
+     visible, which is what ODbL and Mapbox require; which corner it sits in
+     is ours to choose, and the bottom-right corner is no longer free.
+
+     Both corners move, not just the right one: the Mapbox wordmark lives
+     bottom-left, and the first version of this left it underneath the sheet —
+     a logo Mapbox requires be shown, hidden by our own panel. */
+  /* The map's own buttons go to the right edge under the header, where there
+     is nothing else. Chasing a free gap for them did not work: at 104px the
+     full-width header covered them, and at 130px an unfolded Layanan did. */
+  .mapboxgl-ctrl-bottom-right,
+  .mapboxgl-ctrl-bottom-left {
+    top: 130px;
+    bottom: auto;
+  }
+
+  /* Credit does not chase a gap. The wordmark and the attribution are pinned
+     to a strip along the bottom that the sheet is not allowed into, because
+     the alternative is a rule that keeps them visible in most states — and
+     "most" is not what ODbL and Mapbox's terms ask for. This is also why the
+     sheet stops at 34px rather than 12. */
+  .mapboxgl-ctrl-logo,
+  .mapboxgl-ctrl-attrib,
+  /* Mapbox styles the collapsed badge as `.mapboxgl-ctrl-attrib.mapboxgl-compact`
+     — two classes — and sets `position: relative` on it. A single-class rule
+     loses to that and silently does nothing: the badge stayed up at y=285
+     while the wordmark, whose own rule is single-class too, moved as asked. */
+  .mapboxgl-ctrl-attrib.mapboxgl-compact {
+    position: fixed;
+    top: auto;
+    bottom: 7px;
+    margin: 0;
+  }
+  .mapboxgl-ctrl-logo { left: 14px; }
+  .mapboxgl-ctrl-attrib,
+  .mapboxgl-ctrl-attrib.mapboxgl-compact { right: 12px; }
+}
+
+/* The clock's fold button is a phone control. It is hidden rather than not
+   built, so a rotation or a window resize can never strand the panel folded
+   with nothing to unfold it. */
+.clock-fold { display: none; }
+
+@media (max-width: 700px) {
+  .clock-fold {
+    display: block;
+    margin-left: auto;
+    flex: none;
+    padding: 4px 2px 4px 10px;
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: var(--muted);
+    align-self: center;
+  }
+  #clock.folded > :not(.clock-top) { display: none; }
+  #clock.folded .chevron { transform: rotate(-135deg) translate(-1px, -1px); }
 }
 
 /* --------------------------------------------------- line preview card */
@@ -590,7 +688,8 @@ input[type=range]::-moz-range-thumb {
 .fh-btn.stop:hover { background: rgba(255, 90, 90, 0.22); border-color: rgba(255, 90, 90, 0.5); }
 
 @media (max-width: 700px) {
-  #follow-hud { bottom: 12px; }
+  /* Clear of the credit strip, as #ride is. */
+  #follow-hud { bottom: 34px; }
   .fh-speed span { display: none; }
 }
 

@@ -912,6 +912,16 @@ function buildUI(app) {
 
     // Every panel the rail collects now exists, so gather them.
     buildRails();
+
+    // On a phone the header is above the map rather than beside it, so it has
+    // to be short or it eats the thing it is a header for. Both panels in it
+    // start folded — the time and LIVE still read at a glance, and one tap
+    // opens either. Initial state only: once a person unfolds something it
+    // stays unfolded, and this never runs again.
+    if (window.matchMedia('(max-width: 700px)').matches) {
+        app.clockControl?.fold(true);
+        app.layerPanel?.toggle(true);
+    }
 }
 
 /**
