@@ -121,9 +121,14 @@ function environment(app) {
         memoryGb: navigator.deviceMemory || null,
         renderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : null,
         vendor: info ? gl.getParameter(info.UNMASKED_VENDOR_WEBGL) : null,
-        // What the display can offer. A 30 fps result means something quite
-        // different against a 60 Hz panel than against a 120 Hz one.
-        refreshHz: null
+        // Filled in after the run: the fastest frame anything achieved. Named
+        // for what it is rather than for the display, because it is not the
+        // display — an S25 reported 60 here on a 120 Hz panel, because Chrome
+        // was targeting 60 for the page. Frame intervals still landed on
+        // 8.33 ms boundaries (16.7, 25.0, 33.4), which is the panel showing
+        // through. Read it as "the best this page was allowed", not as
+        // hardware.
+        observedCeilingHz: null
     };
 }
 
@@ -230,12 +235,12 @@ export default async function runBench(app) {
 
     map.setConfigProperty('basemap', 'show3dObjects', was3d);
 
-    // The highest interval anything reached is the closest thing to a refresh
-    // rate that is available without a permission prompt: a frame that fits
-    // the budget reports the budget, so the modal interval is the panel's.
+    // A frame that fits the budget reports the budget, so the fastest median
+    // across the arms is the ceiling this page was scheduled against. It is
+    // not necessarily the panel's rate and must not be labelled as such.
     const all = results.flatMap(r => [r.p50]).sort((a, b) => a - b);
 
-    env.refreshHz = all.length ? Math.round(1000 / all[0]) : null;
+    env.observedCeilingHz = all.length ? Math.round(1000 / all[0]) : null;
 
     const report = {ticket: 'JAKAR-60', when: new Date().toISOString(), env, results};
 

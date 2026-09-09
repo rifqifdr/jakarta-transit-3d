@@ -1,0 +1,26 @@
+{
+  "ticket": "JAKAR-60",
+  "device": "Samsung Galaxy S25, Chrome 152, Android",
+  "servedBy": "cloudflare",
+  "note": "Same phone as run A, four minutes later. The host difference is a coincidence — identical artifacts, already loaded before the bench starts. Every arm is worse; the phone was warm.",
+  "when": "2026-09-09T16:41:00.613Z",
+  "env": {
+    "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Mobile Safari/537.36",
+    "dpr": 3,
+    "viewport": [360, 674],
+    "canvas": [1080, 2025],
+    "cores": 10,
+    "memoryGb": 8,
+    "renderer": "ANGLE (Samsung Electronics Co. Ltd., ANGLE ((Samsung Xclipse 940) on Vulkan 1.3.279), OpenGL ES 3.2)",
+    "vendor": "Google Inc. (Samsung Electronics Co., Ltd.)",
+    "observedCeilingHz": 60
+  },
+  "results": [
+    {"view": "street",  "arm": "shipped", "samples": 203, "fps": 50.55, "p50": 16.7, "p90": 33.3, "p99": 50.1, "fleet": 6144},
+    {"view": "street",  "arm": "flat",    "samples": 224, "fps": 55.78, "p50": 16.7, "p90": 16.8, "p99": 33.3, "fleet": 6138},
+    {"view": "default", "arm": "shipped", "samples": 219, "fps": 54.53, "p50": 16.7, "p90": 33.2, "p99": 33.4, "fleet": 6129},
+    {"view": "default", "arm": "flat",    "samples": 218, "fps": 54.28, "p50": 16.7, "p90": 33.2, "p99": 33.4, "fleet": 6121},
+    {"view": "wide",    "arm": "shipped", "samples": 217, "fps": 54.04, "p50": 16.7, "p90": 33.2, "p99": 33.4, "fleet": 6112},
+    {"view": "wide",    "arm": "flat",    "samples": 223, "fps": 55.53, "p50": 16.7, "p90": 16.8, "p99": 33.4, "fleet": 6103}
+  ]
+}

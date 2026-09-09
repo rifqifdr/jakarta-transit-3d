@@ -270,6 +270,39 @@ timing queue wait along with execution. Same shape as traps 10 and 11: an
 answer that is confident, stable, and not about what it appears to be about.
 The only attribution that held up is the A/B against a disabled layer.
 
+**Measured on a real phone at last (JAKAR-60).** A Samsung S25 — Chrome 152,
+Android, Xclipse 940, dpr 3, a 1080x2025 canvas, scheduled against a 60 fps
+ceiling — at the evening peak, ~6,100 vehicles, via `?bench`:
+
+| View | as shipped | Gedung 3D off |
+| --- | --- | --- |
+| street (z16.8) | 54 fps, p90 25.0 ms, p99 33.4 | **59 fps, p90 16.9 ms** |
+| default (z12.4) | 58 fps, p90 16.8 ms | 60 fps, p90 16.7 ms |
+| city-wide (z10.5) | 56 fps, p90 16.8 ms | 58 fps, p90 16.8 ms |
+
+- **The median frame hits the budget in every view, including street level.**
+  `p50` is 16.7 ms across all twelve arms of two runs. Nothing here is
+  anywhere near the 17 fps that a 4x-throttled desktop predicted — **4x CPU
+  throttle over-predicts badly for a phone with a real GPU**, and that arm
+  should be read as a floor for a slow device, never as a phone.
+- **What it costs is tail frames, exactly as JAKAR-58 said.** Street level as
+  shipped loses about one frame in ten (54 against a 60 ceiling) and its p90
+  is a frame and a half. Turning off Gedung 3D recovers nearly all of it and
+  pulls p90 back to the budget — the same lever the emulated sweep found, now
+  confirmed where it matters.
+- **Two runs four minutes apart differed, and the later one was worse across
+  every arm** (street shipped 54 fps then 50, p90 25 ms then 33). They were
+  served by different hosts, which is a coincidence and not a cause — the
+  bytes are identical and already loaded before the bench runs. It is the
+  phone getting warm. Sustained use costs more than the view does.
+- **An S25 is not the target device.** It is a current flagship, so this is
+  the good case, and the audience the ticket is about — mid-range Android —
+  is still unmeasured. A flagship dropping a tenth of its frames at street
+  level is the reason the lever is worth having, not a reason to relax.
+- **`observedCeilingHz` is not the panel.** It reported 60 on a 120 Hz
+  display, because Chrome was scheduling the page at 60. The intervals still
+  quantise to 8.33 ms (16.7, 25.0, 33.4), which is the panel showing through.
+
 **On a slow CPU the basemap is the entire problem.** At 4x CPU throttle the
 street view runs **17 fps — and 18 fps with the fleet removed altogether**:
 51.9 ms of a 58.7 ms frame is Mapbox Standard. City zooms hold 49-62 fps and
