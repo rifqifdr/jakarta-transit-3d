@@ -23,5 +23,12 @@ hosts. The host is a coincidence: the artifacts are identical and already
 loaded before the bench starts. What separates them is that the phone got
 warm, which costs more than the choice of view does.
 
-**Still missing: a mid-range Android.** The S25 is a current flagship and this
-is the good case.
+**The `no3d` arm was called `flat` in the 2026-09-09 files.** It toggles
+Mapbox Standard's extruded buildings and nothing else — same camera pitch,
+same three.js vehicle layer, no 2D renderer anywhere. The old name was read by
+one reviewer as a 2D map mode and produced a whole wrong conclusion, which is
+why it is now named after what it changes.
+
+**Still missing: a mid-range Android**, and any measurement at all of
+*interaction* — every number here is a static camera, and a map is used by
+panning and pinching.

@@ -43,9 +43,16 @@ const VIEWS = {
 
 // Shipped first, so a run abandoned halfway still answers the only question
 // that matters on its own: does this device cope as the map is delivered?
+//
+// `no3d` was called `flat`, which was a bad name and cost a reader a whole
+// wrong conclusion: a research brief read "flat" as a 2D map mode and built a
+// 3D/Flat/Auto product hypothesis on it. This arm toggles exactly one thing —
+// Mapbox Standard's extruded buildings. The camera pitch is identical in both
+// arms (65 degrees at street level), the three.js vehicle layer is untouched,
+// and nothing switches to a 2D renderer. Name an arm after what it changes.
 const ARMS = [
     {id: 'shipped', label: 'As shipped', show3d: true},
-    {id: 'flat', label: 'Gedung 3D off', show3d: false}
+    {id: 'no3d', label: 'Gedung 3D off', show3d: false}
 ];
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
