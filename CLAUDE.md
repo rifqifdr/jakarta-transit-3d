@@ -908,6 +908,18 @@ Worker and caching in IndexedDB. Measured against the real artifacts:
     it reads the same for a client that sent `gzip` alone and for one that sent
     nothing. Measured against `wrangler dev`, and left out rather than left in
     looking like protection. Same shape as traps 10 and 11.
+  - **Verify a host with `node scratchpad/verify-artifacts.mjs <origin>`.**
+    It fetches every `.bin` as its `.br` and measures the inflated length
+    against the manifest — the loader's own fallback trigger, so it asks what
+    the browser asks. A header dump cannot answer this: `Content-Encoding: br`
+    over a double-compressed body decodes to noise and looks perfect.
+  - **Do not judge a Workers deploy while it is rolling out.** Run immediately
+    after the push, that checker reported all sixteen artifacts wrong; minutes
+    later, all sixteen right, with nothing changed in between and requests
+    landing in different colos (`cf-ray`). The bytes were correct throughout —
+    `curl` on the raw wire body inflated once to exactly the manifest length.
+    Give a deploy a couple of minutes before believing a failure, and confirm
+    against the raw body rather than one tool's opinion.
   - **`npx wrangler dev` runs the real workerd runtime against `dist/`**, so
     this is testable on a laptop rather than only by deploying — which is what
     the ticket assumed and what made every previous hosting fix cost a deploy
