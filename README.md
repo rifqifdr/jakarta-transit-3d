@@ -20,6 +20,10 @@ routes, 793 trip patterns, 8,236 stops and a 40,466-edge walking table.
 
 ## Status
 
+Live, on desktop and on a phone. The layout is one column below 700px, both
+hosts send the same ~640 KB of artifacts, and the render path has been measured
+on real Android hardware rather than only on a laptop.
+
 Everything in the original backlog is built. Open work, current weak points and
 what to pick up next are tracked in **Plane** (workspace `jakarta-publictrans-3d`,
 project `JAKAR`) — start from its **"Next Session — Start Here"** page.

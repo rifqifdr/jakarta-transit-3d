@@ -133,8 +133,13 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/data/artifact-loader.js` | Manifest-first loading, mode gating, IndexedDB cache |
 | `src/data/decode.worker.js` | Binary decode, off the main thread |
 | `src/url-state.js` | Deep links, including `?cam=` for a live camera |
+| `src/bench.js` | `?bench` — the on-device render benchmark. Dynamically imported, so it costs a normal visitor nothing |
+| `worker/index.js` | Cloudflare only: re-declares the `Content-Encoding` its asset server strips (JAKAR-61) |
 | `scratchpad/probe.mjs` | Real Chrome over CDP, native clicks. Finds interaction bugs; its timings are meaningless |
 | `scratchpad/gpu-bench.mjs` | The same idea inverted: real GPU, vsync off, A/B arms. Timings only |
+| `scratchpad/mobile-bench.mjs` | A phone's viewport and pixel density on the real GPU: fill rate, and what each lever costs |
+| `scratchpad/verify-artifacts.mjs` | Asks an origin whether it really serves the artifacts compressed. Exits non-zero, so it can gate a deploy |
+| `scratchpad/device-bench/` | `?bench` output from real phones, one file per run. A number without its device is not a measurement |
 | `scripts/plane*.mjs` | Plane issue tracker sync (see below) |
 
 ## Project management
@@ -315,6 +320,13 @@ they cost is tail frames rather than every frame.
 
 **Left is what you do, right is what you read.** `buildRails()` puts the finder
 and the detail card in a left column, the clock and Layanan in a right one.
+
+**Below 700px there is one column, not two** (JAKAR-62): the same order, stacked
+— read at the top, act at the bottom. Both panels in the header start folded, so
+it stays short and the map remains the largest thing on screen; Layanan folds to
+its title bar rather than being hidden, because `display: none` there had quietly
+removed the mode filters, the cameras, the accessibility filter and Gedung 3D
+from every phone at once. See trap 13 for what the first attempt did instead.
 Layanan moved right because it is a filter you set once, not a step in finding
 or planning anything.
 
@@ -510,6 +522,17 @@ Each of these shipped broken once. They are cheap to reintroduce.
     same sample judged on whether the body contains `#EXTM3U` *and* a segment
     gave a different set entirely. Same shape as trap 10 — a truthy answer that
     does not mean what it appears to.
+
+13. **`top: auto` does not move an absolutely positioned box out of the way.**
+    It returns it to its static position, which on a phone was the top — the
+    same place the other rail already was, at the same `z-index`. The clock
+    painted over the finder and over the detail card's close control, so a card
+    opened by tapping the map could not be shut (JAKAR-62). The rule read like
+    it expressed an intent and expressed nothing. **If a panel must move, say
+    where**: pair it with a `bottom`, or lay the column out rather than nudging
+    it. And credit does not chase a gap — the Mapbox wordmark and the
+    attribution badge get a reserved strip no panel may enter, because a rule
+    that keeps them visible in *most* states is not what the licences ask.
 
 12. **Two correct components, ordered wrongly, make a broken state.** Restoring
     a camera from a link switched the layer on and *then* moved the clock to
@@ -1085,9 +1108,14 @@ structural change. The rendering, config and filtering are what assume buses.
 
 **All four modes are live on the default boot path**, drawn at their own sizes,
 with a walk table that has been routed rather than estimated, and each mode now
-drawn as its own **Kapsul** body rather than a scaled box (JAKAR-49). **801
+drawn as its own **Kapsul** body rather than a scaled box (JAKAR-49). **798
 public cameras** sit on the network and play live in the card, or full width over
-the map — 658 on the streets (JAKAR-54) and 143 on the toll roads (JAKAR-55).
+the map — 658 on the streets (JAKAR-54) and 140 on the toll roads (JAKAR-55).
+
+**It is public, on two hosts, and it works on a phone.** Both send the same 640
+KB of artifacts (JAKAR-61), the layout is one column below 700px (JAKAR-62), and
+the render path has been measured on hardware somebody actually rides the bus
+with (JAKAR-60).
 
 The app can: run live or replay a day, follow a vehicle (chase or on-board, with
 its own controls), plan a journey from two typed fields, ride that journey,
@@ -1096,6 +1124,18 @@ is near this point", show first/last departure, colour by live frequency, and
 share any view as a link — a camera included — and watch the actual street, or
 the actual toll carriageway, through a public CCTV camera beside the simulated
 fleet.
+
+**Everything the 2026-09-10 session changed**, so it is not re-derived:
+
+| | |
+| --- | --- |
+| Compression | Cloudflare serves the artifacts brotli through `worker/index.js`; 2,120 KB became 664 KB, level with Netlify (JAKAR-61) |
+| Mobile perf | Measured on a Galaxy S25-class device: the median frame hits the budget in every view; what it costs is tail frames (JAKAR-60) |
+| Levers | Gedung 3D off is the only one that works. Monochrome is not a lever, and capping dpr buys 12% for 9x fewer pixels |
+| `?bench` | An on-device benchmark, lazily imported. Results live in `scratchpad/device-bench/` |
+| Mobile layout | One column: read at the top, act at the bottom. Layanan folds instead of vanishing (JAKAR-62) |
+| Feed host | Its certificate was renewed; the adapter takes the origin again, and twelve withdrawn routes left the map |
+| Network | 261 routes to **249**, 8,281 stops to **8,236**, walk table re-routed to 40,466 edges with no estimates |
 
 **Everything the 2026-09-06/08 sessions changed**, so it is not re-derived:
 
@@ -1109,14 +1149,14 @@ fleet.
 | Vehicle shape | Kapsul bodies, one geometry and one instanced mesh per mode (JAKAR-49) |
 | Walk table | All 40,466 edges routed through Valhalla |
 | Durations | Over an hour read "1 jam 9 mnt" |
-| Cameras | 801 live CCTV on the network, gated to live mode, fullscreen on click |
+| Cameras | Live CCTV on the network, gated to live mode, fullscreen on click |
 | Camera sources | Street coords from a stale mirror; 46 placed from street names; toll needs BPJT joined to Bina Marga |
 | Camera freshness | `toll-camera-sources` watches the BPJT table's own age and the join, road by road (JAKAR-56) |
 | Camera links | `?cam=<id>` restores a camera: loads the layer, forces live, and says so (JAKAR-57) |
 | Probe harness | `scratchpad/probe.mjs` rebuilt — real Chrome over CDP, step lists, screenshots |
 | Render cost | Measured on a real GPU at last (JAKAR-58): the fleet is 0.2-2.6 ms, the basemap is the rest |
 
-**Eight bugs have been found by using the app rather than by testing it**, every
+**Nine bugs have been found by using the app rather than by testing it**, every
 one of which passed the whole automated suite first: the walk table joining stops
 74 km apart (trap 7), the frame loop crashing on a shapeless trip (trap 8), 158
 of 806 patterns collapsed so vehicles teleported then stood still, 43 unservable
@@ -1124,7 +1164,10 @@ stops offered in search, a camera layer where **not one of 612 pins rendered**
 (trap 9), a video player broken for every Chrome user (trap 10), a liveness
 probe measuring nothing because a 200 came back empty (trap 11), and a camera
 deep link that opened a card over a layer the live gate had already torn down
-(trap 12).
+(trap 12), and a phone where the clock covered the card you had just opened and
+nothing could close it (trap 13). The ninth is the one to notice: it was found
+by the person who owns the project opening it on his own phone, after every
+check in the repo had passed.
 
 That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
@@ -1170,8 +1213,20 @@ thing that has ever caught the interaction ones.
 - ~~**GPU performance is unmeasured**~~ — **measured (JAKAR-58).** On an Apple
   M4 the fleet costs **0.2-2.6 ms a frame** and the basemap costs the rest; see
   "What the render path actually costs" below. What is still unmeasured is a
-  low-end device: Chrome can throttle a CPU but not a GPU, so the answer for a
-  mid-range Android — most of this map's likely audience — is still unknown.
+  low-end device — but a phone has now answered (JAKAR-60). On a Galaxy
+  S25-class device the median frame hits the budget in **every** view, street
+  level included, and what the map costs is tail frames rather than a low
+  ceiling. Two things follow. **A 4x CPU throttle over-predicts badly for a
+  phone with a real GPU** — it said 17 fps where hardware says 54 — so treat
+  that arm as a floor for a slow device and never as a phone. And **a mid-range
+  Android is still unmeasured**: an S25 is the good case, and `?bench` makes
+  the next device a one-minute job.
+- **Interaction is entirely unmeasured.** Every frame-rate number this project
+  has — JAKAR-58's, JAKAR-60's, all of them — is a *static camera*. A map is
+  used by panning and pinching, and nothing here has ever measured hitching
+  during a gesture. It is the most likely home for "feels bad on a phone" and
+  the largest remaining blind spot; an external review raised it and was
+  right.
 - **The basemap is the expensive half, and on a slow CPU it is the whole
   problem.** At street level Mapbox Standard alone is ~95% of the frame, and at
   4x CPU throttle it is 52 ms of a 59 ms frame with the fleet removed entirely.
