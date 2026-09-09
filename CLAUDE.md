@@ -891,6 +891,30 @@ Worker and caching in IndexedDB. Measured against the real artifacts:
     `localStorage`, which is already scoped per origin. Without that, the host
     that says no pays sixteen wasted round trips instead of one, and this
     change would have made it *slower* than doing nothing.
+  - **Cloudflare's half is now carried by a Worker script, because no header
+    can carry it** (JAKAR-61). What re-encodes a body there is the runtime, not
+    the `_headers` file, so `worker/index.js` re-declares `Content-Encoding: br`
+    and returns the asset with `encodeBody: 'manual'` — the documented way to
+    say "already encoded, pass it through". `run_worker_first` scopes it to
+    `/artifacts/*`, so nothing else reaches JavaScript. Cloudflare now measures
+    what Netlify measures: **16 brotli requests, 0 fallbacks, 664 KB for
+    2,512 KB decoded**, against 2,120 KB before. The fallback and the length
+    guard both stay — they are what made the disagreement measurable instead of
+    a broken map, and they are still the only thing standing between a host
+    that changes its mind and a page of noise.
+  - **`Accept-Encoding` cannot be tested inside a Worker.** The obvious guard —
+    only claim brotli if the client admits to taking it — is inert: the runtime
+    rewrites the header to a constant `br, gzip` before the Worker sees it, so
+    it reads the same for a client that sent `gzip` alone and for one that sent
+    nothing. Measured against `wrangler dev`, and left out rather than left in
+    looking like protection. Same shape as traps 10 and 11.
+  - **`npx wrangler dev` runs the real workerd runtime against `dist/`**, so
+    this is testable on a laptop rather than only by deploying — which is what
+    the ticket assumed and what made every previous hosting fix cost a deploy
+    cycle. It is also where the doubled `Cache-Control` showed up: Cloudflare
+    concatenates *every* matching `_headers` rule, and two of them match a
+    `.br`. The Worker normalises it; `_headers` is left alone, because the rule
+    that looks redundant on Cloudflare is the one carrying Netlify.
 - **Buffers are transferred, not cloned.** The worker takes ownership, so
   anything needing to survive a decode must be copied first — a structured clone
   of the payload would cost more than the decode it saved.

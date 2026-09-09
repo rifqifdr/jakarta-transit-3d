@@ -11,6 +11,10 @@ data/build/
 # Server output redirected while probing; not a record of anything.
 scratchpad/*.log
 
+# Local state from `npx wrangler dev`, which runs the real workerd runtime
+# against dist/. Regenerated on every run and specific to this machine.
+.wrangler/
+
 # NOT ignored, though both are generated. Two deliberate exceptions:
 #
 #   public/artifacts/  is what the browser downloads, and what the deploy

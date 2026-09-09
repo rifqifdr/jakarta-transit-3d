@@ -18,6 +18,13 @@
 # the same bytes with a transfer encoding declared, and the loader checks the
 # decompressed length against the manifest, so a host that ignores this header
 # costs one wasted request rather than a broken map.
+#
+# This is the rule Netlify honours and Cloudflare drops, and it is the only one
+# of the two that a header file can express. Cloudflare's copy is restored by
+# `worker/index.js`, because what re-encodes a body there is the runtime rather
+# than this file — see JAKAR-61. Do not delete either half: Netlify has no
+# Worker and Cloudflare ignores this rule, so each host is carried by exactly
+# one of them.
 /artifacts/*.br
   Content-Encoding: br
   Content-Type: application/octet-stream

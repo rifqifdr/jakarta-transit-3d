@@ -548,6 +548,21 @@ lives: everything under `/artifacts/` and `/assets/` is content-hashed and
 cached for a year, except `manifest.json`, which is the one mutable file and
 must revalidate — a stale manifest pins a visitor to an old dataset.
 
+**Cloudflare needs a Worker script to serve the artifacts compressed.** The
+`.bin` artifacts ship with a pre-compressed `.br` beside each one, declared in
+`public/_headers`. Netlify honours that declaration; Cloudflare's asset server
+drops it while applying every other rule in the same block, so the artifacts
+went out raw — 2,120 KB a visit against Netlify's 643 KB. No header fixes it,
+because there the *runtime* is what re-encodes a body. `worker/index.js`
+re-declares the encoding and returns the asset with `encodeBody: 'manual'`,
+which is Cloudflare's documented way to pass through bytes that are already
+encoded, and `run_worker_first` scopes it to `/artifacts/*` so nothing else
+runs JavaScript. Both hosts now transfer 664 KB for 2,512 KB decoded.
+
+Run `npx wrangler dev` to check it without deploying — it is the real workerd
+runtime serving `dist/`, so the headers it returns are the headers Cloudflare
+returns.
+
 Two things worth knowing before the first deploy:
 
 - **Use a separate Mapbox token, restricted by URL.** It ends up in the

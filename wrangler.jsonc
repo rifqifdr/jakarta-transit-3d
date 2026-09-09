@@ -14,11 +14,27 @@
     "name": "jakarta-transit-3d",
     "compatibility_date": "2026-09-09",
 
-    // No `main`: there is no Worker script, only files. An assets-only Worker
-    // is a first-class thing and serves them directly, with no request ever
-    // reaching JavaScript.
+    // This was an assets-only Worker with no script, which is a first-class
+    // thing and the right default. It stopped being enough at JAKAR-61: the
+    // asset server strips `Content-Encoding` from `public/_headers`, so the
+    // pre-compressed artifacts shipped raw and this host sent 2,120 KB where
+    // Netlify sent 643 KB. Putting the header back needs `encodeBody:
+    // 'manual'`, which only a Worker script can reach.
+    "main": "worker/index.js",
+
     "assets": {
         "directory": "./dist",
+
+        // How `worker/index.js` reaches the files. Fetching through this
+        // binding goes straight to the asset server rather than back through
+        // the Worker, so there is no recursion.
+        "binding": "ASSETS",
+
+        // Scoped, not blanket. Only `/artifacts/*` has a header to repair, so
+        // only those requests are worth the cost of running JavaScript; the
+        // document, the Vite bundle and `/data/` are served exactly as they
+        // were before this file grew a `main`.
+        "run_worker_first": ["/artifacts/*"],
 
         // Deliberately *not* "single-page-application". This app is one page
         // and its deep links are query strings (`?stop=`, `?cam=`, `?t=`), so
