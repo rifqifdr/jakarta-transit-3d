@@ -15,8 +15,8 @@ and now carries **all four modes**: bus, MRT, LRT and Commuter Line (KRL). Only
 the bus feed is an official GTFS; the three rail feeds are built from scraped
 timetables and OpenStreetMap geometry.
 
-At the evening peak that is around **6,600 vehicles moving at once**, across 261
-routes, 806 trip patterns, 8,281 stops and a 40,817-edge walking table.
+At the evening peak that is around **6,200 vehicles moving at once**, across 249
+routes, 793 trip patterns, 8,236 stops and a 40,466-edge walking table.
 
 ## Status
 
@@ -68,8 +68,9 @@ npm run build-data     # the older path: GTFS -> public/data/
 `npm run build-data` reads the feed from `GTFS_DIR`, defaulting to the newest
 Transjakarta snapshot in `data/snapshots/` so a fresh clone can rebuild it
 (`GTFS_DIR=/path/to/gtfs npm run build-data` to point elsewhere). That snapshot
-came from the Mobility Database mirror and carries 252 routes against the
-origin's 240, so rebuilding changes the network the routing checks run over.
+comes from the origin again as of 2026-09-10 and carries its 240 routes. While
+the host's certificate was expired the newest snapshot was the mirror's 252, and
+rebuilding then changed the network the routing checks ran over.
 
 ## What it does
 
@@ -391,7 +392,7 @@ correcting one is a one-line edit in that file. (Commercial geocoding was no
 help: Mapbox returns the same district centroid for MH Thamrin, Gerbang Pemuda
 and Gatot Subroto alike.)
 
-**801 cameras** ship in total — 612 geolocated street, 46 placed from street
+**798 cameras** ship in total — 612 geolocated street, 46 placed from street
 names, 143 on the toll roads. Their artifact is **14.6 KB brotli** and is
 fetched only when the layer is switched on; `hls.js` is a dynamic import and
 code-splits accordingly, so a viewer who never opens a camera downloads neither.
@@ -602,7 +603,7 @@ an honest 404.
   ship the file, so only the weekly `calendar.txt` pattern is honoured.
 - When a followed bus reaches its terminus the card simply closes, with no
   handover to the next departure on that route.
-- ~~Walking is straight-line distance~~ — **fixed.** All 40,817 edges are routed
+- ~~Walking is straight-line distance~~ — **fixed.** All 40,466 edges are routed
   through Valhalla and carry real pedestrian times. The straight line had been
   out by more than three minutes on **12.4% of edges**, worst 38 minutes: Sekolah
   Fatimiyah Perdana to SMA Angkasa 1 is 293 m apart and 3,356 m on foot. The

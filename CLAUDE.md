@@ -430,9 +430,11 @@ equivalent for Netlify.
   place anyone will read it.
 - **`build-data.mjs` no longer points at a folder on one laptop.** It defaults
   to the newest Transjakarta snapshot in the repo, so the control suite runs on
-  a fresh clone. That snapshot is the 252-route mirror, not the 240-route
-  origin `public/data/` was built from, so a rebuild moves the network under
-  the routing checks. Expected, not a regression.
+  a fresh clone. It is the origin's own 240 routes again as of 2026-09-10 —
+  while the certificate was expired the newest snapshot was the mirror's 252,
+  and a rebuild then moved the network under the routing checks. Expected
+  either way, not a regression: `public/data/` is a fixed control and is only
+  regenerated deliberately.
 - **The map credits its own data now.** Route geometry is OSM-derived, which
   ODbL requires be said, and Mapbox's default control only covers the basemap —
   so the default control is off and one carrying `customAttribution` replaces
@@ -523,7 +525,7 @@ Each of these shipped broken once. They are cheap to reintroduce.
 ## The live camera layer
 
 Public CCTV, playing in the map, after `mt3d-plugin-livecam` in Mini Tokyo 3D
-(JAKAR-54, JAKAR-55). **801 cameras** from three sources that are *not*
+(JAKAR-54, JAKAR-55). **798 cameras** from three sources that are *not*
 interchangeable — the difference is carried to the UI rather than smoothed over,
 and the last of them is filtered on a different rule entirely.
 
@@ -714,17 +716,30 @@ Full detail in `README.md`; the short version:
 ## The Transjakarta feed host
 
 - **Its TLS certificate expired on 1 September 2026** (wildcard
-  `*.transjakarta.co.id`) and is still expired. The host is up and still serves
-  the zip; every ordinary client refuses it, which reads like an outage and is
-  not. `curl` returns exit 60 and no HTTP status at all.
+  `*.transjakarta.co.id`) and was **renewed by 10 September**. While it was
+  expired the host stayed up and still served the zip; every ordinary client
+  refused it, which reads like an outage and is not — `curl` returned exit 60
+  and no HTTP status at all. It now verifies against the system trust store
+  (`ssl_verify_result=0`) and needs no bypass.
 - **The ingest adapter tries origin, then the Mobility Database mirror, then —
   only with `--insecure` — a bypass scoped to one request.** Which one answered
   is recorded in the snapshot's `meta.json`, because "we silently used the
   mirror for six months" is its own bug. **Never disable TLS verification
-  globally in a build script.**
-- **Today's snapshot came from the mirror**, so it carries 252 routes against
-  the origin's current 240 — twelve routes that have since been withdrawn.
-  Re-ingest once the certificate is renewed.
+  globally in a build script.** That record is what made the recovery a
+  one-line check rather than an investigation: every snapshot up to
+  2026-09-06 says `servedBy=cache`/`mirror`, and 2026-09-10 says
+  `servedBy=origin`.
+- **The 2026-09-10 snapshot is the first from the origin**, and it carries the
+  real 240 routes against the mirror's 252. Those twelve were withdrawn
+  services the map had been drawing as though they ran. Re-ingesting moved the
+  whole network: 261 routes to 249, 8,281 stops to 8,236, and three toll
+  cameras dropped because the only routes passing them no longer exist.
+- **A stale mirror is not a broken mirror, which is why nothing alerted.**
+  Every check passed for four days on a feed that was twelve routes wrong.
+  `snapshot-freshness` measures when we last *fetched*, and we were fetching
+  daily — from a copy that had stopped matching. Same lesson as the BPJT table
+  in JAKAR-56: an endpoint that still answers is not an endpoint that is still
+  right. What caught it was checking the origin by hand.
 - `gtfs.transjakarta.co.id` itself is a **login-gated GTFS upload portal**
   (NIK/password, © 2022), not a data portal. The public zip is an artifact it
   publishes.
@@ -847,8 +862,8 @@ Now: 0 backwards, 0 collapsed, 4 zero-span, median pattern 18.1 km.
 - **Shapes are simplified at encode time, not in the model.** How finely a line
   is drawn is a rendering decision; the canonical dataset keeps what the source
   said. At 1e-5 degrees it halves the vertices and saves 100 KB brotli.
-- **The walk table is built last, across every mode.** 40,817 edges within
-  400 m, **775 of them between different modes** — a bus stop and a rail platform
+- **The walk table is built last, across every mode.** 40,466 edges within
+  400 m, **770 of them between different modes** — a bus stop and a rail platform
   never appear in the same operator's feed, so this is the only place
   interchange between them can come from.
 - `build-data.mjs` still exists and still feeds the running app. Two paths
@@ -857,9 +872,9 @@ Now: 0 backwards, 0 collapsed, 4 zero-span, median pattern 18.1 km.
 ## Artifacts, and why they are binary
 
 `npm run transform` writes `public/artifacts/`: a `manifest.json` plus
-content-hashed, mode-sliced files. **All four modes** — 261 routes, 3,216 trips,
-8,281 stops, a 40,817-edge walk table and 801 cameras — come to **1,005 KB
-gzipped / 628 KB brotli**, against 1.33 MB gzipped for the buses alone on the
+content-hashed, mode-sliced files. **All four modes** — 249 routes, 3,203 trips,
+8,236 stops, a 40,466-edge walk table and 798 cameras — come to **997 KB
+gzipped / 624 KB brotli**, against 1.33 MB gzipped for the buses alone on the
 old path.
 
 - **Trips are binary because JSON was the wrong shape for them.** A trip stores
@@ -1092,7 +1107,7 @@ fleet.
 | Follow | Its own HUD — camera, speed, stop |
 | Vehicles | Per-mode size and acceleration; heading smoothed over distance |
 | Vehicle shape | Kapsul bodies, one geometry and one instanced mesh per mode (JAKAR-49) |
-| Walk table | All 40,817 edges routed through Valhalla |
+| Walk table | All 40,466 edges routed through Valhalla |
 | Durations | Over an hour read "1 jam 9 mnt" |
 | Cameras | 801 live CCTV on the network, gated to live mode, fullscreen on click |
 | Camera sources | Street coords from a stale mirror; 46 placed from street names; toll needs BPJT joined to Bina Marga |
@@ -1120,8 +1135,9 @@ thing that has ever caught the interaction ones.
 
 ## Known weak points
 
-- ~~**Walking is straight-line**~~ — **fixed (JAKAR-40).** All 40,817 edges now
-  carry real pedestrian times from Valhalla. The measurement below is what the
+- ~~**Walking is straight-line**~~ — **fixed (JAKAR-40).** All 40,466 edges now
+  carry real pedestrian times from Valhalla, re-routed against the current stop
+  set on 2026-09-10. The measurement below is what the
   old model was wrong by, kept because it is why the work was done.
 
   Re-measured over 400 pairs against the *fixed* walk table (JAKAR-45; the first
