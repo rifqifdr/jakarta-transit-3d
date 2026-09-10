@@ -49,14 +49,14 @@ export default class FollowHUD {
                 </div>
             </div>
             <div class="fh-controls">
-                <button class="fh-btn js-fh-camera" type="button">Dari dalam</button>
+                <button class="btn js-fh-camera" type="button">Dari dalam</button>
                 <div class="fh-speed">
                     <span>Kecepatan</span>
                     <input class="js-fh-speed" type="range" min="0"
                            max="${configs.speeds.length - 1}" step="1" value="0">
                     <output>1&times;</output>
                 </div>
-                <button class="fh-btn stop js-fh-stop" type="button">Berhenti</button>
+                <button class="btn btn-danger js-fh-stop" type="button">Berhenti</button>
             </div>
         `;
         document.body.appendChild(el);

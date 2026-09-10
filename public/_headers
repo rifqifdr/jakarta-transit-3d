@@ -61,6 +61,12 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Plus Jakarta Sans. Not content-hashed — it sits in public/ rather than going
+# through Vite — but the file is versioned by its own name and a typeface does
+# not change under a build. A year is safe; replacing it means a new filename.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
 # The legacy bus-only bundle, reachable at ?data=legacy. Not hashed, so it
 # gets a day rather than a year.
 /data/*

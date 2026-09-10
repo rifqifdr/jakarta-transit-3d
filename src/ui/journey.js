@@ -144,7 +144,7 @@ export default class Journey {
         }
 
         const options = SORTS.map(s =>
-            `<button class="js-sort ${s.id === me.sort ? 'on' : ''}" data-sort="${s.id}">${s.label}</button>`
+            `<button class="btn btn-sm js-sort ${s.id === me.sort ? 'on' : ''}" data-sort="${s.id}">${s.label}</button>`
         ).join('');
 
         el.innerHTML = `
@@ -206,7 +206,7 @@ export default class Journey {
                     ${itinerary.legs[0].wait > 0 ? ` &middot; tunggu ${minutes(itinerary.legs[0].wait)}` : ''}
                 </div>
                 ${selected ? me._detail(itinerary) : ''}
-                ${selected ? '<button class="end-btn wide js-ride" type="button">Jalankan perjalanan</button>' : ''}
+                ${selected ? '<button class="btn btn-accent btn-lg btn-block js-ride" type="button">Jalankan perjalanan</button>' : ''}
             </div>
         `;
     }

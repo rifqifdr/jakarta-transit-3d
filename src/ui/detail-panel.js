@@ -102,7 +102,7 @@ export default class DetailPanel {
             if (event.target.closest('.detail-close')) {
                 me.close();
                 me.onClose();
-            } else if (event.target.closest('.track-btn')) {
+            } else if (event.target.closest('.js-track')) {
                 me.onTrack();
             } else if (event.target.closest('.js-from')) {
                 me.onJourneyEnd('from');
@@ -114,8 +114,8 @@ export default class DetailPanel {
                 me.onRide();
             } else if (event.target.closest('.js-reach')) {
                 me.onReach();
-            } else if (event.target.closest('.cam-ch')) {
-                me.onCameraChannel?.(event.target.closest('.cam-ch').dataset.camera);
+            } else if (event.target.closest('.js-cam-ch')) {
+                me.onCameraChannel?.(event.target.closest('.js-cam-ch').dataset.camera);
             } else if (event.target.closest('.js-cam-expand')) {
                 me.onCameraExpand?.();
             } else if (budget) {
@@ -194,7 +194,7 @@ export default class DetailPanel {
                 </div>
                 <div class="progress"><span class="js-progress"></span></div>
                 <div class="stoplist js-stoplist"></div>
-                <button class="track-btn" type="button"></button>
+                <button class="btn btn-accent btn-lg btn-block js-track" type="button"></button>
             </div>
         `;
 
@@ -205,7 +205,7 @@ export default class DetailPanel {
             count: me.el.querySelector('.js-count'),
             progress: me.el.querySelector('.js-progress'),
             stoplist: me.el.querySelector('.js-stoplist'),
-            track: me.el.querySelector('.track-btn')
+            track: me.el.querySelector('.js-track')
         };
         me._stopIndex = -1;
         me._tracking = null;
@@ -366,7 +366,7 @@ export default class DetailPanel {
             // only one can ever be clicked.
             channels = (camera.siblings ?? []).length > 1
                 ? `<div class="cam-channels">${camera.siblings.map(sibling => `
-                        <button class="cam-ch${sibling.id === camera.id ? ' on' : ''}"
+                        <button class="btn btn-sm js-cam-ch${sibling.id === camera.id ? ' on' : ''}"
                             type="button" data-camera="${escape(sibling.id)}">
                             ${sibling.channel ? `Kamera ${sibling.channel}` : 'Kamera'}
                         </button>
@@ -483,7 +483,7 @@ export default class DetailPanel {
             <div class="detail-body">
                 ${rows}
                 ${nearby.stops.length ?
-                    '<button class="end-btn wide js-from-point" type="button">Mulai perjalanan dari sini</button>' :
+                    '<button class="btn btn-accent btn-lg btn-block js-from-point" type="button">Mulai perjalanan dari sini</button>' :
                     ''}
             </div>
         `;
@@ -546,10 +546,10 @@ export default class DetailPanel {
                 <div class="panel-title" style="margin-top:14px">Rute</div>
                 <div class="chips">${chips}</div>
                 <div class="journey-ends">
-                    <button class="end-btn js-from" type="button">Dari sini</button>
-                    <button class="end-btn js-to" type="button">Ke sini</button>
+                    <button class="btn btn-accent btn-lg js-from" type="button">Dari sini</button>
+                    <button class="btn btn-lg js-to" type="button">Ke sini</button>
                 </div>
-                <button class="end-btn wide js-reach" type="button">Lihat jangkauan</button>
+                <button class="btn btn-lg btn-block js-reach" type="button">Lihat jangkauan</button>
             </div>
         `;
         me._el = {departures: me.el.querySelector('.js-departures')};

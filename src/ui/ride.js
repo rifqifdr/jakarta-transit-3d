@@ -273,10 +273,10 @@ export default class Ride {
             </div>
             <div class="ride-controls">
                 <span class="ride-step js-step"></span>
-                <button class="js-ride-camera" type="button"></button>
-                <button class="js-ride-speed" type="button"></button>
-                <button class="js-ride-skip" type="button">Lewati</button>
-                <button class="js-ride-exit" type="button">Keluar</button>
+                <button class="btn js-ride-camera" type="button"></button>
+                <button class="btn js-ride-speed" type="button"></button>
+                <button class="btn js-ride-skip" type="button">Lewati</button>
+                <button class="btn js-ride-exit" type="button">Keluar</button>
             </div>
         `;
         me._el = {

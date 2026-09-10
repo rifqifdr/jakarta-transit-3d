@@ -144,7 +144,7 @@ export default class Reach {
             </div>
             <div class="sorts">
                 ${[15, 30, 45, 60].map(m =>
-                    `<button class="js-budget ${m === me.budget ? 'on' : ''}" data-budget="${m}">${m} mnt</button>`
+                    `<button class="btn btn-sm js-budget ${m === me.budget ? 'on' : ''}" data-budget="${m}">${m} mnt</button>`
                 ).join('')}
             </div>
             <div class="detail-body">
