@@ -161,6 +161,120 @@ file.
 **Comments earn their place.** Prefer explaining a non-obvious decision or a
 trap over narrating the code.
 
+## The interface, and why it looks like Jakarta
+
+The panels were rebuilt once it was pointed out that they read as generated.
+The diagnosis was not taste, it was arithmetic: **fifteen distinct font sizes**
+between 10 and 30px, padding on every integer from 2 to 14, and 35 of 69 type
+declarations at 11.5px or under. Nothing had been decided; every value had been
+chosen on its own. Reference points are Google Maps and Moovit, which are large,
+confident and legible at arm's length in daylight.
+
+**The typeface is Plus Jakarta Sans**, commissioned as the city of Jakarta's own
+and therefore the one choice here that is not a default. Self-hosted at
+`public/fonts/` — 27 KB for the whole 200-800 variable axis, against a DNS
+lookup and a connection to a third party on first paint. `font-display: swap`,
+because a transit map that shows nothing while a font loads has its priorities
+backwards.
+
+**The accent is Transjakarta's, not a stock blue.** `#0d5eaf` is the enamel of
+the corridor signage, and like the signs it is a *fill* colour with white type
+on it — far too dark to be text on a dark panel, which is why `--brand-lift`
+exists separately for text and edges. The map had been carrying the real
+operator colours in `configs.categories` the whole time while the UI painted
+itself `#35a7ff` on top of them.
+
+- **The card carries its line's identity in the badge, and nowhere else.** A
+  coloured 3px stripe down the card's leading edge was tried and removed: on the
+  route preview it fought the stop list it sat beside, and because `#detail` is
+  one element reused for every kind of card, a treatment there is a treatment on
+  all of them at once. The badge already says which line this is, in the same
+  colour, without a second element competing for the same job.
+- **Hazard yellow (`--here`) means one thing: you are here, now.** The tick on
+  the current stop and the current leg of a ride. It is the yellow every rider
+  in this city has stood behind on a platform edge, and it stops meaning that
+  the moment it is used for anything else.
+- **The type scale is 15px stepped at ~1.2** — seven tokens where there were
+  fifteen ad-hoc sizes. 11px survives only for tracked capitals, which read a
+  size larger than they measure. Hierarchy comes from size *and* weight *and*
+  ink level (four of them, `--text` through `--text-4`); size alone is what made
+  it flat.
+- **Space is on a 4px grid** (`--s1`..`--s6`), and control heights are named:
+  `--ctl-sm` 36, `--ctl` 40, `--ctl-lg` 48. Primary actions are 48px because
+  that is what Google Maps gives them, and 44 is the floor WCAG asks for.
+- **A 36px control keeps its size and extends its hit area**, via
+  `.btn-sm::after { inset: -4px -2px }`. Growing them instead would push the
+  segmented rows off a 390px screen. The rows that use them set a gap wide
+  enough that two hit areas meet but never overlap.
+- **One filled action per card.** Everything was an outline before, so no card
+  had a focal point; then everything became filled, which is the same problem
+  in reverse — the stop card had three primary buttons at once. Someone who taps
+  a stop is nearly always starting a journey from it, so that one is filled and
+  the other two are outlines.
+
+**One button, two intents.** There were six pill buttons — `.track-btn`,
+`.end-btn`, `.sorts button`, `.ride-controls button`, `.fh-btn`, `.cam-ch` —
+each with its own hover and its own idea of what selected looks like. Now `.btn`
+rests neutral (a toggle, a secondary action) and `.btn-accent` is filled brand
+(the action a card exists for), with `.btn-sm` / `.btn-lg`, `.btn-danger` and
+`.btn-block`.
+
+- **Intent and size live on the class; layout lives on the container.** A shared
+  class that also carried `flex: 1` or a margin is how five of these drifted
+  apart. `.sorts`, `.journey-ends` and `.fh-controls` each say how their own
+  buttons sit.
+- **`.sorts` is a segmented control, not three loose buttons** — one inset track
+  with the choice filled inside it. As separate outlines the three read as three
+  unrelated actions.
+- **An input is inset, not raised.** `.field` sinks (`--sink`) and fills its
+  48px, because the origin and destination boxes are the first thing a thumb
+  goes for and a borderless 13.5px label does not read as somewhere you can
+  type.
+- **A button does not inherit the page font.** `.cam-ch` was drawn in the UA's
+  own for want of a `font-family` line, which is the kind of drift one
+  definition prevents.
+- **Query with a `js-` hook, never with the style class.** `.track-btn` and
+  `.cam-ch` were both, so restyling them would have broken the handlers; they
+  are `js-track` and `js-cam-ch` now.
+- **A size change is a layout change on a phone.** Moving the ride HUD's
+  controls up one size step took 14 px from `.ride-step` and wrapped
+  "Tahap 1 / 4" onto two lines at 390 px. Measured, not noticed:
+  `PROBE_WIDTH=390 PROBE_HEIGHT=844 node scratchpad/probe.mjs` is the arm that
+  sees it, and the 1440 px arm shows nothing at all. That row now wraps
+  deliberately on a phone — label above, four 44px buttons below — which is what
+  both reference apps do with a bottom sheet.
+**The basemap theme is the rider's to choose** — Warna / Pudar / Mono in
+Layanan, mapping to Mapbox Standard's `default` / `faded` / `monochrome`. It is
+what the README has meant since the basemap stopped being a private style: the
+fleet competes with a full-colour city, and monochrome takes the colour out so
+six thousand vehicles have it to themselves.
+
+- **Changing the theme must re-run `applyStopTheme`.** It branches on the theme
+  rather than the hour (trap 4) — monochrome keeps a pale ground at every light
+  preset, so its night view still needs dark ink. Verified: the switch flips
+  `stop-labels` ink from `#ffffff` to `#2b3644`. Setting one without the other
+  leaves the stops inked for the previous map.
+- **Set it before the layers, not after.** The frame loop runs `applyStopTheme`
+  on its first pass to establish the light preset, so a theme restored after
+  that point paints stops for the default map until the hour changes — trap 12
+  again, in a new place. `main.js` sets the config property immediately after
+  `style.load`.
+- **It is a preference, not a view, so it lives in `localStorage`** rather than
+  the URL. A shared link is about where and when; someone else's taste in map
+  colour is not part of it. The read is wrapped, because private browsing and
+  blocked site data both make `localStorage` throw.
+- **The light preset stays automatic.** It is driven by the simulated clock so
+  playback reads as a day passing over the city, which is a better use of the
+  four presets than a fourth control.
+- **`custom` is in Standard's schema and is not offered.** It needs a
+  `theme-data` payload, which is style authoring rather than something to put in
+  front of a rider.
+
+- **Motion is named properties only, never `transition: all`.** `all` animates
+  layout and drops frames on the phone this is built for. 140ms on
+  `cubic-bezier(0.23, 1, 0.32, 1)`, `scale(0.97)` on press, and the whole lot
+  drops to colour-only under `prefers-reduced-motion`.
+
 ## Drawing four modes, one instanced mesh each
 
 A six-car train is not a bigger bus, and since JAKAR-49 it is not a scaled one
@@ -1125,6 +1239,27 @@ share any view as a link — a camera included — and watch the actual street, 
 the actual toll carriageway, through a public CCTV camera beside the simulated
 fleet.
 
+**It now looks like Jakarta rather than like a template** (JAKAR-64). The
+typeface is Plus Jakarta Sans, the accent is Transjakarta's own signage blue,
+type sits on a seven-step scale where fifteen ad-hoc sizes used to be, and the
+controls are the size Google Maps makes them. The rider can also choose what the
+map underneath looks like — Warna, Pudar or Mono.
+
+**Everything the 2026-09-11 session changed**, so it is not re-derived:
+
+| | |
+| --- | --- |
+| Buttons | Six pill implementations became one `.btn` system, two intents, three sizes |
+| Typeface | Plus Jakarta Sans, self-hosted, 27 KB for the full variable axis |
+| Type | Fifteen ad-hoc sizes became a seven-step scale on a 15px base |
+| Space | A 4px grid, where padding had used every integer from 2 to 14 |
+| Controls | 29-33px became 36/40/48, with 44px hit areas on the small ones |
+| Fields | The finder's two boxes are real 48px inputs, inset, with a focus ring |
+| Colour | The accent is `configs.categories`' own Transjakarta blue, not a stock `#35a7ff` |
+| Map style | Warna / Pudar / Mono, remembered in `localStorage` (the light preset stays on the clock) |
+| Probe | `PROBE_WIDTH`/`PROBE_HEIGHT` — the phone arm, which is the only one that catches a size change becoming a layout change |
+| Docs | `.interface-design/system.md` is the design system of record |
+
 **Everything the 2026-09-10 session changed**, so it is not re-derived:
 
 | | |
@@ -1174,7 +1309,11 @@ which was clean in every data case, and `scratchpad/probe.mjs`, which is the onl
 thing that has ever caught the interaction ones.
 
 **Open work is in Plane.** Start a session by reading the project's
-**"Next Session — Start Here"** page, which is kept current.
+**"Next Session — Start Here"** page, which is kept current. Next up are
+**JAKAR-65** (mobile type and controls are still undersized — the scale is
+currently identical on a phone and a desktop) and **JAKAR-66** (*"sekitar sini"*
+opens over the part of the map being navigated on a phone), both raised by the
+owner at the end of the 2026-09-11 session.
 
 ## Known weak points
 

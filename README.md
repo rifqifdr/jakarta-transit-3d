@@ -322,6 +322,15 @@ the data is rebuilt.
 | `src/layers/vehicle-layer.js` | Draws the fleet as one instanced three.js mesh per mode, in a Mapbox custom layer |
 | `src/layers/vehicle-geometry.js` | The Kapsul vehicle body: one geometry per mode, all built inside the same base box |
 | `src/ui/` | Clock, layer, search and detail panels |
+| `src/css/style.css` | The whole interface: tokens, then components. See `.interface-design/system.md` |
+| `public/fonts/` | Plus Jakarta Sans, self-hosted — 27 KB for the full 200–800 variable axis |
+
+**The interface is built from the network's own colours.** `configs.categories`
+carries the real operator liveries — Transjakarta's corridor blue, Mikrotrans
+green, KRL red — and the panels take their accent from the same place rather
+than from a separate UI palette. The typeface is Plus Jakarta Sans, commissioned
+as the city of Jakarta's own. Tokens, component sizes and the reasoning are in
+`.interface-design/system.md`.
 
 Two details worth knowing:
 

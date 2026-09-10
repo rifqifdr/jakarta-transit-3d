@@ -9,6 +9,7 @@
  *
  *   node scratchpad/probe.mjs                     # run PROBE_JS
  *   PROBE_JS='...' node scratchpad/probe.mjs      # evaluate an expression
+ *   PROBE_WIDTH=390 PROBE_HEIGHT=844 node ...     # the one-column layout
  *
  * A step of the form {_click: [x, y]} in the returned array is dispatched as a
  * genuine mouse press and release at those viewport coordinates; PROBE_JS2 is
@@ -22,8 +23,10 @@ import {join} from 'node:path';
 const URL_UNDER_TEST = process.env.PROBE_URL || 'http://localhost:5173/',
     CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     PORT = 9222 + Math.floor(Math.random() * 300),
-    WIDTH = 1440,
-    HEIGHT = 900;
+    // `--window-size` floors out well above a phone in headless, so the size
+    // that actually decides the layout is the metrics override below.
+    WIDTH = Number(process.env.PROBE_WIDTH || 1440),
+    HEIGHT = Number(process.env.PROBE_HEIGHT || 900);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -107,6 +110,14 @@ async function click(x, y) {
 
 await send('Runtime.enable');
 await send('Page.enable');
+
+// PROBE_WIDTH=390 PROBE_HEIGHT=844 puts the app in the one-column layout
+// (JAKAR-62), which is where a control that grew a few pixels stops fitting —
+// bumping the ride HUD's buttons up one size step wrapped "Tahap 1 / 4" onto
+// two lines here while the 1440px arm showed nothing at all.
+await send('Emulation.setDeviceMetricsOverride', {
+    width: WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: WIDTH < 700
+});
 
 // Collect console errors: a thrown exception inside the frame loop is exactly
 // how trap 8 presented — the clock froze and the fleet stopped, with nothing
