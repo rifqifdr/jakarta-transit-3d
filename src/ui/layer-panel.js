@@ -1,6 +1,23 @@
 import configs from '../configs';
 
 /**
+ * Mapbox Standard's own themes. Three, not four — `custom` is in the schema but
+ * needs a `theme-data` payload, which is a style-authoring feature rather than
+ * something to put in front of a rider.
+ *
+ * This is a legibility control, not a performance one. `monochrome` was
+ * measured as no help at all to a phone's frame times (JAKAR-60); what it does
+ * is take the colour out of the city so six thousand vehicles have it to
+ * themselves, which is the trade the README has described since the basemap
+ * stopped being a private style.
+ */
+const BASEMAP_THEMES = [
+    {id: 'default', label: 'Warna', hint: 'Peta Mapbox Standard apa adanya'},
+    {id: 'faded', label: 'Pudar', hint: 'Kota diredam, armada lebih menonjol'},
+    {id: 'monochrome', label: 'Mono', hint: 'Kota tanpa warna — armada paling menonjol'}
+];
+
+/**
  * Toggles for the service categories and the supporting map layers.
  *
  * Categories are how an operator segments its own network — BRT corridors,
@@ -15,12 +32,14 @@ import configs from '../configs';
  */
 export default class LayerPanel {
 
-    constructor(fleet, {onCategoryToggle, onLayerToggle}) {
+    constructor(fleet, {onCategoryToggle, onLayerToggle, onBasemapTheme, basemapTheme}) {
         const me = this;
 
         me.fleet = fleet;
         me.onCategoryToggle = onCategoryToggle;
         me.onLayerToggle = onLayerToggle;
+        me.onBasemapTheme = onBasemapTheme;
+        me.basemapTheme = basemapTheme || 'default';
         me._render();
     }
 
@@ -50,6 +69,14 @@ export default class LayerPanel {
                     `).join('')}
                 </div>
             `).join('')}
+            <div class="layer-sep"></div>
+            <div class="panel-title">Tampilan peta</div>
+            <div class="sorts js-basemap">
+                ${BASEMAP_THEMES.map(t => `
+                    <button class="btn btn-sm js-theme${t.id === me.basemapTheme ? ' on' : ''}"
+                            type="button" data-theme="${t.id}" title="${t.hint}">${t.label}</button>
+                `).join('')}
+            </div>
             <div class="layer-sep"></div>
             <label class="toggle"><input type="checkbox" data-layer="routes" checked> Jalur rute</label>
             <label class="toggle"><input type="checkbox" data-layer="stops" checked> Halte</label>
@@ -104,6 +131,19 @@ export default class LayerPanel {
                 me.onLayerToggle(box.dataset.layer, box.checked);
             });
         }
+
+        el.querySelector('.js-basemap').addEventListener('click', event => {
+            const button = event.target.closest('.js-theme');
+
+            if (!button || button.classList.contains('on')) {
+                return;
+            }
+            for (const other of el.querySelectorAll('.js-theme')) {
+                other.classList.toggle('on', other === button);
+            }
+            me.basemapTheme = button.dataset.theme;
+            me.onBasemapTheme?.(me.basemapTheme);
+        });
     }
 
     /** Swaps the panel between explaining categories and explaining frequency. */

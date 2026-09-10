@@ -60,6 +60,46 @@ function mercToLngLat(x, y) {
     ];
 }
 
+const BASEMAP_THEME_KEY = 'tj:basemap-theme',
+    BASEMAP_THEMES = ['default', 'faded', 'monochrome'];
+
+/**
+ * The basemap theme is a preference, not a view, so it is remembered rather
+ * than put in the URL: a shared link is about where and when, and someone
+ * else's taste in map colour is not part of that.
+ *
+ * Wrapped because private browsing and blocked site data both make
+ * `localStorage` throw on access, exactly as the artifact cache is wrapped.
+ */
+function readBasemapTheme() {
+    try {
+        const saved = localStorage.getItem(BASEMAP_THEME_KEY);
+
+        return BASEMAP_THEMES.includes(saved) ? saved : 'default';
+    } catch {
+        return 'default';
+    }
+}
+
+/**
+ * Applies a theme and then re-reads it, because `applyStopTheme` branches on
+ * the theme rather than on the hour (trap 4): monochrome keeps a pale ground at
+ * every light preset, so its night view still needs dark ink. Setting the one
+ * without refreshing the other leaves the stops inked for the previous map.
+ */
+function setBasemapTheme(app, theme) {
+    const {map} = app;
+
+    map.setConfigProperty('basemap', 'theme', theme);
+    applyStopTheme(map, app.lastPreset);
+    try {
+        localStorage.setItem(BASEMAP_THEME_KEY, theme);
+    } catch {
+        // A preference that cannot be saved is still a preference that works
+        // for this session.
+    }
+}
+
 // Mapbox Standard ships four lighting presets; picking one from the simulated
 // hour makes playback read as a day passing over the city.
 function lightPreset(hour) {
@@ -217,6 +257,13 @@ async function main() {
     };
 
     await new Promise(resolve => map.on('style.load', resolve));
+
+    // Before the layers, not after. `applyStopTheme` branches on the theme, and
+    // the frame loop runs it on its first pass to set the light preset — so the
+    // theme has to be true by then or the stops are inked for the default map
+    // and stay that way until the hour changes. Establish the condition before
+    // the state that depends on it (trap 12).
+    map.setConfigProperty('basemap', 'theme', readBasemapTheme());
 
     addRouteLayers(app);
     addReachLayers(app);
@@ -723,6 +770,8 @@ function buildUI(app) {
     app.clockControl = new ClockControl(clock, fleet);
 
     app.layerPanel = new LayerPanel(fleet, {
+        basemapTheme: readBasemapTheme(),
+        onBasemapTheme: theme => setBasemapTheme(app, theme),
         onCategoryToggle: () => applyRouteFilter(app),
         onLayerToggle: (layer, on) => {
             if (layer === 'routes') {
