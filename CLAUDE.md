@@ -127,6 +127,7 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/fleet.js` | Expands headways into runs, positions them each frame |
 | `src/layers/vehicle-layer.js` | The fleet, as one instanced three.js mesh per mode |
 | `src/layers/vehicle-geometry.js` | The Kapsul body, built per mode inside one base box |
+| `src/kodefikasi.js` | Line codes, line colours and the mode glyph sprite (JAKAR-50) |
 | `src/cameras.js` | Live CCTV: artifact loading, the map pin, and the HLS player |
 | `src/ui/` | Panels: clock, layers, search, detail, journey, reach, ride |
 | `#left-rail` | Search, journey bar and detail card in one column (JAKAR-25) |
@@ -328,6 +329,77 @@ still holds each mode's real size and a service acceleration; a KRL set is
   prefix written each frame is uploaded (`addUpdateRange`), so the waste is
   memory, not bandwidth.
 
+## Kodefikasi: the city's own line codes
+
+JAKAR-50. Jakarta has an official alphabet for its lines — `C` for the Bogor
+line, `B` for Cikarang, `M` for the MRT — and until now the app ignored it and
+printed whatever the feed happened to call a route. `src/kodefikasi.js` is the
+one place that knows the mapping.
+
+The source is the **Pedoman Sistem Informasi Penunjuk Arah (Wayfinding) DKI
+Jakarta**, pages 29-30 — the Lampiran to **Kepgub No. 31 Tahun 2022**, written
+by ITDP Indonesia and TfJ-FDTJ for Pemprov DKI. It is what the platform signage
+and the integration map use, so a rider who has stood at Manggarai already
+knows this alphabet.
+
+- **The licence question that blocked this is settled, and the answer is
+  credit.** A codification scheme is a *system*, which UU 28/2014 Pasal 41
+  huruf b puts outside copyright; a letter in a coloured disc is below the
+  threshold of originality, and Wikimedia Commons already publishes the same
+  Jakarta roundels as `{{PD-text}}`. What does carry copyright is the
+  guideline's own pictogram artwork — so **the glyphs here are redrawn, not
+  extracted from its PDF**. ITDP has published no licence of any kind: no terms
+  page, no copyright policy, and nothing in 127 pages of the book. The credit
+  is in the map's attribution line.
+- **The guideline outranks the feed on colour.** KAI Commuter publishes its own
+  liveries (Bogor `#E30A16`, Cikarang `#0084D8`); these are the *operator's*.
+  The pedoman's are the city's integrated set, and one network gets one
+  alphabet. Five KRL lines had been sharing a single red because colour came
+  from the *category*; they now carry their own.
+- **The mark is one object, with its own gap.** `routeMark` returns a
+  `.route-mark` wrapper holding the glyph and the badge. They were two siblings
+  borrowing whatever gap the row set, cancelled back with a negative margin per
+  container — and inside the ride HUD's `.js-badge` there is no row and no gap,
+  so the margin had nothing to cancel and pulled the glyph into the badge. **A
+  component that only spaces correctly inside the five containers somebody
+  remembered to list is not a component.**
+- **A coded line wears its ring everywhere it appears**, including the
+  itinerary leg chips. Rail as a disc in the summary and a ring in the card is
+  two alphabets for one network.
+- **`routeColor()` is the one function the whole map agrees through** — badges,
+  route lines and the instanced fleet. It replaced `CATEGORY_COLOR.get(route.category)`
+  copied at nine call sites, and `routeMark()` replaced eight copies of
+  `<span class="badge" style="background:…">`. Same lesson as the six pill
+  buttons that became one `.btn`: a shape repeated at every call site drifts.
+- **Keyed by route id, not by shortName.** The feed's own label is exactly what
+  this table exists to replace, and an id survives a rebuild.
+- **A coded line wears a ring, everything else a filled plate.** Page 30 draws
+  every rail line as a thick collar of the line's colour around a clear centre;
+  page 29 draws the bus corridors filled. The first build had rail filled too,
+  which read as "one more bus corridor, in a different colour".
+- **An inline `background` beats any class rule**, so emitting one on a ring
+  badge filled every rail roundel solid and swallowed its letter —
+  `.badge-line { background: none }` never had a chance. `routeMark` now emits
+  `background` only on a plate, and the colour always as `--mark`, which is
+  what lets the collar and the letter come from one value.
+- **The letter is the line's colour, and six of nine fail contrast.** Measured
+  on paper: Cikarang `#26baed` is 2.25:1 and Rangkasbitung `#99ca3e` is
+  1.93:1, against WCAG's 4.5:1 for 13px bold. The pedoman sets the letter in
+  near-black inside the collar — 17.6:1 — which is why it does that. Kept as
+  the line's colour by decision; `color: var(--text)` on `.badge-line` is the
+  whole change if that is revisited.
+- **The fleet's colour buffer is keyed by route now**, which also makes the
+  per-instance lookup one map hit instead of two in a loop that runs six
+  thousand times per regeneration.
+- **No pantograph on any glyph.** The first draft gave one to LRT, which has it
+  backwards — both Jakarta LRTs take 750 V from a third rail, and it is KRL and
+  MRT that run under wire. At 15px it would have been a 1px dash saying
+  something untrue.
+- **BRT corridors 1-13 have their own colours on the same page** and are not
+  adopted yet. That would take 31 bus routes from one blue to thirteen colours,
+  and `#0d5eaf` — the app's whole accent — is corridor blue, so it is a
+  deliberate decision rather than a continuation of this one.
+
 ## What the render path actually costs
 
 JAKAR-58. Measured on an **Apple M4** (ANGLE Metal, WebGL2, 120 Hz, canvas
@@ -429,6 +501,80 @@ the geometry stops mattering at all (16.6 ms box against 16.6 ms Kapsul).
 Turning off Standard's 3D buildings — the app's own *Gedung 3D* switch — barely
 moves the median at street level but lifts the mean from 65 to 78 fps, so what
 they cost is tail frames rather than every frame.
+
+## Icons, and the rows they sit in
+
+One sprite in `src/kodefikasi.js` holds every symbol the interface draws —
+four mode glyphs and seven interface icons — because there is one
+`installSprite()`, one place to look, and **a `<use>` pointing at a symbol that
+is not in the document renders nothing at all, silently**. Two sprites would be
+two chances to forget one.
+
+- **A layer row is icon and label on the left, switch on the right.** The
+  native checkbox sat between the icon and the words, so every row began with
+  the same 18px square and there was nothing to aim at; at the trailing edge
+  the states line up in one column and the row reads as a thing and then
+  whether it is on. The input is **visually hidden, not replaced** — the label,
+  the keyboard and the accessibility tree still run through it, and it is still
+  what the handler binds to.
+- **Rows are named the way a rider would say them.** *Kamera langsung* became
+  *CCTV*, *Hanya halte aksesibel* became *Halte aksesibel*.
+- **The finder shows what a stop is, not a letter for it.** `H` and `ST` on a
+  grey plate were two letters of jargon in the space a picture costs, and
+  telling a roadside halte from a station you walk into is most of what
+  Navigasi's list is for.
+- **The route count in Layanan is set like a number.** At 11px grey mono it
+  read as leftover debug output; it is the one figure in that panel — how much
+  of the network a filter is holding — so it is tabular, 13px, one ink level
+  up, and in its own well so the column lines up.
+- **An itinerary step is two rows, not three columns.** The mark and the
+  departure take the top line with the full width between them; boarding and
+  alighting sit under it. Side by side, the mark, three lines of prose and the
+  time fought over a 344px rail and the time lost — it was 11px grey mono, the
+  one number on the step anybody is reading. The headsign and stop count went
+  with the change: four legs of them read as a paragraph rather than a journey.
+- **A scheduled time has no seconds.** `formatClock` is `05:09`; `formatOffset`
+  keeps `05:09:00` for the clock readout, which is the one thing genuinely
+  ticking. No departure board quotes seconds, and `05:03:00 – 06:06:00` was
+  what wrapped the itinerary header onto two lines.
+
+## Paper, not night
+
+The panels were dark because the first basemap was a private dark style and the
+fleet was the only colour on it. Neither is true any more — the basemap is stock
+Standard in full colour — and the case to design for is a rider reading a halte
+card in Jakarta daylight. Both reference apps are light for that reason.
+
+- **It is one palette, at the token level.** The repaint is the `:root` block
+  plus about twenty values that had assumed a dark ground; nothing downstream
+  knows. A dark theme would be a second token block, not a second stylesheet.
+- **The substitution the whole thing turns on is white-at-low-alpha becoming
+  ink-at-low-alpha.** Those were seven hard-coded `rgba(255,255,255,…)` troughs
+  — a progress bar, a ride segment, a scrollbar — each of which had to be found
+  by hand. They are `--track`, `--track-done` and `--press` now.
+- **Grep for `rgba(0,0,0,…)` too.** One rule set the focused field to black at
+  30%, which on paper drew a grey slab where the input should be. It was the
+  only one, and the sweep that missed it looked only for white.
+- **Focus clears the well rather than deepening it.** On a dark panel an input
+  sinks further on focus; on paper the way to say "active" is to take the tint
+  away, so `.field:focus-within` goes to `--panel-solid`.
+- **`--brand-lift` moved in the opposite direction.** It is the readable tint,
+  which on a dark panel meant lifting the enamel blue towards white; on paper
+  the enamel blue *is* the readable one and lifting it is what would make it
+  vanish. Same token, inverted job.
+- **`--live`, `--here` and `--danger` are darkened, hues held.** `#2fd07a` on
+  white is about 1.7:1. `--here` splits in two: `--here-fill` keeps the real
+  platform-edge yellow for the tick itself, and `--here` is the ink-dark collar
+  that stops it dissolving into the paper.
+- **The loader is paper too**, or the app flashes black and then turns white on
+  every first paint.
+- **A camera card stays dark on purpose.** `#000` behind a stream and a dark
+  scrim on the fullscreen overlay are not dark-mode relics — video wants a dark
+  surround at any theme.
+- **The basemap still follows the clock**, by decision. Between dusk and dawn
+  that means light cards over a dark map, which is what Google Maps does with
+  its own chrome, and it keeps playback reading as a day passing over the city.
+  Pinning the preset light was considered and rejected.
 
 ## The two rails, and the finder
 
@@ -573,6 +719,55 @@ equivalent for Netlify.
   the artifact loader a page of HTML to parse as JSON where a swept hash should
   have produced an honest 404.
 
+## What this project is made of, and on whose terms
+
+Audited 2026-09-12, source by source — nineteen feeds, assets and libraries.
+Nothing is unlawful and no source forbids this use; what was missing was
+**credit**, in five places, all now closed. `README.md` carries the register
+and `THIRD-PARTY-NOTICES.md` the bundled components.
+
+- **Almost nothing here states a licence at all.** Not Transjakarta's GTFS —
+  Transitland records only its own terms against it — not KCI, not MRT, not
+  either LRT. That is not permission and it is not refusal; it is silence, and
+  the basis for use is that a timetable is *data*, which UU 28/2014 Pasal 41
+  huruf b puts outside copyright, plus Pasal 43 huruf b for anything published
+  by or for government absent a protection notice.
+- **Reading a published endpoint is not illegal access.** UU ITE Pasal 30 is
+  about acting "tanpa hak" and about breaking security. Every endpoint here is
+  unauthenticated and public; no token is guessed and no `robots.txt` is
+  disobeyed. They were read one by one — `binamarga.pu.go.id` disallows
+  `/assets/`, `/invt/`, `/v3/` and our `/contents/cctv_tol` is allowed;
+  `lrtjakarta.co.id` signals `ai-train=no`, which does not bite because nothing
+  here trains anything.
+- **Mapbox GL JS 3 is not open source**, which is easy to assume from an npm
+  dependency. It is licensed under the Mapbox TOS, needs an account in good
+  standing, and the licence "terminates automatically" without one. The
+  wordmark and attribution control must stay visible — which is the other
+  reason the phone layout reserves a bottom strip (trap 13).
+- **Self-hosting a font is redistributing it.** The OFL requires its text to
+  travel with the Font Software; `public/fonts/` had the `.woff2` and no
+  licence. `OFL.txt` sits beside it now.
+- **Transitland's terms ask for visible attribution** and the walk table is
+  40,466 edges of their hosted Valhalla. The map credited OSM, the operators
+  and the cameras, and not them. It does now.
+- **`public/artifacts/` is an ODbL Derivative Database.** It carries
+  OSM-derived geometry, so share-alike reaches it and the repository's MIT
+  licence does not. Stated explicitly in `README.md`, because a reader is
+  otherwise entitled to assume one licence covers the whole repo.
+- **Non-commercial is load-bearing in exactly two places**, and it is worth
+  knowing which: Pasal 43 huruf d, which covers the guideline's pictogram
+  artwork — moot here, since the glyphs are redrawn — and Mapbox's 50,000 map
+  loads a month, which binds before any host's bandwidth does. ODbL, OFL, MIT
+  and Apache do not distinguish commercial use at all.
+- **A GPL repo cannot relicense someone else's government data.** The 612
+  street-camera positions come from an archived GPL-3.0 mirror of a DKI open
+  data release. The licence covers that repo's code; the coordinates are facts
+  and DKI is the upstream holder. Credited anyway.
+- **One thing to keep an eye on:** the MRT timetable is read from
+  `beweb-dev.jakartamrt.co.id` — a *development* host. Not a legal problem, but
+  not an address meant for public consumption either, and it can vanish without
+  notice.
+
 ## Traps this codebase has already fallen into
 
 Each of these shipped broken once. They are cheap to reintroduce.
@@ -658,6 +853,16 @@ Each of these shipped broken once. They are cheap to reintroduce.
     condition before the state that depends on it**: go live, then switch the
     layer on. `ensureCameras` exists so the question "is this camera in the
     build?" can be answered without switching anything at all.
+
+14. **A sentinel is not a measurement.** Rail sources publish departure boards,
+    not frequencies, so every rail trip is stored as a one-off window carrying
+    a **1-second headway** meaning "this runs once". Read as a service interval
+    it says two false things: the line card offered a Bogor train "tiap 0 mnt",
+    and *Warnai per frekuensi* put all nine rail lines in the under-5-minute
+    band — the most frequent thing on the map. Both were live from the day rail
+    shipped and no test saw either, because the value is real, positive and
+    consistent. `MIN_HEADWAY` is 60 s: the feed's genuine headways start at
+    180 s. Found by reading the card, which is the tenth bug on that list.
 
 ## The live camera layer
 
@@ -1291,7 +1496,7 @@ map underneath looks like — Warna, Pudar or Mono.
 | Probe harness | `scratchpad/probe.mjs` rebuilt — real Chrome over CDP, step lists, screenshots |
 | Render cost | Measured on a real GPU at last (JAKAR-58): the fleet is 0.2-2.6 ms, the basemap is the rest |
 
-**Nine bugs have been found by using the app rather than by testing it**, every
+**Ten bugs have been found by using the app rather than by testing it**, every
 one of which passed the whole automated suite first: the walk table joining stops
 74 km apart (trap 7), the frame loop crashing on a shapeless trip (trap 8), 158
 of 806 patterns collapsed so vehicles teleported then stood still, 43 unservable
@@ -1300,9 +1505,12 @@ stops offered in search, a camera layer where **not one of 612 pins rendered**
 probe measuring nothing because a 200 came back empty (trap 11), and a camera
 deep link that opened a card over a layer the live gate had already torn down
 (trap 12), and a phone where the clock covered the card you had just opened and
-nothing could close it (trap 13). The ninth is the one to notice: it was found
-by the person who owns the project opening it on his own phone, after every
-check in the repo had passed.
+nothing could close it (trap 13), and nine rail lines advertising a train
+"tiap 0 mnt" while the frequency layer called them the most frequent services
+on the map (trap 14). The ninth is the one to notice: it was found by the
+person who owns the project opening it on his own phone, after every check in
+the repo had passed. The tenth was found by reading a card while changing
+something else on it.
 
 That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
@@ -1313,7 +1521,9 @@ thing that has ever caught the interaction ones.
 **JAKAR-65** (mobile type and controls are still undersized — the scale is
 currently identical on a phone and a desktop) and **JAKAR-66** (*"sekitar sini"*
 opens over the part of the map being navigated on a phone), both raised by the
-owner at the end of the 2026-09-11 session.
+owner at the end of the 2026-09-11 session. **JAKAR-50** is done: the line
+codes, the line colours and the mode glyphs are in, and the licence question
+that blocked it turned out to have an answer.
 
 ## Known weak points
 

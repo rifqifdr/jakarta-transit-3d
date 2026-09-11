@@ -18,23 +18,46 @@
 }
 
 :root {
-  /* ---- ground. One hue, lightness only: a night map, not a themed one. */
-  --bg: #0b0f14;
-  --panel: rgba(16, 22, 30, 0.92);
-  --panel-solid: #10161e;
-  --raise: rgba(255, 255, 255, 0.045);   /* one step up, for inset rows */
-  --sink: rgba(0, 0, 0, 0.24);           /* inputs are inset, not raised */
+  /*
+     Paper, not night.
+
+     The panels were dark because the first basemap was a private dark style
+     and the fleet was the only colour on it. Neither is true any more: the
+     basemap is stock Standard in full colour, and a rider reading a halte
+     card in Jakarta daylight is the case to design for. Every reference this
+     project takes — Google Maps, Moovit — is light for exactly that reason.
+
+     One hue, lightness only, as before. The tint is the brand's blue at a few
+     percent rather than neutral grey, so a panel edge reads as part of the
+     same object as the accent on it.
+  */
+  --bg: #eaeef3;
+  --panel: rgba(255, 255, 255, 0.94);
+  --panel-solid: #ffffff;
+  --raise: rgba(13, 42, 82, 0.05);       /* one step *in*, for inset rows */
+  --sink: rgba(13, 42, 82, 0.06);        /* inputs are inset, not raised */
 
   /* ---- edges. Findable, never the first thing seen. */
-  --border: rgba(255, 255, 255, 0.10);
-  --border-soft: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.18);
+  --border: rgba(13, 42, 82, 0.13);
+  --border-soft: rgba(13, 42, 82, 0.08);
+  --border-strong: rgba(13, 42, 82, 0.24);
+
+  /*
+     Troughs: a progress bar, a ride segment, a scrollbar. On a dark panel
+     these were white at low alpha; on paper they are ink at low alpha, which
+     is the one substitution the whole repaint turns on. Named, because they
+     were seven hard-coded `rgba(255,255,255,…)` values that each had to be
+     found by hand.
+  */
+  --track: rgba(13, 42, 82, 0.14);
+  --track-done: rgba(13, 42, 82, 0.42);
+  --press: rgba(13, 42, 82, 0.10);
 
   /* ---- ink, four levels. Two is a flat hierarchy. */
-  --text: #f2f5f9;
-  --text-2: #b9c4d2;
-  --text-3: #8b98a9;
-  --text-4: #64707f;
+  --text: #0f1a26;
+  --text-2: #3d4b5c;
+  --text-3: #64748a;
+  --text-4: #8a97a8;
 
   /*
      The accent is Transjakarta's, not a stock blue. #0d5eaf is the enamel of
@@ -46,14 +69,21 @@
   --brand: #0d5eaf;
   --brand-press: #0a4787;
   --brand-ink: #ffffff;
-  --brand-lift: #56a8ee;                  /* readable on the panel */
-  --brand-tint: rgba(45, 128, 208, 0.16);
+  /* The readable tint. On a dark panel this had to be lifted towards white;
+     on paper the enamel blue is already the readable one, and lifting it is
+     what would make it vanish. Same token, opposite direction. */
+  --brand-lift: #0d5eaf;
+  --brand-tint: rgba(13, 94, 175, 0.10);
 
   /* Each of these means exactly one thing, which is what keeps them from
      becoming decoration. */
-  --live: #2fd07a;                        /* the clock is on real time */
-  --here: #f5c518;                        /* you are here, now. Nothing else. */
-  --danger: #ff6a6a;
+  /* All three are darkened for paper. They were picked to carry on a dark
+     panel, and #2fd07a on white is about 1.7:1 — a colour you can see but not
+     read. The hues are held; only the lightness moves. */
+  --live: #0f9d57;                        /* the clock is on real time */
+  --here: #b8860b;                        /* you are here, now. Nothing else. */
+  --here-fill: #f5c518;                   /* the platform-edge yellow itself */
+  --danger: #c92a2a;
 
   /* ---- type. A 15px base stepped at ~1.2, replacing fifteen sizes that were
      each chosen on their own. 11px survives only for tracked capitals, which
@@ -94,8 +124,10 @@
   --radius: 18px;
   --rail: 344px;
 
-  --shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
-  --ring: 0 0 0 1px rgba(255, 255, 255, 0.07);
+  /* A panel lifting off the map. On paper it takes far less shadow to say
+     that, and the dark value read as a bruise. */
+  --shadow: 0 6px 24px rgba(13, 42, 82, 0.16);
+  --ring: 0 0 0 1px rgba(13, 42, 82, 0.04);
   /* Entering and interactive. ease-in delays the first frame, which is the
      one the finger is watching. */
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
@@ -136,7 +168,7 @@ html, body {
   z-index: 40;
   display: grid;
   place-items: center;
-  background: radial-gradient(120% 90% at 50% 40%, #16202c 0%, #080b10 70%);
+  background: radial-gradient(120% 90% at 50% 40%, #ffffff 0%, var(--bg) 70%);
   transition: opacity 0.6s ease, visibility 0.6s;
 }
 #loader.hidden { opacity: 0; visibility: hidden; }
@@ -207,7 +239,7 @@ html, body {
   transition: background-color 140ms var(--ease), border-color 140ms var(--ease),
     color 140ms var(--ease), transform 100ms var(--ease);
 }
-.btn:hover { background: rgba(255, 255, 255, 0.10); color: var(--text); border-color: var(--border-strong); }
+.btn:hover { background: var(--press); color: var(--text); border-color: var(--border-strong); }
 /* Tactile confirmation the button heard the press. Never below 0.95. */
 .btn:active { transform: scale(0.97); }
 .btn:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: 2px; }
@@ -343,20 +375,20 @@ html, body {
   position: absolute; left: 0; right: 0; bottom: 50%; width: 100%;
   transform: translateY(50%); pointer-events: none;
 }
-.scrub-wrap input[type=range] { position: relative; z-index: 1; background: rgba(255,255,255,0.10); }
+.scrub-wrap input[type=range] { position: relative; z-index: 1; background: var(--track); }
 
 button.icon {
   width: 30px; height: 30px;
   display: grid; place-items: center;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--raise);
   color: var(--text);
   cursor: pointer;
   font-size: var(--text-sm);
   padding: 0;
 }
-button.icon:hover { background: rgba(255, 255, 255, 0.12); }
+button.icon:hover { background: var(--press); }
 
 .speed-row {
   display: flex; align-items: center; gap: 8px;
@@ -366,7 +398,7 @@ button.icon:hover { background: rgba(255, 255, 255, 0.12); }
 
 input[type=range] {
   -webkit-appearance: none; appearance: none;
-  height: 4px; border-radius: 2px; background: rgba(255, 255, 255, 0.16);
+  height: 4px; border-radius: 2px; background: var(--track);
   outline: none; margin: 0; width: 100%;
 }
 input[type=range]::-webkit-slider-thumb {
@@ -417,7 +449,28 @@ input[type=range]::-moz-range-thumb {
 }
 .cat .dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
 .cat .name { flex: 1; }
-.cat .n { font-family: var(--mono); font-size: var(--text-2xs); color: var(--text-3); }
+/*
+   The route count, which read as leftover debug output at 11px grey mono. It
+   is the one number in this panel — how much of the network a filter is
+   holding — so it is set like a number: tabular, 13px, ink one level up, and
+   sitting in its own well so the column of them lines up down the list.
+*/
+.cat .n, .mode-head .n {
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text-2);
+  flex: none;
+  min-width: 34px;
+  padding: 2px 7px;
+  text-align: right;
+  border-radius: 6px;
+  background: var(--raise);
+}
+.mode-head .n { background: none; color: var(--text-3); }
+.mode-icon { width: 16px; height: 16px; flex: none; color: var(--text-3); }
+.mode-head:hover .mode-icon { color: var(--text-2); }
 .cat.off { opacity: 0.38; }
 .layer-sep { height: 1px; background: var(--border); margin: 10px 0; }
 /* While colouring by frequency the category swatches no longer describe the
@@ -437,7 +490,6 @@ input[type=range]::-moz-range-thumb {
   letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-3);
 }
 .mode-head:hover .mode-name { color: var(--text); }
-.mode-head .n { font-size: var(--text-2xs); color: var(--text-3); font-family: var(--mono); }
 .mode-group.off .mode-name, .mode-group.off .mode-head .n { opacity: 0.4; }
 /* Categories sit under their mode, so they are indented to read as children. */
 .mode-group .cat { padding-left: 3px; }
@@ -449,6 +501,14 @@ input[type=range]::-moz-range-thumb {
 .cat.static { cursor: default; }
 /* A filter row is a tap target, so it is one all the way across — the label is
    part of the control, not a caption beside it. */
+/*
+   A layer row: what it is on the left, whether it is on at the right.
+
+   The checkbox used to sit between the icon and the words, so every row began
+   with the same square and there was nothing to aim at. A switch at the
+   trailing edge puts all five states in one column, and the row reads as a
+   thing and then its state.
+*/
 .toggle {
   display: flex; align-items: center; gap: var(--s3);
   min-height: var(--ctl); padding: 0 var(--s2); margin: 0 calc(var(--s2) * -1);
@@ -457,11 +517,46 @@ input[type=range]::-moz-range-thumb {
   transition: background-color 140ms var(--ease), color 140ms var(--ease);
 }
 .toggle:hover { background: var(--raise); color: var(--text); }
-.toggle input {
-  accent-color: var(--brand-lift); margin: 0; flex: none;
-  width: 18px; height: 18px; cursor: pointer;
+.toggle-label { flex: 1; min-width: 0; }
+.toggle-icon {
+  width: 18px; height: 18px; flex: none; color: var(--text-3);
+  transition: color 140ms var(--ease);
 }
-.toggle:focus-within { outline: 2px solid var(--brand-lift); outline-offset: -2px; }
+.toggle:has(input:checked) .toggle-icon { color: var(--brand); }
+.toggle:has(input:checked) .toggle-label { color: var(--text); }
+
+/* Hidden, not replaced: the label, the keyboard and the accessibility tree all
+   still run through the real input, and it is what the handler binds to. */
+.toggle input {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%);
+  overflow: hidden; white-space: nowrap;
+}
+
+.switch {
+  flex: none;
+  width: 38px; height: 22px;
+  border-radius: 999px;
+  background: var(--track);
+  position: relative;
+  transition: background-color 140ms var(--ease);
+}
+.switch::after {
+  content: '';
+  position: absolute; top: 2px; left: 2px;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--panel-solid);
+  box-shadow: 0 1px 3px rgba(13, 42, 82, 0.28);
+  transition: transform 140ms var(--ease);
+}
+.toggle input:checked ~ .switch { background: var(--brand); }
+.toggle input:checked ~ .switch::after { transform: translateX(16px); }
+.toggle input:focus-visible ~ .switch {
+  outline: 2px solid var(--brand-lift); outline-offset: 2px;
+}
 
 /* ------------------------------------------------------------- search */
 
@@ -541,7 +636,10 @@ input[type=range]::-moz-range-thumb {
 .field:hover { border-color: var(--border); }
 .field:focus-within {
   border-color: var(--brand-lift);
-  background: rgba(0, 0, 0, 0.3);
+  /* Focus deepens the well on a dark panel and *clears* it on paper: the
+     content you are about to type is the thing to look at, and on white the
+     way to say "active" is to take the tint away, not add more of it. */
+  background: var(--panel-solid);
   box-shadow: 0 0 0 3px var(--brand-tint);
 }
 .field input {
@@ -560,7 +658,7 @@ input[type=range]::-moz-range-thumb {
   font-size: var(--text-lg); line-height: 1; border-radius: 8px; font-family: var(--font);
   transition: background-color 140ms var(--ease), color 140ms var(--ease);
 }
-.field-swap:hover, .field-clear:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+.field-swap:hover, .field-clear:hover { background: var(--press); color: var(--text); }
 .results { max-height: 320px; overflow-y: auto; border-top: 1px solid var(--border); }
 .results:empty { display: none; }
 /* A search result is the most-tapped thing in the app and was a 31px row. */
@@ -572,7 +670,7 @@ input[type=range]::-moz-range-thumb {
   transition: background-color 120ms var(--ease);
 }
 .result:hover { background: var(--raise); }
-.result:active { background: rgba(255, 255, 255, 0.09); }
+.result:active { background: var(--press); }
 /*
    The corridor number badge is how every rider in Jakarta names a route — "naik
    11", not "naik the blue one" — so it is the one object the interface builds
@@ -586,6 +684,89 @@ input[type=range]::-moz-range-thumb {
   padding: 0 var(--s2); height: 26px; border-radius: 7px;
   flex: none; min-width: 38px; text-align: center; color: #fff;
 }
+
+/*
+   A coded line wears a ring, everything else a filled plate — the pedoman's
+   own distinction (JAKAR-50), and it separates rail from bus before the code
+   has been read at all.
+
+   The ring is not decoration: page 30 draws every rail line as a thick collar
+   of the line's colour around a clear centre, while page 29 draws the bus
+   corridors filled. The first build had rail filled too, which read as "one
+   more bus corridor, in a different colour".
+
+   Both the collar and the letter come from `--mark`, so a line is one value.
+*/
+.badge-line {
+  width: 26px; min-width: 26px; padding: 0; border-radius: 50%;
+  letter-spacing: 0;
+  background: none;
+  border: 2.5px solid var(--mark);
+  /*
+     The letter takes the line's colour. Measured against the paper ground,
+     six of the nine lines fall below WCAG's 4.5:1 for 13px bold — Cikarang
+     #26baed is 2.25:1 and Rangkasbitung #99ca3e is 1.93:1, which is a colour
+     you can see but not read.
+
+     The pedoman itself sets the letter in near-black inside the coloured
+     collar, which measures 17.6:1 and is why it does that. Swapping this one
+     declaration to `var(--text)` is the whole change if legibility wins over
+     the colour.
+  */
+  color: var(--mark);
+}
+
+/*
+   The mark is one object: the mode glyph and the line badge, with their own
+   gap between them.
+
+   They used to be two siblings that borrowed whatever gap the row happened to
+   set, and cancelled it back with a negative margin per container. Inside the
+   ride HUD's `.js-badge` there is no row and no gap, so that margin had
+   nothing to cancel and pulled the glyph into the badge. A component that
+   only spaces correctly inside the five containers someone remembered to list
+   is not a component.
+*/
+.route-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  vertical-align: middle;
+}
+
+/*
+   The glyph takes the line's colour from `--mark` on the wrapper, so one
+   sprite serves every line without a file per mode.
+
+   Sized in `em` against the badge's own type, so it steps with the scale
+   rather than needing a second set of sizes on a phone (JAKAR-65).
+*/
+.mode-glyph {
+  color: var(--mark);
+  width: 1.35em; height: 1.35em;
+  flex: none;
+}
+
+.detail-title .route-mark { gap: 5px; }
+.detail-title .mode-glyph { width: 1em; height: 1em; }
+
+/*
+   A stop in the finder. `H` and `ST` on a grey plate were two letters of
+   jargon in the space a picture of the thing costs — and the finder's whole
+   job in Navigasi is telling a roadside halte from a station you walk into.
+*/
+.stop-mark {
+  flex: none;
+  width: 38px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 7px;
+  background: var(--raise);
+  border: 1px solid var(--border-soft);
+  color: var(--text-3);
+}
+.stop-glyph { width: 17px; height: 17px; }
+.result:hover .stop-mark { color: var(--text-2); }
 .result .meta { color: var(--text-3); font-size: var(--text-xs); font-weight: 400; }
 
 /* ------------------------------------------------------------- detail */
@@ -632,7 +813,7 @@ input[type=range]::-moz-range-thumb {
 .fare.free { color: var(--live); }
 .fare-note { font-size: var(--text-2xs); color: var(--text-3); margin-top: 2px; font-weight: 400; }
 
-.progress { height: 4px; border-radius: 2px; background: rgba(255,255,255,0.13); margin: 11px 0 4px; }
+.progress { height: 4px; border-radius: 2px; background: var(--track); margin: 11px 0 4px; }
 .progress span { display: block; height: 100%; border-radius: 2px; background: var(--brand-lift); }
 
 .stoplist { margin-top: 10px; max-height: 168px; overflow-y: auto; }
@@ -646,10 +827,10 @@ input[type=range]::-moz-range-thumb {
 }
 .stoprow.done { opacity: 0.42; }
 .stoprow.now { color: var(--text); font-weight: 600; }
-.stoprow.now .tick { background: var(--here); border-color: var(--here); box-shadow: 0 0 0 3px rgba(245, 197, 24, 0.18); }
+.stoprow.now .tick { background: var(--here-fill); border-color: var(--here); box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.22); }
 .stoprow .t { margin-left: auto; font-family: var(--mono); font-size: var(--text-2xs); }
 
-.access-tag { color: #35d08a; }
+.access-tag { color: #0f7a4a; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 
@@ -691,7 +872,7 @@ input[type=range]::-moz-range-thumb {
   padding: var(--s3); margin-top: var(--s2); cursor: pointer;
   transition: background-color 140ms var(--ease), border-color 140ms var(--ease);
 }
-.itin:hover { background: rgba(255,255,255,0.04); }
+.itin:hover { background: var(--raise); }
 .itin.on { border-color: var(--brand-lift); background: var(--brand-tint); cursor: default; }
 .itin-top { display: flex; align-items: baseline; gap: 8px; }
 .itin-time { font-size: var(--text-lg); font-weight: 650; }
@@ -704,16 +885,49 @@ input[type=range]::-moz-range-thumb {
   font-variant-numeric: tabular-nums;
   padding: 3px var(--s2); border-radius: 6px; color: #fff;
 }
-.leg.walk { background: rgba(255,255,255,0.1); color: var(--text-3); font-weight: 500; }
+/* A coded line is a ring here too, so rail is not a disc in the summary and a
+   ring in every other place the same line appears. */
+.leg-line {
+  background: none;
+  border: 1.5px solid var(--mark);
+  color: var(--mark);
+  width: 22px; height: 22px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+}
+.leg.walk { background: var(--track); color: var(--text-2); font-weight: 500; }
 .leg-sep { color: var(--text-3); font-size: var(--text-2xs); }
 .itin-meta { margin-top: 7px; font-size: var(--text-2xs); color: var(--text-3); }
 
 .steps { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border); }
-.step { display: flex; gap: var(--s3); padding: var(--s2) 0; font-size: var(--text-sm); align-items: flex-start; }
-.step .t { margin-left: auto; font-family: var(--mono); font-size: var(--text-2xs); color: var(--text-3); }
-.step-sub { color: var(--text-3); font-size: var(--text-2xs); margin: 2px 0; }
-.step.walk { color: var(--text-3); align-items: center; }
-.step-icon { width: 20px; text-align: center; flex: none; }
+/*
+   Two rows. The mark and the departure take the top line with the full width
+   between them; where you board and where you get off sit under it.
+
+   Side by side, the mark, three lines of prose and the time competed for a
+   344px rail, and the time lost — it was 11px grey mono, which is the one
+   number on the step a person is actually reading.
+*/
+.step { padding: var(--s2) 0; font-size: var(--text-sm); }
+.step + .step { border-top: 1px solid var(--border-soft); }
+.step-top { display: flex; align-items: center; gap: var(--s2); }
+.step .t {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: var(--text-md);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text);
+}
+.step-body { margin-top: var(--s2); padding-left: 2px; }
+.step-body div + div { margin-top: 2px; }
+.step.walk .step-top .t { font-weight: 500; color: var(--text-2); }
+.step.walk .step-body { color: var(--text-3); }
+.step-icon {
+  width: 26px; height: 26px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 7px; background: var(--raise); color: var(--text-3);
+}
 
 /* ----------------------------------------------------------- jangkauan */
 
@@ -724,7 +938,7 @@ input[type=range]::-moz-range-thumb {
 .reach-row .t { margin-left: auto; font-family: var(--mono); font-size: var(--text-xs); }
 .reach-note {
   margin-top: 11px; padding: 9px 10px; border-radius: 8px;
-  background: rgba(255,255,255,0.05); font-size: var(--text-xs); line-height: 1.45;
+  background: var(--raise); font-size: var(--text-xs); line-height: 1.45;
 }
 .reach-note.muted { color: var(--text-3); background: none; padding: 9px 0 0; }
 
@@ -732,8 +946,8 @@ input[type=range]::-moz-range-thumb {
   margin-top: 9px; padding: 8px 10px; border-radius: 8px;
   font-size: var(--text-xs); line-height: 1.4;
 }
-.hours-note.soon { background: rgba(224,139,0,0.16); color: #ffc061; }
-.hours-note.gone { background: rgba(212,20,90,0.16); color: #ff87b0; }
+.hours-note.soon { background: rgba(224, 139, 0, 0.14); color: #8a5200; }
+.hours-note.gone { background: rgba(212, 20, 90, 0.12); color: #a30f45; }
 
 /* --------------------------------------------------------- di sekitar */
 
@@ -762,9 +976,9 @@ input[type=range]::-moz-range-thumb {
 .ride-arrive { font-size: var(--text-2xs); color: var(--text-3); margin-top: 2px; }
 
 .ride-progress { display: flex; gap: 3px; margin-top: 11px; }
-.ride-seg { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); }
+.ride-seg { flex: 1; height: 4px; border-radius: 2px; background: var(--track); }
 .ride-seg.walk { flex: 0 0 14px; }
-.ride-seg.done { background: rgba(255,255,255,0.4); }
+.ride-seg.done { background: var(--track-done); }
 .ride-seg.now { background: var(--brand-lift); }
 
 .ride-controls { display: flex; align-items: center; gap: 7px; margin-top: 11px; }
@@ -790,11 +1004,11 @@ input[type=range]::-moz-range-thumb {
 .mapboxgl-ctrl-group { background: var(--panel) !important; border: 1px solid var(--border); }
 .mapboxgl-ctrl-group button + button { border-top: 1px solid var(--border); }
 .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon { filter: invert(1); }
-.mapboxgl-ctrl-attrib { background: rgba(11,15,20,0.7) !important; }
+.mapboxgl-ctrl-attrib { background: rgba(255, 255, 255, 0.78) !important; }
 .mapboxgl-ctrl-attrib a { color: var(--text-3) !important; }
 
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--track); border-radius: 4px; }
 
 /* ------------------------------------------------------------- one column
 

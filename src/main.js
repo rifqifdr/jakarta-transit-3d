@@ -9,7 +9,8 @@ import Fleet from './fleet';
 import VehicleLayer from './layers/vehicle-layer';
 import ClockControl from './ui/clock-control';
 import LayerPanel from './ui/layer-panel';
-import SearchControl, {CATEGORY_COLOR} from './ui/search-control';
+import SearchControl from './ui/search-control';
+import {installSprite, lineColorExpression, routeColor, vehicleColors} from './kodefikasi';
 import DetailPanel from './ui/detail-panel';
 import {nextDeparture, serviceSpan, servesOn} from './routing/timetable';
 import Router from './routing/router';
@@ -222,7 +223,12 @@ async function main() {
         compact: true,
         customAttribution: [
             'Jadwal: Transjakarta, KAI Commuter, MRT Jakarta, LRT Jakarta & Jabodebek',
+            'Kodefikasi lin: Pedoman Wayfinding DKI Jakarta (Kepgub 31/2022, ITDP & TfJ-FDTJ)',
             'Geometri jalur: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL)',
+            // Interline's terms for the hosted Valhalla ask for the name and a
+            // link to the terms themselves, visible to the end user. The walk
+            // table is 40,466 edges of their routing, so it is owed.
+            'Waktu jalan kaki: <a href="https://www.transit.land/terms">Transitland</a> (Valhalla)',
             'CCTV: JakCCTV / Dishub DKI, BPJT, Bina Marga',
             '<strong>Simulasi terjadwal — bukan posisi kendaraan sebenarnya</strong>'
         ]
@@ -233,9 +239,7 @@ async function main() {
 
     const vehicleLayer = new VehicleLayer(fleet);
 
-    vehicleLayer.categoryColor = new Map(configs.categories.map(c =>
-        [c.id, parseInt(c.color.slice(1), 16)]
-    ));
+    vehicleLayer.lineColor = vehicleColors(network.routes);
 
     const app = {
         map, clock, network, fleet, vehicleLayer,
@@ -312,11 +316,7 @@ async function main() {
 function addRouteLayers({map, network}) {
     map.addSource('routes', {type: 'geojson', data: network.lines});
 
-    const colorExpression = [
-        'match', ['get', 'category'],
-        ...configs.categories.flatMap(c => [c.id, c.color]),
-        '#8a94a3'
-    ];
+    const colorExpression = lineColorExpression();
 
     map.addLayer({
         id: 'route-lines',
@@ -959,6 +959,11 @@ function buildUI(app) {
         }
     });
 
+    // The mode glyphs every badge draws through. Before the panels write any
+    // markup — a `<use>` pointing at a symbol that is not in the document yet
+    // renders nothing, and silently.
+    installSprite();
+
     // Every panel the rail collects now exists, so gather them.
     buildRails();
 
@@ -1051,6 +1056,21 @@ function drawReach(app) {
     app.vehicleLayer.setDimmed(showing);
 }
 
+/*
+   A timetabled run is stored as a one-off window carrying a 1-second headway.
+   The rail sources publish departure boards rather than frequencies, so every
+   rail trip has one — and it is a sentinel meaning "this runs once", not a
+   service interval.
+
+   Read as an interval it says two false things at once: the line card offered
+   a Bogor train "tiap 0 mnt", and Warnai per frekuensi put all nine rail lines
+   in the under-5-minute band, which is the most frequent thing on the map.
+   Both were live from the day rail shipped. The feed's genuine headways start
+   at 180 s, so a minute is comfortably below anything real and comfortably
+   above the sentinel.
+*/
+const MIN_HEADWAY = 60;
+
 // Headway bands. The feed's headways run from 180 s to 52,700 s - over fourteen
 // hours - so without a sensible top band nearly every route lands in one bucket.
 const HEADWAY_BANDS = [
@@ -1077,7 +1097,7 @@ function currentHeadways({network, clock}) {
             continue;
         }
         for (const [start, end, headway] of trip.windows) {
-            if (headway > 0 && now >= start && now < end) {
+            if (headway >= MIN_HEADWAY && now >= start && now < end) {
                 const existing = headways.get(trip.route);
 
                 if (existing === undefined || headway < existing) {
@@ -1114,11 +1134,7 @@ function applyHeadwayColours(app) {
 }
 
 function applyCategoryColours({map}) {
-    map.setPaintProperty('route-lines', 'line-color', [
-        'match', ['get', 'category'],
-        ...configs.categories.flatMap(c => [c.id, c.color]),
-        '#8a94a3'
-    ]);
+    map.setPaintProperty('route-lines', 'line-color', lineColorExpression());
 }
 
 function setRouteColouring(app, mode) {
@@ -1151,7 +1167,7 @@ function applyRouteFilter({map, fleet}) {
 function selectRoute(app, route) {
     const {map, network} = app,
         trip = network.trips.find(t => t.route === route.id),
-        color = CATEGORY_COLOR.get(route.category) || '#ffffff';
+        color = routeColor(route);
 
     app.highlightedRoute = route.id;
     map.setFilter('route-highlight', ['==', ['get', 'route'], route.id]);
@@ -1177,7 +1193,7 @@ function selectRoute(app, route) {
             continue;
         }
         for (const window of candidate.windows ?? []) {
-            if (window[2] > 0) {
+            if (window[2] >= MIN_HEADWAY) {
                 headways.push(window[2]);
             }
         }

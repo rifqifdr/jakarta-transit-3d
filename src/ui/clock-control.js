@@ -12,6 +12,19 @@ function formatOffset(seconds) {
     return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(Math.floor(s) % 60)}`;
 }
 
+/**
+ * A scheduled time: `05:03`, not `05:03:00`.
+ *
+ * No departure board in the world quotes seconds, and a timetable that does
+ * reads as machine output. `formatOffset` keeps them because it drives the
+ * clock, which is the one readout that is genuinely ticking.
+ */
+function formatClock(seconds) {
+    const s = ((seconds % DAY) + DAY) % DAY;
+
+    return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}`;
+}
+
 const DATE_FORMAT = new Intl.DateTimeFormat('id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'
 });
@@ -247,9 +260,9 @@ export default class ClockControl {
  * appears to close 28 minutes after it opens.
  */
 function formatOffsetWithDay(seconds) {
-    const label = formatOffset(seconds);
+    const label = formatClock(seconds);
 
     return seconds >= DAY ? `${label} (+1)` : label;
 }
 
-export {formatOffset, formatOffsetWithDay};
+export {formatClock, formatOffset, formatOffsetWithDay};

@@ -636,13 +636,31 @@ an honest 404.
 
 ## Licence
 
-Code is MIT — see `LICENSE`. The data is not the author's to license and stays
-under its own terms: route geometry and station positions are
-© OpenStreetMap contributors under **ODbL**, timetables belong to Transjakarta,
-KAI Commuter, MRT Jakarta and the two LRT operators, and the camera streams to
-JakCCTV / Dishub DKI, BPJT and Bina Marga. The dated captures under
-`data/snapshots/` are unmodified copies of those sources, kept so a build is
-reproducible offline.
+Code is MIT — see `LICENSE`. Bundled third-party components carry their own
+notices in `THIRD-PARTY-NOTICES.md`. The data is not the author's to license
+and stays under its own terms.
+
+### Data sources and their terms
+
+| Source | What it gives | Terms |
+| --- | --- | --- |
+| Transjakarta | Official GTFS | Published openly; no licence stated by the operator or by Transitland |
+| KAI Commuter, MRT Jakarta, LRT Jakarta, LRT Jabodebek | Timetables | Published openly; read from unauthenticated public endpoints, no licence stated |
+| OpenStreetMap | Route geometry, station positions | **ODbL 1.0** — © OpenStreetMap contributors |
+| Transitland (Interline) | Pedestrian routing for the walk table | [transit.land/terms](https://www.transit.land/terms) — attribution required, and given |
+| ITDP Indonesia & TfJ-FDTJ | Line codification and colours | Lampiran to Kepgub DKI Jakarta 31/2022 |
+| JakCCTV / Dishub DKI, BPJT, Bina Marga | Camera positions and streams | Public government sources; streams are embedded live, never recorded or restreamed |
+| Plus Jakarta Sans | The typeface | **SIL OFL 1.1** — `public/fonts/OFL.txt` |
+
+**The OSM-derived artifacts are offered under ODbL.** `public/artifacts/`
+contains route geometry and station positions derived from OpenStreetMap, which
+makes it a Derivative Database; ODbL's share-alike applies to it, and it is
+published here under those terms rather than under the repository's MIT licence.
+The MIT licence covers the code.
+
+The dated captures under `data/snapshots/` are unmodified copies of those
+sources, kept so a build is reproducible offline, and each records which host
+answered on the day.
 
 **This is a scheduled simulation, not a live vehicle feed.** No Jakarta
 operator publishes GTFS-Realtime; every vehicle drawn is where its timetable

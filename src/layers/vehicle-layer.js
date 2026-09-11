@@ -230,7 +230,7 @@ export default class VehicleLayer {
             scale = me._objectScale(zoom),
             routes = fleet.network.routes,
             trips = fleet.network.trips,
-            categoryColor = me.categoryColor,
+            lineColor = me.lineColor,
             recolour = me._generation !== fleet.generation;
 
         // Rebuilt on a fleet change or a focus change; null means show all.
@@ -327,7 +327,7 @@ export default class VehicleLayer {
             if (recolour) {
                 const trip = trips[fleet.runTrip[fleet.active[i]]];
 
-                color.setHex(categoryColor.get(routes.get(trip.route).category));
+                color.setHex(lineColor.get(trip.route));
 
                 // A previewed line is drawn in its own category colour, so a
                 // vehicle of that same colour disappears into the line it is

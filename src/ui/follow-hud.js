@@ -1,5 +1,5 @@
 import configs from '../configs';
-import {CATEGORY_COLOR} from './search-control';
+import {routeColor} from '../kodefikasi';
 
 /**
  * The controls for following a vehicle.
@@ -105,7 +105,7 @@ export default class FollowHUD {
         if (me._key !== key) {
             me._key = key;
             me._badge.textContent = route?.shortName || '—';
-            me._badge.style.background = CATEGORY_COLOR.get(route?.category) || '#666';
+            me._badge.style.background = routeColor(route);
             me._headsign.textContent = info.trip?.headsign || route?.longName || '';
         }
 

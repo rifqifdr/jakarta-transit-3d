@@ -11,9 +11,9 @@
  * it — the buses it passes, the traffic on the corridor — is the same
  * simulation the rest of the map is showing.
  */
-import {formatOffset} from './clock-control';
+import {formatClock} from './clock-control';
 import {formatRemaining} from './format';
-import {CATEGORY_COLOR} from './search-control';
+import {routeColor, routeMark} from '../kodefikasi';
 
 // Wound back slightly before departure so the ride opens with the bus pulling
 // away rather than already under way.
@@ -241,7 +241,7 @@ export default class Ride {
         el.sub.innerHTML = sub;
         el.badge.innerHTML = badge;
         el.eta.textContent = formatRemaining(remaining);
-        el.arrive.textContent = `tiba ${formatOffset(arrival)}`;
+        el.arrive.textContent = `tiba ${formatClock(arrival)}`;
         el.step.textContent = `Tahap ${me.index + 1} / ${total}`;
         el.speed.textContent = `${me.clock.speed}\u00d7`;
         el.camera.textContent = me.camera === 'onboard' ? 'Dari atas' : 'Dari dalam';
@@ -307,14 +307,14 @@ export default class Ride {
                     `Menunggu di ${to ? to.name : entry.leg.to}` :
                     `Jalan ke ${to ? to.name : entry.leg.to}`,
                 sub: state.waiting ?
-                    `Keberangkatan berikutnya ${formatOffset(entry.to)}` :
+                    `Keberangkatan berikutnya ${formatClock(entry.to)}` :
                     `${Math.round(entry.leg.seconds / 60)} menit jalan kaki`
             };
         }
 
         const route = me.network.routes.get(entry.leg.route),
-            color = CATEGORY_COLOR.get(route.category) || '#666',
-            badge = `<span class="badge" style="background:${color}">${route.shortName}</span>`,
+            color = routeColor(route),
+            badge = routeMark(route),
             to = me.network.stops.get(entry.leg.to);
 
         if (!state.info) {
@@ -326,7 +326,7 @@ export default class Ride {
                     `Menunggu di ${at ? at.name : entry.leg.from}` :
                     'Kendaraan ini sedang tidak beroperasi',
                 sub: state.boarding ?
-                    `Berangkat ${formatOffset(entry.leg.departure)}` :
+                    `Berangkat ${formatClock(entry.leg.departure)}` :
                     entry.leg.headsign || route.longName
             };
         }

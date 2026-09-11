@@ -23,20 +23,30 @@ commissioned as the city's own typeface, which is the whole reason it is here.
 
 ## Palette
 
-Colours come from `src/configs.js` `categories` — the real operator liveries —
-not from a second palette invented for the UI.
+Paper, not night. The panels were dark when the basemap was a private dark
+style and the fleet was the only colour on it; the basemap is stock Standard in
+full colour now, and the case to design for is a rider reading a halte card in
+Jakarta daylight. One palette, at the token level — a dark theme would be a
+second token block, not a second stylesheet.
+
+Colours come from `src/configs.js` `categories` and from `src/kodefikasi.js`
+— the real operator liveries and the city's own line colours — not from a
+second palette invented for the UI.
 
 | Token | Value | Means |
 | --- | --- | --- |
 | `--brand` | `#0d5eaf` | Transjakarta enamel blue. A **fill**, white type on it. |
-| `--brand-lift` | `#56a8ee` | The readable tint — text, edges, focus rings. |
-| `--live` | `#2fd07a` | The clock is on real time. Nothing else. |
-| `--here` | `#f5c518` | You are here, now. Platform-edge yellow. Nothing else. |
-| `--danger` | `#ff6a6a` | Hover-only warning on `.btn-danger`. |
+| `--brand-lift` | `#0d5eaf` | The readable tint — text, edges, focus rings. On paper the enamel blue already is it. |
+| `--live` | `#0f9d57` | The clock is on real time. Nothing else. |
+| `--here` | `#b8860b` | You are here, now. The ink-dark collar. |
+| `--here-fill` | `#f5c518` | The platform-edge yellow itself, for the tick. |
+| `--danger` | `#c92a2a` | Hover-only warning on `.btn-danger`. |
 
 Ink is four levels: `--text`, `--text-2`, `--text-3`, `--text-4`. Two is flat.
 Surfaces are one hue, lightness only: `--bg` → `--panel` → `--raise`, with
-`--sink` for inputs, which are inset because they receive content.
+`--sink` for inputs, which are inset because they receive content. Troughs — a
+progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
+`--press`: ink at low alpha, where a dark panel used white.
 
 ## Scale
 
@@ -61,6 +71,19 @@ Surfaces are one hue, lightness only: `--bg` → `--panel` → `--raise`, with
 - `.result` — 52px min, 15px/500. The most-tapped row in the app.
 - `.badge` — 26px h · 38px min-w · 13px/800 tabular. The corridor number, set
   like the enamel plate it comes from.
+- `.badge-line` — 26px disc, 2.5px collar, no fill. A coded rail line, as the
+  pedoman draws it. Collar and letter both from `--mark`.
+- `.route-mark` — the glyph and the badge as **one** inline-flex object with a
+  6px gap of its own. Never space these from the parent's gap.
+- `.mode-glyph` — 1.35em, one `<symbol>` per mode from the sprite in
+  `src/kodefikasi.js`, coloured through `--mark`.
+- `.stop-mark` — 38x26 well holding a halte or stasiun glyph. The finder's
+  stop row.
+- `.toggle` — 40px row: icon, label, then `.switch` at the trailing edge. The
+  real `<input>` is visually hidden inside it, never removed.
+- `.switch` — 38x22 pill, 18px knob, `--track` off and `--brand` on.
+- `.step` — two rows: `.step-top` (mark, then time at 15px mono) over
+  `.step-body`.
 - `.sorts` — a segmented control: one inset track, the choice filled inside it
 - `.finder-tab` — 48px h, 2px bottom border in `--brand-lift` when on
 

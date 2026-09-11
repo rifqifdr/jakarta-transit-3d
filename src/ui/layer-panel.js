@@ -1,4 +1,5 @@
 import configs from '../configs';
+import {icon} from '../kodefikasi';
 
 /**
  * Mapbox Standard's own themes. Three, not four — `custom` is in the schema but
@@ -16,6 +17,52 @@ const BASEMAP_THEMES = [
     {id: 'faded', label: 'Pudar', hint: 'Kota diredam, armada lebih menonjol'},
     {id: 'monochrome', label: 'Mono', hint: 'Kota tanpa warna — armada paling menonjol'}
 ];
+
+/** A mode's glyph, for the group header. Same four the fleet is drawn with. */
+const MODE_GLYPH = {
+    bus: 'bus',
+    commuter_rail: 'krl',
+    metro: 'mrt',
+    light_rail: 'lrt'
+};
+
+/*
+   The map layers, as rows.
+
+   Each carries an icon because a column of identical checkboxes gives a reader
+   nothing to aim at — the eye lands on the icon and the label confirms it,
+   which is how both reference apps build this list. `CCTV` and `Halte
+   aksesibel` are named the way a rider would say them rather than the way the
+   layer is implemented.
+*/
+const LAYER_TOGGLES = [
+    {layer: 'routes', icon: 'jalur', label: 'Jalur rute', on: true},
+    {layer: 'stops', icon: 'halte', label: 'Halte', on: true},
+    {layer: 'buildings', icon: 'gedung', label: 'Gedung 3D', on: true},
+    {layer: 'accessible', icon: 'aksesibel', label: 'Halte aksesibel'},
+    {layer: 'headway', icon: 'frekuensi', label: 'Warnai per frekuensi'}
+];
+
+const CAMERA_TOGGLE = {layer: 'cameras', icon: 'cctv', label: 'CCTV', className: 'cam-toggle'};
+
+/*
+   Icon and label on the left, the switch on the right.
+
+   A native checkbox sat between the icon and the words and made every row
+   start with the same 18px square; moved to the trailing edge the switches
+   line up in one column and the row reads left to right as a thing and then
+   its state. The input is still there and still what the handler binds to —
+   it is visually hidden, not replaced, so the label, the keyboard and the
+   accessibility tree all keep working.
+*/
+function toggle({layer, icon: name, label, on, className = ''}) {
+    return `<label class="toggle ${className}">
+        ${icon(name, 'toggle-icon')}
+        <span class="toggle-label">${label}</span>
+        <input type="checkbox" data-layer="${layer}"${on ? ' checked' : ''}>
+        <span class="switch" aria-hidden="true"></span>
+    </label>`;
+}
 
 /**
  * Toggles for the service categories and the supporting map layers.
@@ -57,6 +104,7 @@ export default class LayerPanel {
             ${groups.map(group => `
                 <div class="mode-group" data-mode="${group.id}">
                     <div class="mode-head js-mode">
+                        ${icon(MODE_GLYPH[group.id] || 'bus', 'mode-icon')}
                         <span class="mode-name">${group.label}</span>
                         <span class="n">${group.count}</span>
                     </div>
@@ -78,13 +126,9 @@ export default class LayerPanel {
                 `).join('')}
             </div>
             <div class="layer-sep"></div>
-            <label class="toggle"><input type="checkbox" data-layer="routes" checked> Jalur rute</label>
-            <label class="toggle"><input type="checkbox" data-layer="stops" checked> Halte</label>
-            <label class="toggle"><input type="checkbox" data-layer="buildings" checked> Gedung 3D</label>
-            <label class="toggle"><input type="checkbox" data-layer="accessible"> Hanya halte aksesibel</label>
-            <label class="toggle"><input type="checkbox" data-layer="headway"> Warnai per frekuensi</label>
+            ${LAYER_TOGGLES.map(t => toggle(t)).join('')}
             <div class="headway-legend"></div>
-            <label class="toggle cam-toggle"><input type="checkbox" data-layer="cameras"> Kamera langsung</label>
+            ${toggle(CAMERA_TOGGLE)}
             <div class="cam-hint" hidden>Hanya tersedia dalam mode LIVE</div>
             </div>
         `;

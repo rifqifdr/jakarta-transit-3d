@@ -1,6 +1,4 @@
-import configs from '../configs';
-
-const CATEGORY_COLOR = new Map(configs.categories.map(c => [c.id, c.color]));
+import {routeCode, routeMark, stopMark} from '../kodefikasi';
 
 /**
  * The finder: one panel at the top of the left rail, in two modes.
@@ -189,7 +187,7 @@ export default class SearchControl {
         me._results.innerHTML = !query ? '' : me._match(query)
             .map(item => `
                 <div class="result" data-kind="${item.kind}" data-id="${item.id}">
-                    <span class="badge" style="background:${item.color}">${item.badge}</span>
+                    ${item.mark}
                     <span>
                         <div>${item.title}</div>
                         <div class="meta">${item.meta}</div>
@@ -212,11 +210,11 @@ export default class SearchControl {
                     routes.push({
                         kind: 'route',
                         id: route.id,
-                        badge: route.shortName || '—',
+                        badge: routeCode(route),
+                        mark: routeMark(route),
                         // Exact and prefix matches on the route number are what
                         // a rider usually means, so rank those first.
                         rank: short === query ? 0 : short.startsWith(query) ? 1 : 2,
-                        color: CATEGORY_COLOR.get(route.category) || '#666',
                         title: route.longName || route.shortName,
                         meta: route.category
                     });
@@ -233,8 +231,8 @@ export default class SearchControl {
                     kind: 'stop',
                     id: stop.id,
                     badge: stop.station ? 'ST' : 'H',
+                    mark: stopMark(stop),
                     rank: name.startsWith(query) ? 0 : 1,
-                    color: '#42505f',
                     title: stop.name,
                     meta: `${me.network.routesAt(stop).size} rute`
                 });
@@ -244,5 +242,3 @@ export default class SearchControl {
     }
 
 }
-
-export {CATEGORY_COLOR};

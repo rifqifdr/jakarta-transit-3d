@@ -10,8 +10,8 @@
  * one. The finder's two fields now hold that state and can be typed into
  * directly, so the bar had nothing left to say and was removed.
  */
-import {formatOffset} from './clock-control';
-import {CATEGORY_COLOR} from './search-control';
+import {formatClock} from './clock-control';
+import {lineOf, routeCode, routeColor, routeMark} from '../kodefikasi';
 import {formatFare} from '../routing/fares';
 import {formatDuration} from './format';
 
@@ -152,7 +152,7 @@ export default class Journey {
                 <div>
                     <div class="detail-title">${me.from.name} → ${me.to.name}</div>
                     <div class="detail-sub">
-                        Berangkat ${formatOffset(me.time)} &middot; ${me.results.length} pilihan
+                        Berangkat ${formatClock(me.time)} &middot; ${me.results.length} pilihan
                     </div>
                 </div>
                 <button class="detail-close" type="button" title="Tutup">&times;</button>
@@ -186,17 +186,24 @@ export default class Journey {
                     return `<span class="leg walk">${minutes(leg.seconds)} jalan</span>`;
                 }
 
-                const route = me.network.routes.get(leg.route),
-                    color = CATEGORY_COLOR.get(route.category) || '#666';
+                const route = me.network.routes.get(leg.route);
 
-                return `<span class="leg ride" style="background:${color}">${route.shortName}</span>`;
+                // No glyph on a leg chip: three of them wrap at 390px as it
+                // is, and the itinerary is read as a sequence of codes. A
+                // coded line still wears its ring here, or rail would be a
+                // disc in the summary and a ring everywhere else.
+                const coded = lineOf(route),
+                    color = routeColor(route);
+
+                return `<span class="leg ride${coded ? ' leg-line' : ''}" style="--mark:${
+                    color}${coded ? '' : `;background:${color}`}">${routeCode(route)}</span>`;
             }).join('<span class="leg-sep">›</span>');
 
         return `
             <div class="itin ${selected ? 'on' : ''}" data-index="${index}">
                 <div class="itin-top">
                     <span class="itin-time">${minutes(itinerary.duration)}</span>
-                    <span class="itin-clock">${formatOffset(itinerary.departure)} – ${formatOffset(itinerary.arrival)}</span>
+                    <span class="itin-clock">${formatClock(itinerary.departure)} – ${formatClock(itinerary.arrival)}</span>
                     <span class="itin-fare ${itinerary.fare.total === 0 ? 'free' : ''}">${formatFare(itinerary.fare.total)}</span>
                 </div>
                 <div class="itin-legs">${legs}</div>
@@ -218,29 +225,43 @@ export default class Journey {
                 const from = me.network.stops.get(leg.from),
                     to = me.network.stops.get(leg.to);
 
+                /*
+                   Two rows, not one: the mark and the time take the top line
+                   with the whole width between them, and the stops sit under
+                   it. Side by side the three fought over a 344px rail, which
+                   is what kept the departure time at 11px — the one number on
+                   the step somebody is actually reading.
+                */
                 if (leg.type === 'walk') {
                     return `
                         <div class="step walk">
-                            <span class="step-icon">⇢</span>
-                            <span>${leg.fromPoint ? 'Jalan dari titik Anda ke' : 'Jalan ke'}
-                                <strong>${to ? to.name : leg.to}</strong></span>
-                            <span class="t">${minutes(leg.seconds)}</span>
+                            <div class="step-top">
+                                <span class="step-icon">⇢</span>
+                                <span class="t">${minutes(leg.seconds)}</span>
+                            </div>
+                            <div class="step-body">${
+                                leg.fromPoint ? 'Jalan dari titik Anda ke' : 'Jalan ke'}
+                                <strong>${to ? to.name : leg.to}</strong></div>
                         </div>
                     `;
                 }
 
-                const route = me.network.routes.get(leg.route),
-                    color = CATEGORY_COLOR.get(route.category) || '#666';
+                const route = me.network.routes.get(leg.route);
 
+                // The headsign and the stop count are dropped deliberately.
+                // Where you get on and where you get off is what a step is
+                // for; the rest was three lines of prose per leg, and four
+                // legs of it read as a paragraph rather than a journey.
                 return `
                     <div class="step">
-                        <span class="badge" style="background:${color}">${route.shortName}</span>
-                        <span>
+                        <div class="step-top">
+                            ${routeMark(route)}
+                            <span class="t">${formatClock(leg.departure)}</span>
+                        </div>
+                        <div class="step-body">
                             <div>Naik di <strong>${from ? from.name : leg.from}</strong></div>
-                            <div class="step-sub">${leg.headsign || route.longName} &middot; ${leg.stops} perhentian</div>
                             <div>Turun di <strong>${to ? to.name : leg.to}</strong></div>
-                        </span>
-                        <span class="t">${formatOffset(leg.departure)}</span>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -311,7 +332,7 @@ export default class Journey {
                 type: 'Feature',
                 properties: {
                     kind: 'ride',
-                    color: CATEGORY_COLOR.get(route.category) || '#666'
+                    color: routeColor(route)
                 },
                 geometry: {type: 'LineString', coordinates}
             });

@@ -1,6 +1,6 @@
-import {formatOffset, formatOffsetWithDay} from './clock-control';
+import {formatClock, formatOffsetWithDay} from './clock-control';
 import {formatDuration} from './format';
-import {CATEGORY_COLOR} from './search-control';
+import {routeColor, routeMark, lineName} from '../kodefikasi';
 
 const RUPIAH = new Intl.NumberFormat('id-ID');
 
@@ -155,13 +155,13 @@ export default class DetailPanel {
     _buildVehicle(info) {
         const me = this,
             {trip, route} = info,
-            color = CATEGORY_COLOR.get(route.category) || '#666',
+            color = routeColor(route),
             fare = me.network.fareForRoute(route.id),
             transferNote = formatTransfers(fare);
 
         me.el.innerHTML = `
             <div class="detail-head">
-                <span class="badge" style="background:${color}">${route.shortName || '—'}</span>
+                ${routeMark(route)}
                 <div>
                     <div class="detail-title">${trip.headsign || route.longName}</div>
                     <div class="detail-sub">${route.category} &middot; ${route.longName}</div>
@@ -179,7 +179,7 @@ export default class DetailPanel {
                 </div>
                 <div class="row">
                     <span class="k">Berangkat</span>
-                    <span class="v">${formatOffset(info.departure)}</span>
+                    <span class="v">${formatClock(info.departure)}</span>
                 </div>
                 <div class="row">
                     <span class="k">Perhentian</span>
@@ -242,7 +242,7 @@ export default class DetailPanel {
                     <div class="stoprow ${state}">
                         <span class="tick"></span>
                         <span>${stop ? stop.name : stops[i]}</span>
-                        <span class="t">${formatOffset(info.departure + trip.arrivals[i])}</span>
+                        <span class="t">${formatClock(info.departure + trip.arrivals[i])}</span>
                     </div>
                 `);
             }
@@ -295,6 +295,10 @@ export default class DetailPanel {
                 </div>
             `).join(''),
             facts = [
+                // The pedoman's own name for the line, where it has one. The
+                // feed says "COMMUTER LINE BOGOR" and the platform says "Lin
+                // Sentral"; a rider who has read the signage deserves both.
+                lineName(route),
                 stops.length ? `${stops.length} perhentian` : null,
                 headway ? (headwayMax && Math.round(headwayMax / 60) !== Math.round(headway / 60)
                     ? `tiap ${Math.round(headway / 60)}-${Math.round(headwayMax / 60)} mnt`
@@ -306,7 +310,7 @@ export default class DetailPanel {
             <div class="detail-head">
                 <div>
                     <div class="detail-title">
-                        <span class="badge" style="background:${color}">${escape(route.shortName || '—')}</span>
+                        ${routeMark(route)}
                         ${escape(route.longName || route.shortName || '')}
                     </div>
                     <div class="detail-sub">${escape(facts)}</div>
@@ -458,9 +462,7 @@ export default class DetailPanel {
                     </div>
                     <div class="near-deps">
                         ${departures.length ? departures.map(d => `
-                            <span class="badge" style="background:${
-                                CATEGORY_COLOR.get(d.route.category) || '#666'
-                            }">${d.route.shortName}</span>
+                            ${routeMark(d.route, {glyph: false})}
                             <span class="near-wait">${d.wait <= 0 ? 'tiba' : formatDuration(d.wait)}</span>
                         `).join('') : '<span class="near-wait">tidak ada layanan</span>'}
                     </div>
@@ -508,9 +510,7 @@ export default class DetailPanel {
             chips = routeIds.slice(0, 24).map(id => {
                 const route = me.network.routes.get(id);
 
-                return `<span class="badge" style="background:${
-                    CATEGORY_COLOR.get(route.category) || '#666'
-                }">${route.shortName}</span>`;
+                return routeMark(route, {glyph: false});
             }).join(''),
             // Official interchange walks, where the feed records them.
             walkRows = me.network.transfersFrom(stop).map(({stop: target, minTime}) => `
@@ -598,9 +598,7 @@ export default class DetailPanel {
     _updateDepartures(departures) {
         this._el.departures.innerHTML = departures.length ? departures.map(d => `
             <div class="stoprow">
-                <span class="badge" style="background:${
-                    CATEGORY_COLOR.get(d.route.category) || '#666'
-                }">${d.route.shortName}</span>
+                ${routeMark(d.route)}
                 <span>${d.headsign}</span>
                 <span class="t">${d.wait <= 0 ? 'tiba' : formatDuration(d.wait)}</span>
             </div>
