@@ -10,6 +10,7 @@ import VehicleLayer from './layers/vehicle-layer';
 import ClockControl from './ui/clock-control';
 import LayerPanel from './ui/layer-panel';
 import SearchControl from './ui/search-control';
+import Credits from './ui/credits';
 import {installSprite, lineColorExpression, routeColor, vehicleColors} from './kodefikasi';
 import DetailPanel from './ui/detail-panel';
 import {nextDeparture, serviceSpan, servesOn} from './routing/timetable';
@@ -221,18 +222,55 @@ async function main() {
     // will find it.
     map.addControl(new mapboxgl.AttributionControl({
         compact: true,
+        /*
+           Two lines, and the rest behind them.
+
+           Five credits crammed into the badge was a credit that read as
+           boilerplate — the operators whose timetables this map *is* arrived as
+           a run-on sentence. `Sumber data` opens a panel that can name what
+           each source gave; ODbL, Mapbox's own terms and Interline's all ask
+           for attribution that a reader can reach, and one labelled control is
+           more reachable than five lines behind an `(i)`.
+
+           The simulation line stays out here. It is the one thing a casual
+           visitor has to see without opening anything.
+
+           The trigger is not in here, and cannot be: Mapbox sanitises
+           `customAttribution` hard. A `<button>` arrived as bare text and an
+           `<a class="js-credits">` lost its class, both of which look operable
+           and are not. So the trigger is a control of our own, added below,
+           and this line carries only what must be read without opening
+           anything.
+        */
         customAttribution: [
-            'Jadwal: Transjakarta, KAI Commuter, MRT Jakarta, LRT Jakarta & Jabodebek',
-            'Kodefikasi lin: Pedoman Wayfinding DKI Jakarta (Kepgub 31/2022, ITDP & TfJ-FDTJ)',
-            'Geometri jalur: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> (ODbL)',
-            // Interline's terms for the hosted Valhalla ask for the name and a
-            // link to the terms themselves, visible to the end user. The walk
-            // table is 40,466 edges of their routing, so it is owed.
-            'Waktu jalan kaki: <a href="https://www.transit.land/terms">Transitland</a> (Valhalla)',
-            'CCTV: JakCCTV / Dishub DKI, BPJT, Bina Marga',
             '<strong>Simulasi terjadwal — bukan posisi kendaraan sebenarnya</strong>'
         ]
     }), 'bottom-right');
+
+    /*
+       The credits trigger, as a control rather than as a line inside Mapbox's
+       attribution — see the note on `customAttribution` above for why it
+       cannot live there.
+
+       `bottom-left`, beside the Mapbox wordmark, and not `bottom-right` where
+       a credits link would more naturally sit: an unfolded Layanan reaches the
+       bottom of a 900px window, so the right-hand control stack is underneath
+       the rail at desktop heights. Measured, not guessed —
+       `elementFromPoint` over the trigger returned `.panel-title`.
+    */
+    map.addControl({
+        onAdd() {
+            const el = document.createElement('div');
+
+            el.className = 'mapboxgl-ctrl credits-ctrl';
+            el.innerHTML = '<button type="button" class="js-credits">Sumber data</button>';
+            this._el = el;
+            return el;
+        },
+        onRemove() {
+            this._el.remove();
+        }
+    }, 'bottom-left');
 
     map.addControl(new mapboxgl.NavigationControl({visualizePitch: true}), 'bottom-right');
     map.addControl(new mapboxgl.GeolocateControl({trackUserLocation: true}), 'bottom-right');
@@ -963,6 +1001,18 @@ function buildUI(app) {
     // markup — a `<use>` pointing at a symbol that is not in the document yet
     // renders nothing, and silently.
     installSprite();
+
+    // The trigger lives inside Mapbox's own attribution markup, which is
+    // rebuilt whenever the style's sources change, so the listener is
+    // delegated from the document rather than bound to a button that may be
+    // replaced under it.
+    app.credits = new Credits();
+    document.addEventListener('click', event => {
+        if (event.target.closest('.js-credits')) {
+            event.preventDefault();
+            app.credits.show();
+        }
+    });
 
     // Every panel the rail collects now exists, so gather them.
     buildRails();

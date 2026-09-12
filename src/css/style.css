@@ -1358,3 +1358,159 @@ input[type=range]::-moz-range-thumb {
 /* Toll cameras answer a different question from street ones, and the badge
    says so before the picture loads. */
 .cam-badge.toll { background: #f0a94a; color: #2a1802; }
+
+/* ------------------------------------------------------------- credits */
+
+/*
+   Who the data belongs to, as a panel.
+
+   The trigger sits inside Mapbox's attribution, so it has to look like the
+   text around it rather than like a button dropped into a credit line — the
+   only thing marking it as operable is that it underlines and takes the
+   accent on hover.
+*/
+/*
+   The trigger sits with the map's own controls, so it borrows their ground
+   rather than the panel's: a small pill that reads as part of the credit
+   furniture instead of as an action the map wants you to take.
+*/
+/* Clear of the wordmark it shares the corner with, and clear of the credit
+   strip that neither of them may be pushed out of (trap 13). */
+.credits-ctrl { margin: 0 0 26px var(--s3); }
+.credits-ctrl button {
+  font-family: var(--font);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  min-height: 26px;
+  padding: 0 var(--s3);
+  cursor: pointer;
+  box-shadow: var(--ring);
+  transition: background-color 140ms var(--ease), color 140ms var(--ease);
+}
+.credits-ctrl button:hover { color: var(--text); background: var(--panel-solid); }
+.credits-ctrl button:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: 2px; }
+
+.credits-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: var(--s5);
+  background: rgba(13, 26, 40, 0.44);
+  backdrop-filter: blur(2px);
+}
+.credits-scrim[hidden] { display: none; }
+
+.credits {
+  width: min(520px, 100%);
+  max-height: min(720px, 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  pointer-events: auto;
+}
+
+.credits-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s5) var(--s5) var(--s4);
+  border-bottom: 1px solid var(--border);
+}
+.credits-title {
+  margin: 0;
+  flex: 1;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+/* 36px of paint, 44px of reach — the same bargain every small control here
+   makes. */
+.credits-close {
+  flex: none;
+  width: 36px; height: 36px;
+  margin: -4px -6px -4px 0;
+  display: grid; place-items: center;
+  background: none; border: 0; border-radius: 8px;
+  color: var(--text-3);
+  font-size: var(--text-xl);
+  font-family: var(--font);
+  line-height: 1;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 140ms var(--ease), color 140ms var(--ease);
+}
+.credits-close::after { content: ''; position: absolute; inset: -4px; }
+.credits-close:hover { background: var(--raise); color: var(--text); }
+.credits-close:active { transform: scale(0.94); }
+
+.credits-body {
+  padding: var(--s2) var(--s5) var(--s5);
+  overflow-y: auto;
+  flex: 0 1 auto;
+}
+
+.credit-group + .credit-group {
+  margin-top: var(--s5);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--border-soft);
+}
+.credit-group-title {
+  margin: var(--s4) 0 var(--s3);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.credit-group + .credit-group .credit-group-title { margin-top: 0; }
+.credit-note {
+  margin: calc(var(--s2) * -1) 0 var(--s3);
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  line-height: 1.45;
+}
+
+/* One source, one row. Name in full ink, what it gave underneath — the same
+   two-level shape the finder's result rows use. */
+.credit + .credit { margin-top: var(--s3); }
+.credit-name {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--text);
+}
+.credit-name a { color: var(--text); text-decoration: none; }
+.credit-name a:hover { color: var(--brand); text-decoration: underline; text-underline-offset: 2px; }
+.credit-detail {
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  line-height: 1.45;
+  margin-top: 1px;
+}
+
+.credits-foot {
+  padding: var(--s4) var(--s5);
+  border-top: 1px solid var(--border);
+  background: var(--raise);
+  border-radius: 0 0 var(--r-panel) var(--r-panel);
+  font-size: var(--text-xs);
+  color: var(--text-2);
+  line-height: 1.5;
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .credits-scrim { padding: var(--s3); align-items: end; }
+  .credits { max-height: 88vh; }
+  /* The left corner is relocated below the header on a phone, where there is
+     no wordmark to clear. */
+  .credits-ctrl { margin: 0 0 0 var(--s1); }
+}

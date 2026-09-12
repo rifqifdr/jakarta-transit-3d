@@ -84,6 +84,9 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
 - `.switch` — 38x22 pill, 18px knob, `--track` off and `--brand` on.
 - `.step` — two rows: `.step-top` (mark, then time at 15px mono) over
   `.step-body`.
+- `.credits-scrim` / `.credits` — the data-source panel, opened from the
+  `Sumber data` control in the map's bottom-left corner. Scrim closes, panel
+  does not; Escape closes; the close control takes focus on open.
 - `.sorts` — a segmented control: one inset track, the choice filled inside it
 - `.finder-tab` — 48px h, 2px bottom border in `--brand-lift` when on
 

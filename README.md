@@ -640,6 +640,9 @@ Code is MIT — see `LICENSE`. Bundled third-party components carry their own
 notices in `THIRD-PARTY-NOTICES.md`. The data is not the author's to license
 and stays under its own terms.
 
+The running map credits these in **Sumber data**, a panel opened from the
+control in its bottom-left corner.
+
 ### Data sources and their terms
 
 | Source | What it gives | Terms |

@@ -129,7 +129,7 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/layers/vehicle-geometry.js` | The Kapsul body, built per mode inside one base box |
 | `src/kodefikasi.js` | Line codes, line colours and the mode glyph sprite (JAKAR-50) |
 | `src/cameras.js` | Live CCTV: artifact loading, the map pin, and the HLS player |
-| `src/ui/` | Panels: clock, layers, search, detail, journey, reach, ride |
+| `src/ui/` | Panels: clock, layers, search, detail, journey, reach, ride, credits |
 | `#left-rail` | Search, journey bar and detail card in one column (JAKAR-25) |
 | `src/data/artifact-loader.js` | Manifest-first loading, mode gating, IndexedDB cache |
 | `src/data/decode.worker.js` | Binary decode, off the main thread |
@@ -707,6 +707,27 @@ equivalent for Netlify.
   and a rebuild then moved the network under the routing checks. Expected
   either way, not a regression: `public/data/` is a fixed control and is only
   regenerated deliberately.
+- **The credits are a panel, not a line** (`src/ui/credits.js`). Five sources
+  crammed into Mapbox's badge was technically a credit and read as boilerplate;
+  the operators whose timetables this map *is* arrived as a run-on sentence
+  behind an `(i)`. `Sumber data` opens a panel that says what each source
+  actually gave, and only data sources are in it — the typeface and the
+  bundled libraries have their obligations met in `THIRD-PARTY-NOTICES.md`, and
+  putting them in front of a rider looking for who runs the Bogor line would
+  bury the answer.
+  - **`customAttribution` cannot host a trigger. Mapbox sanitises it hard** — a
+    `<button>` came through as bare text and an `<a class="js-credits">` lost
+    its class, both of which look operable and are not. Only `<a href="http…">`
+    survives intact. So the trigger is a control of our own.
+  - **It is in `bottom-left`, not `bottom-right`**, where a credits link would
+    more naturally sit: an unfolded Layanan reaches the bottom of a 900px
+    window, so the right-hand control stack is *underneath* the rail at desktop
+    heights. Measured rather than guessed — `elementFromPoint` over the trigger
+    returned `.panel-title`. Worth knowing for anything else put in that
+    corner.
+  - **The simulation line stays out in the attribution.** It is the one thing a
+    casual visitor has to see without opening anything, which is why it did not
+    move into the panel with everything else.
 - **The map credits its own data now.** Route geometry is OSM-derived, which
   ODbL requires be said, and Mapbox's default control only covers the basemap —
   so the default control is off and one carrying `customAttribution` replaces
