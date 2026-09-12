@@ -7,6 +7,34 @@ clock. Around 6,600 vehicles move at the evening peak, across all four modes.
 > **Vision:** make people have visibility regarding public transportation in
 > Jakarta or the Greater Jakarta Area.
 
+**Where this is going: a thematic map of Greater Jakarta, with one entry.**
+Four themes — **Angkutan Umum** (the opening, and the foundation the other
+three borrow), **Warga dan Kota**, **Air dan Tanah**, **Udara dan Cuaca**.
+Phase 1 is the layers; phase 2 is a small set of *authored* analyses that
+combine them. Not a mapping SaaS: the opening view is an opinion, and the
+analyses are written rather than assembled. JAKAR-68 onward, and the theme
+shell blocks the rest.
+
+Three decisions carry all of it:
+
+- **Layers store values, not appearances** — `{geometry, value, unit}`,
+  coloured at render. Density already baked to red cannot be multiplied by a
+  reachability result, and that is the whole bet of the two-phase split.
+- **The channel budget**: at most one ground fill, one point layer, one line
+  layer, plus the dimmed network. Two choropleths never co-exist, not even
+  inside one theme. **The legibility limit and the GPU limit are the same
+  limit** — the basemap is ~95% of a street-level frame and the whole fleet is
+  0.2-2.6 ms, so what hurts is several heavy layers at once, which is exactly
+  what the budget forbids. One rule enforces both.
+- **Precompute rather than warn.** Five of six planned analyses are build-time
+  jobs shipped as artifacts; at runtime they are lookups — the same trade
+  `patterns.bin` already makes. For anything that must run live, build a
+  *bound* (max time, max points, a stop button), because "this is expensive"
+  is a warning nobody can act on.
+
+**The transit-only shape is tagged `v1.0-transit`** and archived outside the
+repo. It is recoverable exactly: `git checkout v1.0-transit`.
+
 **The direction changed on 2026-09-12: this is a spatial visualisation, not a
 trip planner.** A→B journey planning is gone — Google Maps, Moovit and Waze all
 do it and do it with live traffic, and competing with them was spending the
