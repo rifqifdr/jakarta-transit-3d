@@ -2,7 +2,7 @@
  * The map's state, in the address bar.
  *
  * Everything else in this app is worth sending to someone — a corridor at the
- * morning peak, a planned journey, how far you can get from a stop for nothing,
+ * morning peak, how far you can get from a stop for nothing,
  * what a toll carriageway looks like right now. None of it was shareable until
  * this existed.
  *
@@ -65,12 +65,6 @@ export function readState() {
     state.route = params.get('route');
     state.bus = params.get('bus');
     state.follow = params.get('follow') === '1';
-    state.from = params.get('from');
-    state.fromPoint = (params.get('fromll') || '').split(',').map(Number);
-    if (state.fromPoint.length !== 2 || !state.fromPoint.every(Number.isFinite)) {
-        state.fromPoint = null;
-    }
-    state.to = params.get('to');
     state.reach = params.get('reach');
     state.budget = number(params.get('budget'));
     state.free = params.get('free') === '1';
@@ -82,7 +76,7 @@ export function readState() {
 
 /** Serialises the app's current state into a query string. */
 export function serialise(app) {
-    const {map, clock, journey, reach, fleet} = app,
+    const {map, clock, reach, fleet} = app,
         params = new URLSearchParams(),
         centre = map.getCenter();
 
@@ -112,14 +106,7 @@ export function serialise(app) {
         }
     }
 
-    if (journey.from && journey.to) {
-        if (journey.from.id) {
-            params.set('from', journey.from.id);
-        } else {
-            params.set('fromll', `${journey.from.lon.toFixed(5)},${journey.from.lat.toFixed(5)}`);
-        }
-        params.set('to', journey.to.id);
-    } else if (reach.active) {
+    if (reach.active) {
         params.set('reach', reach.origin.id);
         params.set('budget', String(reach.budget));
         if (reach.freeOnly) {
@@ -143,7 +130,7 @@ export function serialise(app) {
     // Outside the chain above rather than in it: a camera is an overlay, not
     // one of the mutually exclusive selections. Opening one already clears the
     // stop and the vehicle, so the chain writes nothing while a camera is up —
-    // except a drawn journey, which stays on the map and stays in the link.
+    // except a reachability set, which stays on the map and stays in the link.
     if (app.selectedCamera) {
         params.set('cam', app.selectedCamera.id);
     }
@@ -202,23 +189,13 @@ export function applyState(app, state, handlers) {
         handlers.onRoute(network.routes.get(state.route));
     }
 
-    // Restoring a journey or a reachability set would normally reframe the map;
+    // Restoring a reachability set would normally reframe the map;
     // an explicit camera in the link takes precedence over that.
     app.restoringCamera = !!state.center;
 
     const stopOf = id => (id ? network.stops.get(id) : null);
 
-    if ((state.from || state.fromPoint) && state.to) {
-        const from = state.fromPoint ?
-            {name: 'Titik dipilih', lon: state.fromPoint[0], lat: state.fromPoint[1]} :
-            stopOf(state.from),
-            to = stopOf(state.to);
-
-        if (from && to) {
-            app.journey.setEnd('from', from, clock.getTimeOffset(), clock.getDayOfWeek());
-            app.journey.setEnd('to', to, clock.getTimeOffset(), clock.getDayOfWeek());
-        }
-    } else if (state.reach) {
+    if (state.reach) {
         const origin = stopOf(state.reach);
 
         if (origin) {
@@ -252,7 +229,7 @@ export function applyState(app, state, handlers) {
     // Last, and asynchronous: the camera layer is fetched only when someone
     // asks for it, so restoring one has to load it first. `framed` says the
     // link already carried a view, in which case the camera must not fly the
-    // map somewhere else — the same rule the journey follows above.
+    // map somewhere else — the same rule reachability follows above.
     if (state.camera) {
         handlers.onCamera?.(state.camera, {framed: !!state.center});
     }

@@ -16,9 +16,7 @@ import DetailPanel from './ui/detail-panel';
 import {nextDeparture, serviceSpan, servesOn} from './routing/timetable';
 import Router from './routing/router';
 import FollowHUD from './ui/follow-hud';
-import Journey from './ui/journey';
 import Reach from './ui/reach';
-import Ride from './ui/ride';
 import {applyState, readState, startSync} from './url-state';
 import {StreamPlayer, cameraIcon, loadCameras} from './cameras';
 
@@ -309,7 +307,6 @@ async function main() {
 
     addRouteLayers(app);
     addReachLayers(app);
-    addJourneyLayers(app);
     addStopLayers(app);
     addCameraLayers(app);
     map.addLayer(vehicleLayer);
@@ -380,66 +377,6 @@ function addRouteLayers({map, network}) {
             'line-color': '#ffffff',
             'line-width': ['interpolate', ['linear'], ['zoom'], 9, 2.5, 17, 7],
             'line-opacity': 0.95
-        }
-    });
-}
-
-function addJourneyLayers({map}) {
-    map.addSource('journey', {
-        type: 'geojson',
-        data: {type: 'FeatureCollection', features: []}
-    });
-
-    // A dark casing under the coloured leg keeps the line readable wherever it
-    // crosses the 700 route lines already on the map.
-    map.addLayer({
-        id: 'journey-casing',
-        type: 'line',
-        source: 'journey',
-        filter: ['==', ['get', 'kind'], 'ride'],
-        layout: {'line-cap': 'round', 'line-join': 'round'},
-        paint: {
-            'line-color': '#0b0f14',
-            'line-width': ['interpolate', ['linear'], ['zoom'], 10, 9, 16, 16],
-            'line-opacity': 0.8
-        }
-    });
-
-    map.addLayer({
-        id: 'journey-ride',
-        type: 'line',
-        source: 'journey',
-        filter: ['==', ['get', 'kind'], 'ride'],
-        layout: {'line-cap': 'round', 'line-join': 'round'},
-        paint: {
-            'line-color': ['get', 'color'],
-            'line-width': ['interpolate', ['linear'], ['zoom'], 10, 5.5, 16, 11]
-        }
-    });
-
-    map.addLayer({
-        id: 'journey-walk',
-        type: 'line',
-        source: 'journey',
-        filter: ['==', ['get', 'kind'], 'walk'],
-        layout: {'line-cap': 'round'},
-        paint: {
-            'line-color': '#5c6b7c',
-            'line-width': 3,
-            'line-dasharray': [0.4, 1.8]
-        }
-    });
-
-    map.addLayer({
-        id: 'journey-points',
-        type: 'circle',
-        source: 'journey',
-        filter: ['==', ['get', 'kind'], 'point'],
-        paint: {
-            'circle-radius': 5,
-            'circle-color': '#ffffff',
-            'circle-stroke-color': '#0b0f14',
-            'circle-stroke-width': 2
         }
     });
 }
@@ -837,38 +774,18 @@ function buildUI(app) {
     app.search = new SearchControl(network, {
         onSelectRoute: route => selectRoute(app, route),
 
-        // Typing an end plans the journey the moment the second one lands,
-        // which is the whole point of the two fields.
-        onSetEnd: (which, stop) => {
+        // Both kinds do the same thing now: show me this. A line is previewed
+        // on the map; a stop opens its card and the map goes to it.
+        onSelectStop: stop => {
             clearRoutePreview(app);
-            app.journey.setEnd(which, stop, clock.getTimeOffset(), clock.getDayOfWeek());
-            if (app.journey.active) {
-                app.detail.showJourney(app.journey);
-            } else {
-                map.flyTo({center: [stop.lon, stop.lat], zoom: 15, duration: 1000});
-            }
-        },
-        onSwap: () => {
-            app.journey.swap(clock.getTimeOffset(), clock.getDayOfWeek());
-            if (app.journey.active) {
-                app.detail.showJourney(app.journey);
-            }
+            app.selectedRun = -1;
+            app.vehicleLayer.setSelection(-1);
+            app.selectedStop = stop;
+            map.flyTo({center: [stop.lon, stop.lat], zoom: 15, duration: 1000});
         },
         onClear: () => {
-            app.journey.clear();
+            clearRoutePreview(app);
             app.detail.close();
-        }
-    });
-
-    app.journey = new Journey({
-        network,
-        router: app.router,
-        onChange: () => {
-            drawJourney(app);
-            // The fields are the journey's display, so anything that sets an
-            // end elsewhere — a stop card, a deep link — has to reach them.
-            app.search.syncEnds(app.journey.from, app.journey.to);
-            app.syncUrl?.();
         }
     });
 
@@ -879,14 +796,6 @@ function buildUI(app) {
             drawReach(app);
             app.syncUrl?.();
         }
-    });
-
-    app.ride = new Ride({
-        clock,
-        fleet,
-        network,
-        onExit: () => exitRide(app),
-        onCamera: mode => setCameraMode(app, mode)
     });
 
     app.followHud = new FollowHUD({
@@ -904,20 +813,6 @@ function buildUI(app) {
     app.detail = new DetailPanel(network, {
         onTrack: () => {
             app.trackedRun = app.trackedRun === app.selectedRun ? -1 : app.selectedRun;
-        },
-        // Setting one end of a journey from whichever stop card is open.
-        onJourneyEnd: which => {
-            const stop = app.selectedStop;
-
-            if (!stop) {
-                return;
-            }
-            app.selectedRun = -1;
-            app.vehicleLayer.setSelection(-1);
-            app.journey.setEnd(which, stop, clock.getTimeOffset(), clock.getDayOfWeek());
-            if (app.journey.active) {
-                app.selectedStop = null;
-            }
         },
         onReach: () => {
             const stop = app.selectedStop;
@@ -938,35 +833,14 @@ function buildUI(app) {
             }
             const [lon, lat] = app.nearby.point;
 
-            app.journey.setEnd(
-                'from',
+            // Reachability from an arbitrary point: the map answers "what is
+            // within reach of *here*", which is the spatial question a tap on
+            // empty map is actually asking.
+            app.reach.setOrigin(
                 {name: 'Titik dipilih', lon, lat},
                 clock.getTimeOffset(), clock.getDayOfWeek()
             );
             app.nearby = null;
-        },
-        onRide: () => {
-            const itinerary = app.journey.chosen;
-
-            if (!itinerary) {
-                return;
-            }
-            // Remember where the camera was, so leaving puts it back.
-            app.rideReturn = {
-                center: map.getCenter(), zoom: map.getZoom(),
-                pitch: map.getPitch(), bearing: map.getBearing()
-            };
-            app.ride.start(itinerary);
-        },
-        onSelectItinerary: index => {
-            app.journey.selected = index;
-            drawJourney(app);
-        },
-        onSort: sort => {
-            app.journey.sort = sort;
-            app.journey.selected = 0;
-            app.journey.sortResults();
-            drawJourney(app);
         },
         onCameraExpand: () => expandCamera(app),
 
@@ -987,13 +861,11 @@ function buildUI(app) {
             app.selectedStop = null;
             app.nearby = null;
             app.vehicleLayer.setSelection(-1);
-            app.journey.clear();
             app.reach.clear();
             clearRoutePreview(app);
             // Closing the card has to stop the stream too, or the video keeps
             // pulling segments for a panel nobody can see.
             closeCamera(app);
-            app.search.syncEnds(null, null);
         }
     });
 
@@ -1056,38 +928,6 @@ function setAccessibleOnly(app, on) {
  * With 700 route lines already drawn, a journey needs the surrounding network
  * dimmed or it simply disappears into it.
  */
-function drawJourney(app) {
-    const {map, journey} = app,
-        data = journey.toGeoJSON();
-
-    map.getSource('journey').setData(data);
-
-    const showing = data.features.length > 0;
-
-    map.setPaintProperty('route-lines', 'line-opacity', showing ?
-        0.1 :
-        ['interpolate', ['linear'], ['zoom'], 9, 0.28, 13, 0.4, 17, 0.55]
-    );
-    app.vehicleLayer.setDimmed(showing);
-
-    // A link that names a camera means it. Framing the journey would throw
-    // away the very view the link was sent to show.
-    if (showing && !app.restoringCamera) {
-        const bounds = new mapboxgl.LngLatBounds();
-
-        for (const feature of data.features) {
-            if (feature.geometry.type === 'LineString') {
-                for (const coordinate of feature.geometry.coordinates) {
-                    bounds.extend(coordinate);
-                }
-            }
-        }
-        if (!bounds.isEmpty()) {
-            map.fitBounds(bounds, {padding: {top: 80, bottom: 80, left: 360, right: 360}, duration: 900});
-        }
-    }
-}
-
 function drawReach(app) {
     const {map, reach} = app,
         data = reach.toGeoJSON(),
@@ -1653,20 +1493,6 @@ function setCameraMode(app, mode) {
 }
 
 /** Leaves the ride and restores the camera the user had before it. */
-function exitRide(app) {
-    const {map, ride} = app;
-
-    ride.stop();
-    setCameraMode(app, 'chase');
-    ride.camera = 'chase';
-    app.nav.run = -1;
-    app.vehicleLayer.setSelection(-1);
-    if (app.rideReturn) {
-        map.easeTo({...app.rideReturn, duration: 900});
-        app.rideReturn = null;
-    }
-}
-
 /**
  * Drives the camera through a planned journey.
  *
@@ -1674,67 +1500,6 @@ function exitRide(app) {
  * leg. Walk legs glide between the two stops at walking pace, so a transfer
  * reads as part of the journey rather than a cut.
  */
-function rideCamera(app, state) {
-    const {map, ride} = app;
-
-    if (state.done) {
-        exitRide(app);
-        return;
-    }
-
-    if (state.phase === 'ride') {
-        if (!state.info) {
-            app.vehicleLayer.setSelection(-1);
-
-            // Waiting for the bus to set out: hold on the boarding stop rather
-            // than leaving the camera wherever it happened to be.
-            const at = app.network.stops.get(state.entry.leg.from);
-
-            if (state.boarding && at) {
-                map.jumpTo({
-                    center: [at.lon, at.lat],
-                    zoom: Math.max(map.getZoom(), NAV_ZOOM),
-                    pitch: NAV_PITCH
-                });
-            }
-            return;
-        }
-        app.vehicleLayer.setSelection(state.slot);
-        followCamera(app, state.info);
-        return;
-    }
-
-    // Walking: interpolate between the two stops, facing the way you are going.
-    const from = app.network.stops.get(state.entry.leg.from),
-        to = app.network.stops.get(state.entry.leg.to);
-
-    app.vehicleLayer.setSelection(-1);
-    if (!from || !to) {
-        return;
-    }
-
-    const t = state.progress,
-        lon = from.lon + (to.lon - from.lon) * t,
-        lat = from.lat + (to.lat - from.lat) * t,
-        bearing = Math.atan2(
-            (to.lon - from.lon) * Math.cos(lat * RAD),
-            to.lat - from.lat
-        ) / RAD;
-
-    // Reuse the nav bearing smoothing so the hand-off from a bus is not a snap.
-    const nav = app.nav,
-        delta = ((bearing - nav.bearing + 540) % 360) - 180;
-
-    nav.run = -1;
-    nav.bearing += delta * 0.06;
-    map.jumpTo({
-        center: lookAhead(map, [lon, lat], nav.bearing),
-        bearing: nav.bearing,
-        zoom: Math.max(map.getZoom(), 16.5),
-        pitch: NAV_PITCH
-    });
-}
-
 // -------------------------------------------------------------- frame loop
 
 function loop(app) {
@@ -1763,14 +1528,12 @@ function loop(app) {
             applyStopTheme(map, preset);
         }
 
-        // Following is the only state this HUD belongs to, and a ride has its
-        // own. One guard here rather than a hide() in every other branch.
-        if ((app.trackedRun < 0 || app.ride.active) && app.followHud.hide()) {
+        // Following is the only state this HUD belongs to. One guard here
+        // rather than a hide() in every other branch.
+        if (app.trackedRun < 0 && app.followHud.hide()) {
             // Stopping while on board would otherwise leave the vehicle hidden
             // — the camera was inside it, so it was scaled away.
-            if (!app.ride.active) {
-                setCameraMode(app, 'chase');
-            }
+            setCameraMode(app, 'chase');
         }
 
         // A camera shows the street *now*; the clock may be replaying a
@@ -1792,15 +1555,7 @@ function loop(app) {
             }
         }
 
-        if (app.ride.active) {
-            const state = app.ride.advance(now);
-
-            if (state) {
-                app.ride.updateHUD(state, now);
-                rideCamera(app, state);
-            }
-            detail.showJourney(app.journey);
-        } else if (app.selectedCamera) {
+        if (app.selectedCamera) {
             // Its own branch, ahead of everything but a ride. Without one this
             // chain would overwrite the card on the very next frame — which is
             // exactly how the line preview appeared and vanished — and here it
@@ -1820,21 +1575,14 @@ function loop(app) {
         } else if (app.reach.active) {
             detail.showReach(app.reach);
         } else if (app.previewedRoute && app.selectedRun < 0) {
-            // Ahead of the journey, because previewing a line is the more
-            // recent choice — and because this loop reasserts its branch every
-            // frame, which otherwise wipes the line card the moment it opens.
+            // This loop reasserts its branch every frame, which is what wiped
+            // the line card the moment it opened until it got a branch here.
             //
             // Behind the vehicle card, though: while a line is previewed its
             // own vehicles are the only ones you can click, so clicking one
             // means you want that train, not the line you found it from. The
             // map keeps the line focused either way.
             detail.showRoute(app.previewedRoute.route, app.previewedRoute.info);
-        } else if (app.journey.active && !app.previewedRoute) {
-            // The preview guard only matters when a journey is already planned
-            // and a line is previewed on top of it: clicking one of that line's
-            // trains should then reach the vehicle branch, not fall back to the
-            // journey card. Journey still outranks a vehicle otherwise.
-            detail.showJourney(app.journey);
         } else if (app.selectedRun >= 0) {
             const slot = fleet.slotOfRun(app.selectedRun);
 

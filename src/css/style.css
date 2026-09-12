@@ -603,18 +603,10 @@ input[type=range]::-moz-range-thumb {
 
 /* Mode first, so the result list below is never ambiguous about what it is
    listing. */
-.finder-tabs { display: flex; border-bottom: 1px solid var(--border); }
-.finder-tab {
-  flex: 1; min-height: var(--ctl-lg); padding: 0 var(--s2);
-  font-size: var(--text-sm); font-weight: 600;
-  letter-spacing: -0.005em; background: none; border: none; cursor: pointer;
-  color: var(--text-3); font-family: var(--font);
-  border-bottom: 2px solid transparent; margin-bottom: -1px;
-  transition: color 140ms var(--ease), border-color 140ms var(--ease);
-}
-.finder-tab:hover { color: var(--text-2); }
-.finder-tab.on { color: var(--text); border-bottom-color: var(--brand-lift); }
-.finder-tab:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: -4px; }
+
+
+
+
 
 .finder-pane[hidden] { display: none; }
 /*
@@ -650,15 +642,32 @@ input[type=range]::-moz-range-thumb {
 .field input::placeholder { color: var(--text-4); font-weight: 400; }
 /* Safari draws its own clear affordance on type=search and it collides. */
 .field input::-webkit-search-cancel-button { display: none; }
-.jb-dot.line { background: var(--brand-lift); }
-.field-swap, .field-clear {
-  flex: none; width: 32px; height: 32px; padding: 0; cursor: pointer;
+
+
+
+/* 36px of paint, 44px of reach — the rule every small control here follows. */
+.field-clear {
+  flex: none;
+  width: 32px; height: 32px;
   display: grid; place-items: center;
   background: none; border: none; color: var(--text-3);
-  font-size: var(--text-lg); line-height: 1; border-radius: 8px; font-family: var(--font);
+  font-size: var(--text-lg); line-height: 1; border-radius: 8px;
+  font-family: var(--font); cursor: pointer;
+  position: relative;
   transition: background-color 140ms var(--ease), color 140ms var(--ease);
 }
-.field-swap:hover, .field-clear:hover { background: var(--press); color: var(--text); }
+.field-clear::after { content: ''; position: absolute; inset: -6px; }
+.field-clear:hover { background: var(--press); color: var(--text); }
+
+/*
+   The finder's own mark. It replaced the origin dot, which only meant
+   something while the field was one end of a journey.
+*/
+.field-glyph {
+  width: 18px; height: 18px; flex: none; color: var(--text-3);
+}
+.field:focus-within .field-glyph { color: var(--brand); }
+
 .results { max-height: 320px; overflow-y: auto; border-top: 1px solid var(--border); }
 .results:empty { display: none; }
 /* A search result is the most-tapped thing in the app and was a 31px row. */
@@ -834,101 +843,6 @@ input[type=range]::-moz-range-thumb {
 
 .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 
-/* ------------------------------------------------------------- journey */
-
-/* The origin/destination dots outlived the bar they were built for — the
-   finder's two fields wear them now. */
-.jb-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.jb-dot.from { background: var(--live); }
-.jb-dot.to { background: var(--brand-lift); }
-
-.journey-ends { display: flex; gap: 6px; margin-top: 14px; }
-.journey-ends .btn { flex: 1; }
-
-/*
-   A segmented control, not three loose buttons: one inset track with the
-   choice filled inside it, which is how iOS, Google Maps and Moovit all say
-   "pick one of these". The track is what makes it read as a single control —
-   as separate outlines they read as three unrelated actions.
-*/
-.sorts {
-  display: flex; gap: var(--s1); margin-top: var(--s4);
-  padding: var(--s1); background: var(--sink);
-  border: 1px solid var(--border-soft); border-radius: 12px;
-}
-.sorts .btn {
-  flex: 1; min-width: 0; padding: 0 var(--s2);
-  min-height: var(--ctl-sm); font-size: var(--text-xs);
-  background: none; border-color: transparent; border-radius: 8px;
-  text-wrap: balance;
-}
-.sorts .btn:hover { background: var(--raise); border-color: transparent; }
-.sorts .btn.on { background: var(--brand); border-color: var(--brand); }
-
-/* Concentric: the card sits inside a 16px-padded panel with an 18px radius,
-   so 12px keeps the curves parallel instead of nested-square. */
-.itin {
-  border: 1px solid var(--border); border-radius: 12px;
-  padding: var(--s3); margin-top: var(--s2); cursor: pointer;
-  transition: background-color 140ms var(--ease), border-color 140ms var(--ease);
-}
-.itin:hover { background: var(--raise); }
-.itin.on { border-color: var(--brand-lift); background: var(--brand-tint); cursor: default; }
-.itin-top { display: flex; align-items: baseline; gap: 8px; }
-.itin-time { font-size: var(--text-lg); font-weight: 650; }
-.itin-clock { font-size: var(--text-2xs); color: var(--text-3); font-family: var(--mono); }
-.itin-fare { margin-left: auto; font-size: var(--text-sm); font-weight: 600; }
-.itin-fare.free { color: var(--live); }
-.itin-legs { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
-.leg {
-  font-size: var(--text-2xs); font-weight: 800; letter-spacing: 0.01em;
-  font-variant-numeric: tabular-nums;
-  padding: 3px var(--s2); border-radius: 6px; color: #fff;
-}
-/* A coded line is a ring here too, so rail is not a disc in the summary and a
-   ring in every other place the same line appears. */
-.leg-line {
-  background: none;
-  border: 1.5px solid var(--mark);
-  color: var(--mark);
-  width: 22px; height: 22px; padding: 0;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 50%;
-}
-.leg.walk { background: var(--track); color: var(--text-2); font-weight: 500; }
-.leg-sep { color: var(--text-3); font-size: var(--text-2xs); }
-.itin-meta { margin-top: 7px; font-size: var(--text-2xs); color: var(--text-3); }
-
-.steps { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border); }
-/*
-   Two rows. The mark and the departure take the top line with the full width
-   between them; where you board and where you get off sit under it.
-
-   Side by side, the mark, three lines of prose and the time competed for a
-   344px rail, and the time lost — it was 11px grey mono, which is the one
-   number on the step a person is actually reading.
-*/
-.step { padding: var(--s2) 0; font-size: var(--text-sm); }
-.step + .step { border-top: 1px solid var(--border-soft); }
-.step-top { display: flex; align-items: center; gap: var(--s2); }
-.step .t {
-  margin-left: auto;
-  font-family: var(--mono);
-  font-size: var(--text-md);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: var(--text);
-}
-.step-body { margin-top: var(--s2); padding-left: 2px; }
-.step-body div + div { margin-top: 2px; }
-.step.walk .step-top .t { font-weight: 500; color: var(--text-2); }
-.step.walk .step-body { color: var(--text-3); }
-.step-icon {
-  width: 26px; height: 26px; flex: none;
-  display: inline-flex; align-items: center; justify-content: center;
-  border-radius: 7px; background: var(--raise); color: var(--text-3);
-}
-
 /* ----------------------------------------------------------- jangkauan */
 
 .free-toggle { margin: 4px 0 10px; }
@@ -957,47 +871,6 @@ input[type=range]::-moz-range-thumb {
 .near-top .t { font-family: var(--mono); font-size: var(--text-2xs); color: var(--text-3); }
 .near-deps { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
 .near-wait { font-size: var(--text-2xs); color: var(--text-3); margin-right: 8px; }
-
-/* --------------------------------------------------------- ride-along */
-
-/* Bottom centre: the only free edge, and where a heads-up display belongs. */
-#ride {
-  left: 50%; transform: translateX(-50%); bottom: 16px;
-  width: min(560px, calc(100% - 24px)); padding: var(--s4); display: none;
-  z-index: 30;
-}
-#ride.open { display: block; }
-.ride-main { display: flex; align-items: center; gap: 11px; }
-.ride-text { flex: 1; min-width: 0; }
-.ride-title { font-size: var(--text-md); font-weight: 650; }
-.ride-sub { font-size: var(--text-xs); color: var(--text-3); margin-top: 2px; }
-.ride-eta { text-align: right; flex: none; }
-.ride-eta .js-eta { font-size: var(--text-lg); font-weight: 650; font-variant-numeric: tabular-nums; }
-.ride-arrive { font-size: var(--text-2xs); color: var(--text-3); margin-top: 2px; }
-
-.ride-progress { display: flex; gap: 3px; margin-top: 11px; }
-.ride-seg { flex: 1; height: 4px; border-radius: 2px; background: var(--track); }
-.ride-seg.walk { flex: 0 0 14px; }
-.ride-seg.done { background: var(--track-done); }
-.ride-seg.now { background: var(--brand-lift); }
-
-.ride-controls { display: flex; align-items: center; gap: 7px; margin-top: 11px; }
-.ride-step { flex: 1; font-size: var(--text-2xs); color: var(--text-3); }
-
-@media (max-width: 700px) {
-  /* 34px, not 12: the bottom strip is reserved for the Mapbox wordmark and
-     the attribution badge, which nothing is allowed to cover. */
-  #ride { bottom: 34px; }
-  /*
-     A thumb gets more, not less, so the controls grow here rather than shrink.
-     They only fit because the row stops pretending it is one line: the step
-     label takes the top and the buttons take the bottom, which is what both
-     Google Maps and Moovit do with a bottom sheet on a phone.
-  */
-  .ride-controls { flex-wrap: wrap; row-gap: var(--s2); }
-  .ride-step { flex: 1 0 100%; font-size: var(--text-sm); }
-  .ride-controls .btn { flex: 1; min-height: 44px; padding: 0 var(--s2); }
-}
 
 /* --------------------------------------------------------------- misc */
 
@@ -1176,7 +1049,7 @@ input[type=range]::-moz-range-thumb {
 .fh-controls .btn { flex: none; }
 
 @media (max-width: 700px) {
-  /* Clear of the credit strip, as #ride is. */
+  /* Clear of the credit strip. */
   #follow-hud { bottom: 34px; }
   .fh-speed span { display: none; }
 }

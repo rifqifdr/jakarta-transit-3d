@@ -1,39 +1,33 @@
 import {routeCode, routeMark, stopMark} from '../kodefikasi';
 
 /**
- * The finder: one panel at the top of the left rail, in two modes.
+ * The finder: one field, over everything on the map.
  *
- * The app answers two different questions and they want different searches.
- * "How do I get from here to there" wants stops and wants two of them;
- * "what is the Bogor line" wants a route and wants one. Mixing both into a
- * single result list made every query ambiguous - typing "Bogor" returned a
- * corridor and eleven stations with no way to say which kind you meant.
+ * It used to be two tabs, because the app asked two different questions and a
+ * mixed list made both ambiguous — typing "Bogor" returned a corridor and
+ * eleven stations with no way to say which you meant. That ambiguity was never
+ * really about the list. It was about what happened *next*: a stop was an
+ * origin to plan from, a line was a thing to look at, and the two could not be
+ * told apart by looking.
  *
- * So the mode is chosen first and the result list is unambiguous by
- * construction. Navigation mode owns the origin and destination fields, which
- * is why the old pending-origin bar is gone: the fields *are* the bar, and they
- * are editable, which the bar never was.
+ * With journey planning gone there is one next step — show me this — so one
+ * list is unambiguous by construction, and the kind is carried by the mark:
+ * a halte or stasiun glyph in a plate, against a line's ring or corridor
+ * badge. The picture says which without a tab having to be chosen first.
  *
- * Trap 1 applies with force here. The shell - tabs, inputs, buttons - is built
- * exactly once. Only `.results` is ever rewritten, and only on input, never
- * between a mousedown and its mouseup.
+ * Trap 1 applies with force here. The shell is built exactly once. Only
+ * `.results` is ever rewritten, and only on input, never between a mousedown
+ * and its mouseup.
  */
 export default class SearchControl {
 
-    constructor(network, {onSelectRoute, onSetEnd, onSwap, onClear}) {
+    constructor(network, {onSelectRoute, onSelectStop, onClear}) {
         const me = this;
 
         me.network = network;
         me.onSelectRoute = onSelectRoute;
-        me.onSetEnd = onSetEnd;
-        me.onSwap = onSwap;
+        me.onSelectStop = onSelectStop;
         me.onClear = onClear;
-
-        me.mode = 'nav';
-        // Which field a result should land in. Held rather than read from
-        // document.activeElement, because clicking a result blurs the input
-        // before the handler runs.
-        me.field = 'from';
 
         // Stations stand in for their platforms so a search for "Harmoni"
         // returns one corridor station rather than a dozen bay entries.
@@ -56,30 +50,11 @@ export default class SearchControl {
         el.className = 'panel';
         el.id = 'search';
         el.innerHTML = `
-            <div class="finder-tabs">
-                <button class="finder-tab on" type="button" data-mode="nav">Navigasi</button>
-                <button class="finder-tab" type="button" data-mode="line">Jalur</button>
-            </div>
-            <div class="finder-pane" data-pane="nav">
-                <div class="field">
-                    <span class="jb-dot from"></span>
-                    <input type="search" data-field="from" placeholder="Titik awal"
-                           autocomplete="off" spellcheck="false">
-                    <button class="field-swap" type="button" title="Tukar arah">⇅</button>
-                </div>
-                <div class="field">
-                    <span class="jb-dot to"></span>
-                    <input type="search" data-field="to" placeholder="Tujuan"
-                           autocomplete="off" spellcheck="false">
-                    <button class="field-clear" type="button" title="Bersihkan">&times;</button>
-                </div>
-            </div>
-            <div class="finder-pane" data-pane="line" hidden>
-                <div class="field">
-                    <span class="jb-dot line"></span>
-                    <input type="search" data-field="line" placeholder="Cari jalur atau koridor…"
-                           autocomplete="off" spellcheck="false">
-                </div>
+            <div class="field">
+                <svg class="field-glyph" aria-hidden="true"><use href="#kf-cari"></use></svg>
+                <input type="search" data-field="q" placeholder="Cari halte, stasiun atau jalur"
+                       autocomplete="off" spellcheck="false" aria-label="Cari halte, stasiun atau jalur">
+                <button class="field-clear" type="button" title="Bersihkan">&times;</button>
             </div>
             <div class="results"></div>
         `;
@@ -90,35 +65,19 @@ export default class SearchControl {
         me._results = results;
 
         el.addEventListener('click', event => {
-            const tab = event.target.closest('.finder-tab');
-
-            if (tab) {
-                me.setMode(tab.dataset.mode);
-                return;
-            }
-            if (event.target.closest('.field-swap')) {
-                me.onSwap();
-                return;
-            }
             if (event.target.closest('.field-clear')) {
+                me._input().value = '';
                 me._clearResults();
                 me.onClear();
             }
         });
 
-        for (const input of el.querySelectorAll('input')) {
-            input.addEventListener('focus', () => {
-                me.field = input.dataset.field;
-            });
-            input.addEventListener('input', () => {
-                me.field = input.dataset.field;
-                me._show(input.value.trim().toLowerCase());
-            });
-        }
+        el.querySelector('input').addEventListener('input', event => {
+            me._show(event.target.value.trim().toLowerCase());
+        });
 
         // A result is chosen on mousedown-prevented click: without this the
-        // input blurs first, and on a two-field form that blur can move the
-        // target field out from under the selection.
+        // input blurs before the click lands.
         results.addEventListener('mousedown', event => event.preventDefault());
 
         results.addEventListener('click', event => {
@@ -130,55 +89,18 @@ export default class SearchControl {
             if (row.dataset.kind === 'route') {
                 me.onSelectRoute(me.network.routes.get(row.dataset.id));
             } else {
-                const stop = me.network.stops.get(row.dataset.id),
-                    field = me.field === 'to' ? 'to' : 'from';
-
-                me._input(field).value = stop.name;
-                me.onSetEnd(field, stop);
-
-                // Filling the origin almost always means filling the
-                // destination next, so go there rather than making them click.
-                if (field === 'from' && !me._input('to').value) {
-                    me.field = 'to';
-                    me._input('to').focus();
-                }
+                me.onSelectStop(me.network.stops.get(row.dataset.id));
             }
             me._clearResults();
         });
     }
 
-    _input(field) {
-        return this.el.querySelector(`input[data-field="${field}"]`);
+    _input() {
+        return this.el.querySelector('input');
     }
 
     _clearResults() {
         this._results.innerHTML = '';
-    }
-
-    setMode(mode) {
-        const me = this;
-
-        if (me.mode === mode) {
-            return;
-        }
-        me.mode = mode;
-        me.field = mode === 'line' ? 'line' : 'from';
-        for (const tab of me.el.querySelectorAll('.finder-tab')) {
-            tab.classList.toggle('on', tab.dataset.mode === mode);
-        }
-        for (const pane of me.el.querySelectorAll('.finder-pane')) {
-            pane.hidden = pane.dataset.pane !== mode;
-        }
-        me._clearResults();
-        me._input(mode === 'line' ? 'line' : 'from').focus();
-    }
-
-    /** Reflects journey state that was set elsewhere - a map click, or a link. */
-    syncEnds(from, to) {
-        const me = this;
-
-        me._input('from').value = from ? from.name : '';
-        me._input('to').value = to ? to.name : '';
     }
 
     _show(query) {
@@ -198,47 +120,45 @@ export default class SearchControl {
 
     _match(query) {
         const me = this,
-            routes = [],
-            stops = [];
+            rows = [];
 
-        if (me.mode === 'line') {
-            for (const route of me.network.routes.values()) {
-                const short = (route.shortName || '').toLowerCase(),
-                    long = (route.longName || '').toLowerCase();
+        for (const route of me.network.routes.values()) {
+            const short = (route.shortName || '').toLowerCase(),
+                code = routeCode(route).toLowerCase(),
+                long = (route.longName || '').toLowerCase();
 
-                if (short.includes(query) || long.includes(query)) {
-                    routes.push({
-                        kind: 'route',
-                        id: route.id,
-                        badge: routeCode(route),
-                        mark: routeMark(route),
-                        // Exact and prefix matches on the route number are what
-                        // a rider usually means, so rank those first.
-                        rank: short === query ? 0 : short.startsWith(query) ? 1 : 2,
-                        title: route.longName || route.shortName,
-                        meta: route.category
-                    });
-                }
+            if (short.includes(query) || code.includes(query) || long.includes(query)) {
+                rows.push({
+                    kind: 'route',
+                    id: route.id,
+                    mark: routeMark(route),
+                    // An exact or prefix hit on the code is nearly always what
+                    // was meant: `C` and `1` are the shortest queries there are.
+                    rank: code === query || short === query ? 0
+                        : code.startsWith(query) || short.startsWith(query) ? 1 : 3,
+                    title: route.longName || route.shortName,
+                    meta: route.category
+                });
             }
-            return routes.sort((a, b) => a.rank - b.rank || a.badge.localeCompare(b.badge)).slice(0, 12);
         }
 
         for (const stop of me._stops) {
             const name = stop.name.toLowerCase();
 
             if (name.includes(query)) {
-                stops.push({
+                rows.push({
                     kind: 'stop',
                     id: stop.id,
-                    badge: stop.station ? 'ST' : 'H',
                     mark: stopMark(stop),
-                    rank: name.startsWith(query) ? 0 : 1,
+                    rank: name.startsWith(query) ? 2 : 4,
                     title: stop.name,
                     meta: `${me.network.routesAt(stop).size} rute`
                 });
             }
         }
-        return stops.sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title)).slice(0, 12);
+        return rows
+            .sort((a, b) => a.rank - b.rank || a.title.localeCompare(b.title))
+            .slice(0, 14);
     }
 
 }

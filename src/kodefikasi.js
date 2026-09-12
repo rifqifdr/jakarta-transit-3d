@@ -203,6 +203,9 @@ const SPRITE = `
   <symbol id="kf-mrt" viewBox="0 0 24 24">
     <path fill="currentColor" fill-rule="evenodd" d="M12 3h2a5 5 0 0 1 5 5v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8a5 5 0 0 1 5-5Zm-4.6 4.2h9.2v5.4H7.4Zm0 7.4h9.2v1.6H7.4ZM6 21h12v1.3H6Z"/>
   </symbol>
+  <symbol id="kf-cari" viewBox="0 0 24 24">
+    <path fill="currentColor" fill-rule="evenodd" d="M10.6 2.4a8.2 8.2 0 1 1 0 16.4 8.2 8.2 0 0 1 0-16.4Zm0 2.3a5.9 5.9 0 1 0 0 11.8 5.9 5.9 0 0 0 0-11.8Zm5.2 11.3 1.7-1.7 4.4 4.4-1.7 1.7Z"/>
+  </symbol>
   <symbol id="kf-halte" viewBox="0 0 24 24">
     <path fill="currentColor" fill-rule="evenodd" d="M6.5 2.6h11a2.4 2.4 0 0 1 2.4 2.4v5.2a2.4 2.4 0 0 1-2.4 2.4h-4.6V21H16v1.6H8V21h3.1v-8.4H6.5a2.4 2.4 0 0 1-2.4-2.4V5a2.4 2.4 0 0 1 2.4-2.4Zm.6 2.7h9.8v1.7H7.1Zm0 3.1h6.1v1.7H7.1Z"/>
   </symbol>

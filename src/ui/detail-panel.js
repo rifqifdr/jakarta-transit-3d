@@ -56,8 +56,8 @@ function formatTransfers(fare) {
 export default class DetailPanel {
 
     constructor(network, {
-        onTrack, onClose, onJourneyEnd, onSelectItinerary, onSort,
-        onReach, onBudget, onFreeOnly, onRide, onFromPoint,
+        onTrack, onClose,
+        onReach, onBudget, onFreeOnly, onFromPoint,
         onCameraExpand, onCameraChannel
     }) {
         const me = this;
@@ -65,15 +65,11 @@ export default class DetailPanel {
         me.network = network;
         me.onTrack = onTrack;
         me.onClose = onClose;
-        me.onJourneyEnd = onJourneyEnd;
-        me.onSelectItinerary = onSelectItinerary;
-        me.onSort = onSort;
         me.onReach = onReach;
         me.onCameraExpand = onCameraExpand;
         me.onCameraChannel = onCameraChannel;
         me.onBudget = onBudget;
         me.onFreeOnly = onFreeOnly;
-        me.onRide = onRide;
         me.onFromPoint = onFromPoint;
         me.mode = null;
         me._key = null;
@@ -95,23 +91,15 @@ export default class DetailPanel {
         });
 
         el.addEventListener('click', event => {
-            const sort = event.target.closest('.js-sort'),
-                budget = event.target.closest('.js-budget'),
-                itinerary = event.target.closest('.itin');
+            const budget = event.target.closest('.js-budget');
 
             if (event.target.closest('.detail-close')) {
                 me.close();
                 me.onClose();
             } else if (event.target.closest('.js-track')) {
                 me.onTrack();
-            } else if (event.target.closest('.js-from')) {
-                me.onJourneyEnd('from');
-            } else if (event.target.closest('.js-to')) {
-                me.onJourneyEnd('to');
             } else if (event.target.closest('.js-from-point')) {
                 me.onFromPoint();
-            } else if (event.target.closest('.js-ride')) {
-                me.onRide();
             } else if (event.target.closest('.js-reach')) {
                 me.onReach();
             } else if (event.target.closest('.js-cam-ch')) {
@@ -120,10 +108,6 @@ export default class DetailPanel {
                 me.onCameraExpand?.();
             } else if (budget) {
                 me.onBudget(+budget.dataset.budget);
-            } else if (sort) {
-                me.onSort(sort.dataset.sort);
-            } else if (itinerary) {
-                me.onSelectItinerary(+itinerary.dataset.index);
             }
         });
     }
@@ -420,20 +404,6 @@ export default class DetailPanel {
         );
     }
 
-    /** Renders whatever the journey planner wants to show, in the same slot. */
-    showJourney(journey) {
-        const me = this,
-            key = `journey:${journey.from?.id}:${journey.to?.id}:${journey.sort}:${journey.selected}`;
-
-        me.mode = 'journey';
-        me.el.classList.add('open');
-        if (me._key !== key) {
-            me._key = key;
-            journey.renderInto(me.el);
-            me.el.scrollTop = 0;
-        }
-    }
-
     /**
      * What you can catch from an arbitrary point on the map.
      *
@@ -545,11 +515,7 @@ export default class DetailPanel {
                 ${me._hours(service)}
                 <div class="panel-title" style="margin-top:14px">Rute</div>
                 <div class="chips">${chips}</div>
-                <div class="journey-ends">
-                    <button class="btn btn-accent btn-lg js-from" type="button">Dari sini</button>
-                    <button class="btn btn-lg js-to" type="button">Ke sini</button>
-                </div>
-                <button class="btn btn-lg btn-block js-reach" type="button">Lihat jangkauan</button>
+                <button class="btn btn-accent btn-lg btn-block js-reach" type="button">Lihat jangkauan</button>
             </div>
         `;
         me._el = {departures: me.el.querySelector('.js-departures')};

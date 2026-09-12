@@ -88,7 +88,8 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
   `Sumber data` control in the map's bottom-left corner. Scrim closes, panel
   does not; Escape closes; the close control takes focus on open.
 - `.sorts` — a segmented control: one inset track, the choice filled inside it
-- `.finder-tab` — 48px h, 2px bottom border in `--brand-lift` when on
+- `.field` in `#search` — one search over stops and lines; the row's mark
+  says which kind it is, so there are no tabs to choose first
 
 ## Identity
 

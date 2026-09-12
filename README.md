@@ -634,6 +634,19 @@ an honest 404.
   source geolocates them, and a further 47 live toll streams cannot be placed at
   all because BPJT names no kilometre for their road.
 
+## Direction
+
+**This is a spatial visualisation of Greater Jakarta's public transport, not a
+trip planner.** A→B journey planning was removed on 2026-09-12: Google Maps,
+Moovit and Waze all do it, with live traffic this map does not have. What this
+one has is six thousand scheduled vehicles moving over a real 3D city, and the
+direction is to spend that on spatial questions — where the network goes, how
+far it reaches, what is running now, and what else is true about the city
+underneath it.
+
+Following a vehicle, the animated fleet, line preview, reachability and the
+live cameras all stay.
+
 ## Licence
 
 Code is MIT — see `LICENSE`. Bundled third-party components carry their own

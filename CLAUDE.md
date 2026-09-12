@@ -7,6 +7,15 @@ clock. Around 6,600 vehicles move at the evening peak, across all four modes.
 > **Vision:** make people have visibility regarding public transportation in
 > Jakarta or the Greater Jakarta Area.
 
+**The direction changed on 2026-09-12: this is a spatial visualisation, not a
+trip planner.** A→B journey planning is gone — Google Maps, Moovit and Waze all
+do it and do it with live traffic, and competing with them was spending the
+one thing this map has (six thousand scheduled vehicles moving over a real 3D
+city) on the one job it was worst at. What stays is everything spatial: the
+animated fleet, **ikuti kendaraan**, line preview, reachability, the stop card,
+and the live cameras. What gets built next is more *data about Greater
+Jakarta*, not more routing.
+
 It began with Transjakarta's buses and now carries **MRT, LRT and Commuter Line
 (KRL)** as well. Two consequences to hold in mind while working:
 
@@ -123,14 +132,14 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `scripts/transform/artifacts.mjs` | Canonical dataset → content-hashed binaries + `manifest.json` |
 | `scripts/transform/geometry.mjs` | Track projection, run times from distance, simplification, walk table |
 | `public/artifacts/` | What the browser downloads. Generated; rebuildable from snapshots. |
-| `src/routing/` | `timetable.js` (schedule maths), `router.js` (RAPTOR), `fares.js` |
+| `src/routing/` | `timetable.js` (schedule maths), `router.js` (RAPTOR, now only for reachability), `fares.js` |
 | `src/fleet.js` | Expands headways into runs, positions them each frame |
 | `src/layers/vehicle-layer.js` | The fleet, as one instanced three.js mesh per mode |
 | `src/layers/vehicle-geometry.js` | The Kapsul body, built per mode inside one base box |
 | `src/kodefikasi.js` | Line codes, line colours and the mode glyph sprite (JAKAR-50) |
 | `src/cameras.js` | Live CCTV: artifact loading, the map pin, and the HLS player |
-| `src/ui/` | Panels: clock, layers, search, detail, journey, reach, ride, credits |
-| `#left-rail` | Search, journey bar and detail card in one column (JAKAR-25) |
+| `src/ui/` | Panels: clock, layers, search, detail, reach, follow, credits |
+| `#left-rail` | Search and detail card in one column (JAKAR-25) |
 | `src/data/artifact-loader.js` | Manifest-first loading, mode gating, IndexedDB cache |
 | `src/data/decode.worker.js` | Binary decode, off the main thread |
 | `src/url-state.js` | Deep links, including `?cam=` for a live camera |
@@ -576,6 +585,27 @@ card in Jakarta daylight. Both reference apps are light for that reason.
   its own chrome, and it keeps playback reading as a day passing over the city.
   Pinning the preset light was considered and rejected.
 
+## What went, and what stayed
+
+The router did not go with the journey planner. **Reachability still needs
+it** — "everywhere you can get to in 45 minutes" is the same forward search
+with the destination removed and a ceiling put on instead, and it is the most
+spatial thing in the app. `router.js`, `timetable.js` and `fares.js` all stay.
+
+Removed: `src/ui/journey.js`, `src/ui/ride.js`, the `journey-*` map layers, the
+`from`/`to`/`fromll` URL parameters, the stop card's *Dari sini* / *Ke sini*,
+and the frame loop's journey branch.
+
+- **A tap on empty map now offers reachability rather than an origin.** The
+  "sekitar sini" card's one action used to be *plan from here*; it sets a reach
+  origin instead, which is the spatial question a tap on nothing is actually
+  asking. That is also most of JAKAR-66 answered by subtraction.
+- **The stop card has one filled action again** — *Lihat jangkauan*. It had
+  three primary buttons when two of them were journey ends.
+- **`#ride` is gone and `#follow-hud` keeps the slot.** They shared it and were
+  never open together; the frame loop's guard collapses from
+  `(app.trackedRun < 0 || app.ride.active)` to `app.trackedRun < 0`.
+
 ## The two rails, and the finder
 
 **Left is what you do, right is what you read.** `buildRails()` puts the finder
@@ -590,16 +620,20 @@ from every phone at once. See trap 13 for what the first attempt did instead.
 Layanan moved right because it is a filter you set once, not a step in finding
 or planning anything.
 
-**The finder has two modes, and that is the point.** The app answers two
-different questions and they want different searches: "how do I get there" wants
-two *stops*, "what is the Bogor line" wants one *route*. One mixed result list
-made every query ambiguous — typing "Bogor" returned a corridor and eleven
-stations with no way to say which you meant. Navigasi and Jalur each list one
-kind, so the list is unambiguous by construction.
+**The finder is one field over everything.** It was two tabs, because a mixed
+list made every query ambiguous — typing "Bogor" returned a corridor and eleven
+stations with no way to say which you meant. That ambiguity was never really
+about the list: it was about what happened *next*. A stop was an origin to plan
+from, a line was a thing to look at, and nothing in the row said which.
 
-- **Navigasi owns origin and destination**, as two editable fields. This is why
-  the old `#journey-bar` is gone: the fields *are* the bar. Picking an origin
-  moves focus to the destination, because that is always what happens next.
+With planning gone there is one next step — show me this — so one list is
+unambiguous by construction, and the kind is carried by the mark: a halte or
+stasiun glyph in a plate against a line's ring or corridor badge. The picture
+says which without a tab having to be chosen first.
+
+- **Duplicate stop names are more visible in one list.** Three rows reading
+  "Akses Bawah Flyover Raya" are three real stops with one name, which the two
+  tabs used to hide behind a mode choice. Worth a disambiguating line one day.
 - **Jalur previews a line**: the card is the route and its stops, and the map
   frames it. Contrast comes from dimming the other 700 lines, not from
   brightening this one — a brighter needle is still in the same haystack. Same
@@ -1457,13 +1491,15 @@ KB of artifacts (JAKAR-61), the layout is one column below 700px (JAKAR-62), and
 the render path has been measured on hardware somebody actually rides the bus
 with (JAKAR-60).
 
-The app can: run live or replay a day, follow a vehicle (chase or on-board, with
-its own controls), plan a journey from two typed fields, ride that journey,
-preview a line and watch only its vehicles run, show reachability, answer "what
+The app can: run live or replay a day, follow a vehicle (chase or on-board,
+with its own controls), preview a line and watch only its vehicles run, show
+how far you can get from any stop or any point in a time budget, answer "what
 is near this point", show first/last departure, colour by live frequency, and
 share any view as a link — a camera included — and watch the actual street, or
 the actual toll carriageway, through a public CCTV camera beside the simulated
 fleet.
+
+It deliberately does **not** plan a journey from A to B any more.
 
 **It now looks like Jakarta rather than like a template** (JAKAR-64). The
 typeface is Plus Jakarta Sans, the accent is Transjakarta's own signage blue,
