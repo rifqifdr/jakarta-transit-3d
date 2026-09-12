@@ -387,7 +387,16 @@ export async function writeArtifacts(dataset, outDir, {previousManifest = null} 
             name: dataset.stops.map(s => s.name),
             lat: dataset.stops.map(s => Math.round(s.lat * COORD_SCALE)),
             lon: dataset.stops.map(s => Math.round(s.lon * COORD_SCALE)),
-            station: dataset.stops.map(s => stopIndex.get(s.station) ?? -1)
+            station: dataset.stops.map(s => stopIndex.get(s.station) ?? -1),
+
+            // A full column rather than a list of the 100 stops that are
+            // accessible, which is the shape sparseness suggests. Measured:
+            // the column is 16,473 bytes raw and **121 brotli**, the sparse
+            // list 501 raw and 139 — eight thousand zeros run-length away to
+            // nothing, while a hundred rising indices carry real entropy. So
+            // the wire cost of the obvious saving is negative, and the column
+            // keeps the shape every other stop field already has.
+            accessible: dataset.stops.map(s => s.accessible ? 1 : 0)
         },
 
         // Pattern metadata only — the stop sequences and offsets are the bulk

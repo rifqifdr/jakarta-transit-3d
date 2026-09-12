@@ -87,7 +87,13 @@ export async function loadArtifactBundle(base = 'artifacts/', {modes = null, onP
             y: core.stops.lat[i] / COORD_SCALE,
             x: core.stops.lon[i] / COORD_SCALE,
             s: core.stops.station[i] === i ? 1 : 0,
-            a: 0,
+
+            // Hardcoded 0 until now, which switched *Halte aksesibel* from a
+            // filter into a blank map: the flag is in the canonical dataset
+            // (100 stops, 39 of them drawn stations) and was simply never
+            // carried across the encode. Tolerant of a core file without the
+            // column, so an artifact set built before it still loads.
+            a: core.stops.accessible?.[i] ? 1 : 0,
             p: core.stops.station[i] >= 0 && core.stops.station[i] !== i
                 ? stopIds[core.stops.station[i]]
                 : null

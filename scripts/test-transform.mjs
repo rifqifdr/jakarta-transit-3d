@@ -14,8 +14,11 @@ import {
 } from './transform/model.mjs';
 import normaliseCctv from './transform/sources/cctv.mjs';
 import normaliseCctvTol from './transform/sources/cctv-tol.mjs';
-import {encodeShapes, encodeTrips} from './transform/artifacts.mjs';
+import {encodeShapes, encodeTrips, writeArtifacts} from './transform/artifacts.mjs';
 import {counts, formatReport, validate} from './transform/validate.mjs';
+import {mkdtemp, readFile, rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 
 let passed = 0,
     failed = 0;
@@ -921,6 +924,64 @@ section('Toll camera sources decay quietly, so the gate watches them (JAKAR-56)'
     check('no cctv-tol snapshot at all is simply passed over',
         !hasError(validate(baseDataset(), {toll: null, snapshots: []}), 'toll-camera-sources') &&
         !hasWarning(validate(baseDataset(), {toll: null, snapshots: []}), 'toll-camera-sources'));
+}
+
+section('Core carries every stop field the client reads');
+{
+    // The check this project did not have, and the reason *Halte aksesibel*
+    // shipped as a blank map: the canonical model knew which stops a wheelchair
+    // user can board from, `writeArtifacts` never emitted the column, and the
+    // client hardcoded `a: 0`. Three correct-looking files, one field quietly
+    // dropped between them — and every binary round-trip check above passed,
+    // because none of them ever looked at core.
+    const data = baseDataset();
+
+    data.stops.find(s => s.id === 'BM').accessible = true;
+
+    const outDir = await mkdtemp(join(tmpdir(), 'artifacts-')),
+        {manifest} = await writeArtifacts(data, outDir),
+        core = JSON.parse(await readFile(join(outDir, manifest.core.file), 'utf8')),
+        index = data.stops.findIndex(s => s.id === 'BM');
+
+    check('the accessible column is emitted', Array.isArray(core.stops.accessible));
+    check('  one per stop, like every other stop column',
+        core.stops.accessible?.length === data.stops.length,
+        `${core.stops.accessible?.length} of ${data.stops.length}`);
+    check('  and it marks the accessible stop, and only it',
+        core.stops.accessible?.[index] === 1 &&
+        core.stops.accessible?.filter(a => a).length === 1,
+        JSON.stringify(core.stops.accessible));
+
+    // Every stop field the canonical model carries either reaches core or is
+    // listed here as deliberately left behind. A new field then has to be a
+    // decision rather than an omission — which is the whole failure above.
+    const dropped = new Set([
+            // Derivable from the patterns that call at the stop, and the
+            // client does not ask.
+            'modes',
+            // The operator's own platform label. Nothing is drawn per platform.
+            'platform'
+        ]),
+        modelFields = Object.keys(data.stops[0]),
+        missing = modelFields.filter(f =>
+            !dropped.has(f) && !(f in core.stops));
+
+    check('no canonical stop field is dropped without saying so',
+        missing.length === 0, missing.join(', '));
+
+    // The mirror image, from the client's side: the fields it actually reads
+    // off `core.stops` must exist. A read of a column nobody emits is not an
+    // error in JavaScript — it is `undefined`, which is how `a: 0` looked.
+    const client = await readFile(new URL('../src/data/network-artifacts.js', import.meta.url), 'utf8'),
+        read = [...new Set([...client.matchAll(/core\.stops\.(\w+)/g)].map(m => m[1]))],
+        absent = read.filter(f => !(f in core.stops));
+
+    check('every core.stops field the client reads is emitted',
+        absent.length === 0, absent.join(', '));
+    check('  and the client reads the accessible column at all',
+        read.includes('accessible'), read.join(', '));
+
+    await rm(outDir, {recursive: true, force: true});
 }
 
 // ---------------------------------------------------------------------------

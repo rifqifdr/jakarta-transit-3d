@@ -942,6 +942,20 @@ Each of these shipped broken once. They are cheap to reintroduce.
     consistent. `MIN_HEADWAY` is 60 s: the feed's genuine headways start at
     180 s. Found by reading the card, which is the tenth bug on that list.
 
+15. **A field can be correct in three files and still not arrive.** The
+    canonical model has carried `accessible` since the bus feed was migrated —
+    100 stops, 39 of them drawn stations, propagated from platform to station
+    exactly as the feed requires. `artifacts.mjs` never emitted a column for
+    it, and `network-artifacts.js` hardcoded `a: 0`. So *Halte aksesibel*
+    switched the map from 7,633 stops to **zero** on the default boot path,
+    while the legacy path it was written against still worked. Nothing failed:
+    reading a column nobody emits is `undefined`, not an error, and the binary
+    round-trip checks never looked at `core.json` at all. **Test the contract
+    between the encoder and the client, not just each encoder.**
+    `test-transform` now asserts that every canonical stop field either
+    reaches core or is named as deliberately dropped, and that every
+    `core.stops.*` the client reads exists.
+
 ## The live camera layer
 
 Public CCTV, playing in the map, after `mt3d-plugin-livecam` in Mini Tokyo 3D
@@ -1576,7 +1590,7 @@ map underneath looks like — Warna, Pudar or Mono.
 | Probe harness | `scratchpad/probe.mjs` rebuilt — real Chrome over CDP, step lists, screenshots |
 | Render cost | Measured on a real GPU at last (JAKAR-58): the fleet is 0.2-2.6 ms, the basemap is the rest |
 
-**Ten bugs have been found by using the app rather than by testing it**, every
+**Eleven bugs have been found by using the app rather than by testing it**, every
 one of which passed the whole automated suite first: the walk table joining stops
 74 km apart (trap 7), the frame loop crashing on a shapeless trip (trap 8), 158
 of 806 patterns collapsed so vehicles teleported then stood still, 43 unservable
@@ -1587,10 +1601,12 @@ deep link that opened a card over a layer the live gate had already torn down
 (trap 12), and a phone where the clock covered the card you had just opened and
 nothing could close it (trap 13), and nine rail lines advertising a train
 "tiap 0 mnt" while the frequency layer called them the most frequent services
-on the map (trap 14). The ninth is the one to notice: it was found by the
-person who owns the project opening it on his own phone, after every check in
-the repo had passed. The tenth was found by reading a card while changing
-something else on it.
+on the map (trap 14), and an accessibility filter that emptied the map because
+the flag was dropped between the model and the client (trap 15). The ninth is
+the one to notice: it was found by the person who owns the project opening it
+on his own phone, after every check in the repo had passed. The tenth was
+found by reading a card while changing something else on it, and the eleventh
+by switching on a filter and seeing nothing left.
 
 That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
