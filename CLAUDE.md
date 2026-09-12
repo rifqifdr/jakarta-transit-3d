@@ -1596,6 +1596,12 @@ That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
 thing that has ever caught the interaction ones.
 
+**Next session is about interaction and craft** — JAKAR-79 (hand-crafted
+walkers along the routed walk paths) or JAKAR-65 (mobile type and controls).
+Both land on the same blind spot: JAKAR-63, that every frame number this
+project has is a static camera, and both of those features are looked at while
+panning.
+
 **Open work is in Plane.** Start a session by reading the project's
 **"Next Session — Start Here"** page, which is kept current. Next up are
 **JAKAR-65** (mobile type and controls are still undersized — the scale is
@@ -1603,7 +1609,8 @@ currently identical on a phone and a desktop) and **JAKAR-66** (*"sekitar sini"*
 opens over the part of the map being navigated on a phone), both raised by the
 owner at the end of the 2026-09-11 session. **JAKAR-50** is done: the line
 codes, the line colours and the mode glyphs are in, and the licence question
-that blocked it turned out to have an answer.
+that blocked it turned out to have an answer. **JAKAR-67** recorded the licence
+audit of all nineteen sources.
 
 ## Known weak points
 
