@@ -227,6 +227,13 @@ const SPRITE = `
   <symbol id="kf-frekuensi" viewBox="0 0 24 24">
     <path fill="currentColor" fill-rule="evenodd" d="M12 2.2a9.8 9.8 0 1 1 0 19.6 9.8 9.8 0 0 1 0-19.6Zm0 2.4a7.4 7.4 0 1 0 0 14.8 7.4 7.4 0 0 0 0-14.8Zm-1 2.5h2v5.2h3.7v2H11Z"/>
   </symbol>
+  <symbol id="kf-pejalan" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M11.5 1.2a2.2 2.2 0 1 1 0 4.4 2.2 2.2 0 0 1 0-4.4Z"/>
+    <path fill="currentColor" d="M9.9 6.2h3.2l-.5 6h-2.3Z"/>
+    <path fill="currentColor" d="M13.1 6.8l1.5.6 1.8 3.8-1.3.7Z"/>
+    <path fill="currentColor" d="M11.7 12.2h1.5l2.8 7.6-1.4.7Z"/>
+    <path fill="currentColor" d="M10.3 12.2h1.3l-2 8.2-1.4-.3Z"/>
+  </symbol>
   <symbol id="kf-lrt" viewBox="0 0 24 24">
     <path fill="currentColor" fill-rule="evenodd" d="M10 5h4a4.5 4.5 0 0 1 4.5 4.5V18a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2V9.5A4.5 4.5 0 0 1 10 5Zm-2.3 4.2h8.6v4.4H7.7Zm0 6.1h3v1.5h-3Zm5.6 0h3v1.5h-3ZM5.5 21.2h13v1.3h-13Z"/>
   </symbol>

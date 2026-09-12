@@ -6,6 +6,7 @@ import configs from './configs';
 import Clock from './clock';
 import Network from './network';
 import Fleet from './fleet';
+import Walkers, {WALKER_MIN_ZOOM} from './walkers';
 import VehicleLayer from './layers/vehicle-layer';
 import ClockControl from './ui/clock-control';
 import LayerPanel from './ui/layer-panel';
@@ -191,7 +192,8 @@ async function main() {
             status.textContent = text;
         }),
         clock = new Clock(),
-        fleet = new Fleet(network);
+        fleet = new Fleet(network),
+        walkers = new Walkers(network);
 
     status.textContent = 'Menyiapkan peta...';
 
@@ -273,12 +275,17 @@ async function main() {
     map.addControl(new mapboxgl.NavigationControl({visualizePitch: true}), 'bottom-right');
     map.addControl(new mapboxgl.GeolocateControl({trackUserLocation: true}), 'bottom-right');
 
-    const vehicleLayer = new VehicleLayer(fleet);
+    const vehicleLayer = new VehicleLayer(fleet, walkers);
 
     vehicleLayer.lineColor = vehicleColors(network.routes);
 
     const app = {
-        map, clock, network, fleet, vehicleLayer,
+        map, clock, network, fleet, vehicleLayer, walkers,
+        // People on the pavements, above their own zoom band (JAKAR-79). On by
+        // default — it is decoration, but decoration nobody ever sees is not
+        // worth the code — and switchable, because street level is where a
+        // phone has least headroom (JAKAR-60).
+        walkersOn: true,
         selectedRun: -1,
         trackedRun: -1,
         selectedStop: null,
@@ -761,6 +768,11 @@ function buildUI(app) {
                 setAccessibleOnly(app, on);
             } else if (layer === 'headway') {
                 setRouteColouring(app, on ? 'headway' : 'category');
+            } else if (layer === 'walkers') {
+                app.walkersOn = on;
+                if (!on) {
+                    app.walkers.clear();
+                }
             } else if (layer === 'cameras') {
                 setCameras(app, on);
             } else {
@@ -1671,14 +1683,43 @@ function setCameraMode(app, mode) {
 // -------------------------------------------------------------- frame loop
 
 function loop(app) {
-    const {map, clock, fleet, vehicleLayer, clockControl, detail} = app;
+    const {map, clock, fleet, walkers, vehicleLayer, clockControl, detail} = app;
     let lastStopRefresh = 0,
-        lastLive = null;
+        lastLive = null,
+        lastNow = null,
+        lastReal = 0,
+        lastWalkZoom = null;
 
     const frame = () => {
-        const now = clock.getTimeOffset();
+        const now = clock.getTimeOffset(),
+            real = performance.now() / 1000;
 
         fleet.update(now, clock.getDayOfWeek());
+
+        // The crowd takes both deltas: the simulated one because it stops when
+        // the clock stops, and the real one because its pace is capped
+        // against it — a pedestrian at 1200x crosses the frame within one
+        // frame, and nothing about a walker is owed to the timetable
+        // (JAKAR-79). The first frame has no previous time to difference.
+        if (app.walkersOn && lastNow !== null) {
+            walkers.update(map, now - lastNow, real - lastReal);
+        } else if (!app.walkersOn) {
+            walkers.clear();
+        }
+        lastNow = now;
+        lastReal = real;
+
+        // Whether the crowd's zoom band has been reached. Compared against
+        // the last frame for the same reason the live gate is: this writes to
+        // the DOM, and doing that sixty times a second to set the value it
+        // already holds is work for nothing.
+        const inWalkBand = map.getZoom() >= WALKER_MIN_ZOOM;
+
+        if (inWalkBand !== lastWalkZoom) {
+            lastWalkZoom = inWalkBand;
+            app.layerPanel.setWalkersVisible(inWalkBand);
+        }
+
         clockControl.update();
 
         const hour = Math.floor(now / 3600),

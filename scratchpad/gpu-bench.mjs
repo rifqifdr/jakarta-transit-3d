@@ -291,6 +291,17 @@ window.__benchInstall = () => {
         });
     };
 
+    // The crowd (JAKAR-79) is switched at its own flag rather than in the
+    // render patch above, because the simulation runs in the frame loop and
+    // the drawing is only the second half of it — turning it off here measures
+    // both, which is what the ticket asks about.
+    b.setWalkers = on => {
+        app.walkersOn = on;
+        if (!on) {
+            app.walkers.clear();
+        }
+    };
+
     for (const mesh of layer.meshes) {
         const attribute = mesh.instanceMatrix,
             add = attribute.addUpdateRange.bind(attribute);
@@ -366,6 +377,7 @@ window.__benchInstall = () => {
     b.summary = () => ({
         samples: b.frame.length,
         fleet: fleet.activeCount,
+        walkers: app.walkers ? app.walkers.count : 0,
         zoom: Number(app.map.getZoom().toFixed(2)),
         frame: {
             p50: pct(b.frame, 0.5), p90: pct(b.frame, 0.9), p99: pct(b.frame, 0.99),
@@ -449,11 +461,15 @@ if (process.env.BENCH_THROTTLE) {
 }
 
 async function scenario(label, mode) {
-    // `box` is not a render mode — it is the shipped path drawn with the old
-    // geometry, so the layer runs `full` and only the meshes change.
+    // Neither `box` nor `nowalkers` is a render mode: both are the shipped
+    // path with one thing swapped, so the layer runs `full` and only the
+    // meshes or the crowd change.
     await evaluate(`
         window.__bench.setGeometry(${JSON.stringify(mode === 'box' ? 'box' : 'kapsul')});
-        window.__bench.mode = ${JSON.stringify(mode === 'box' ? 'full' : mode)};
+        window.__bench.setWalkers(${mode !== 'nowalkers'});
+        window.__bench.mode = ${JSON.stringify(
+        mode === 'box' || mode === 'nowalkers' ? 'full' : mode
+    )};
         return true;
     `);
     await sleep(WARMUP_MS);
@@ -463,9 +479,15 @@ async function scenario(label, mode) {
 
     const summary = await evaluate('return window.__bench.summary();');
 
+    // A sample can come back empty — the window losing focus is enough for
+    // Chrome to stop scheduling frames — and an arm reporting nothing is worth
+    // saying rather than crashing the matrix eight arms from the end.
+    const p50 = summary.frame.p50 === null ? null : summary.frame.p50.toFixed(2);
+
     process.stderr.write(`  ${label.padEnd(28)} ${
-        summary.frame.p50.toFixed(2)} ms p50, ${
-        summary.frame.fps.toFixed(0)} fps, fleet ${summary.fleet}\n`);
+        p50 === null ? 'no frames recorded' : `${p50} ms p50, ${
+            summary.frame.fps.toFixed(0)} fps`}, fleet ${summary.fleet}, walkers ${
+        summary.walkers}\n`);
     return {label, mode, ...summary};
 }
 
@@ -488,12 +510,27 @@ const VIEWS = [
         id: 'street',
         label: 'street level (z16.8)',
         camera: {center: [106.8230, -6.2010], zoom: 16.8, pitch: 65, bearing: 20}
+    },
+    // The crowd's own view. Street level as this project benchmarks it is
+    // z16.8, and the walkers do not exist there at all — a person is 2.5 px
+    // tall, so their band starts at z17.2. Tanah Abang because it is the
+    // densest interchange measured, 24 km of eligible street in view, which
+    // is where the cap of 800 is actually reached.
+    {
+        id: 'crowd',
+        label: 'crowd (z18.4, Tanah Abang)',
+        camera: {center: [106.8112, -6.1858], zoom: 18.4, pitch: 65, bearing: 20}
     }
 ];
 
 const results = [];
 
-for (const v of VIEWS) {
+// BENCH_VIEWS=crowd,street runs a subset. The matrix is four views by six
+// arms at five seconds each, and a question about one of them should not cost
+// two minutes of the other three.
+const only = (process.env.BENCH_VIEWS || '').split(',').filter(Boolean);
+
+for (const v of VIEWS.filter(v => !only.length || only.includes(v.id))) {
     process.stderr.write(`\n${v.label}\n`);
     await view(v.camera);
 
@@ -502,7 +539,11 @@ for (const v of VIEWS) {
         ['box geometry (pre-JAKAR-49)', 'box'],
         ['no fleet (basemap only)', 'nofleet'],
         ['no draw (CPU loop only)', 'nodraw'],
-        ['full-buffer upload', 'noupload']
+        ['full-buffer upload', 'noupload'],
+        // Only means anything in the crowd view, and it is run everywhere
+        // anyway: a walker arm that measures the same as `full` at z12 is the
+        // evidence that the zoom band really does cost nothing below it.
+        ['no crowd (JAKAR-79 off)', 'nowalkers']
     ]) {
         results.push({view: v.id, ...await scenario(label, mode)});
     }

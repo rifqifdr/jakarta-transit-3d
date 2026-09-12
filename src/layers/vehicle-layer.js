@@ -6,7 +6,9 @@ import {
 import mapboxgl from 'mapbox-gl';
 import configs from '../configs';
 import {CAPACITY} from '../fleet';
+import {WALKER_CAPACITY} from '../walkers';
 import vehicleGeometry from './vehicle-geometry';
+import walkerGeometry from './walker-geometry';
 
 // How much larger than life the tracked vehicle is drawn.
 const SELECTED_SCALE = 1.7;
@@ -43,13 +45,27 @@ const MODE_IDS = ['bus', ...Object.keys(configs.modes).filter(id => id !== 'bus'
  */
 export default class VehicleLayer {
 
-    constructor(fleet) {
+    constructor(fleet, walkers = null) {
         const me = this;
 
         me.id = 'buses';
         me.type = 'custom';
         me.renderingMode = '3d';
         me.fleet = fleet;
+
+        /*
+           The crowd is drawn in this layer's own pass rather than in a layer
+           of its own (JAKAR-79).
+
+           A second Mapbox custom layer means a second `WebGLRenderer`, a
+           second scene and a second `resetState()` every frame — a full GL
+           state reset, to draw the smallest objects on the map. The people are
+           a different subject and live in their own files, `walkers.js` for
+           where they are and `walker-geometry.js` for what they look like;
+           what they share with the fleet is one pass, one camera and one
+           material, which is a rendering decision rather than a modelling one.
+        */
+        me.walkers = walkers;
 
         me.origin = mapboxgl.MercatorCoordinate.fromLngLat(configs.defaultCenter, 0);
         me.metre = me.origin.meterInMercatorCoordinateUnits();
@@ -124,6 +140,21 @@ export default class VehicleLayer {
             return mesh;
         });
 
+        // Two poses of one figure, a mesh each, so the whole crowd is two
+        // draw calls whatever its size. Sharing the fleet's material is
+        // deliberate: the walk cycle needs no shader of its own, and a
+        // previewed line dims the city around it — people included.
+        me.walkerMeshes = walkerGeometry().map(geometry => {
+            const mesh = new InstancedMesh(geometry, material, WALKER_CAPACITY);
+
+            mesh.instanceMatrix.setUsage(DynamicDrawUsage);
+            mesh.frustumCulled = false;
+            mesh.count = 0;
+            scene.add(mesh);
+
+            return mesh;
+        });
+
         // A ring drawn under whichever vehicle is being tracked.
         const marker = me.marker = new Mesh(
             new RingGeometry(configs.vehicleLength * 0.75, configs.vehicleLength * 0.95, 32),
@@ -140,7 +171,7 @@ export default class VehicleLayer {
     onRemove() {
         const me = this;
 
-        for (const mesh of me.meshes) {
+        for (const mesh of [...me.meshes, ...me.walkerMeshes]) {
             mesh.geometry.dispose();
         }
         me.material.dispose();
@@ -364,6 +395,8 @@ export default class VehicleLayer {
             me._generation = fleet.generation;
         }
 
+        me._drawWalkers();
+
         const slot = me._selection;
 
         if (slot >= 0 && slot < count && !me._hideSelected) {
@@ -392,6 +425,95 @@ export default class VehicleLayer {
         me.renderer.resetState();
         me.renderer.render(me.scene, me.camera);
         me.map.triggerRepaint();
+    }
+
+    /**
+     * Places the crowd, from whatever `walkers.js` last worked out.
+     *
+     * The simulation is not run here — `main.js` advances it with the clock's
+     * own deltas, exactly as it does the fleet — so this is the placement half
+     * only, and it writes nothing at all when nobody is in view. Above the
+     * zoom band that is the common case: a walker count of zero costs two
+     * assignments and no upload.
+     */
+    _drawWalkers() {
+        const me = this,
+            walkers = me.walkers,
+            meshes = me.walkerMeshes,
+            {origin, metre, _matrix: m, _position: p, _scale: s,
+                _quaternion: q, _axis: axis, _color: color} = me,
+            count = walkers ? walkers.count : 0;
+
+        if (!count) {
+            for (const mesh of meshes) {
+                mesh.count = 0;
+            }
+            return;
+        }
+
+        // Never inflated, unlike the fleet: they are drawn at the size a
+        // person is, and the zoom band is chosen so that size is legible. What
+        // does vary is the scale-in across the bottom of the band.
+        const grow = walkers.scale,
+            at = [0, 0];
+
+        for (let i = 0; i < count; i++) {
+            const pose = walkers.pose[i],
+                mesh = meshes[pose],
+                slot = at[pose]++;
+
+            s.set(grow, grow, grow);
+            p.set(
+                (walkers.mercX[i] - origin.x) / metre,
+                (origin.y - walkers.mercY[i]) / metre,
+                walkers.lift[i]
+            );
+            q.setFromAxisAngle(axis, -walkers.bearing[i]);
+            m.compose(p, q, s);
+            mesh.setMatrixAt(slot, m);
+
+            // Clothing, as a per-instance colour the geometry's own tints
+            // multiply down from.
+            //
+            // Dark and desaturated, and twice as dark as it looks: this
+            // shares the fleet's lights, which come to about 3.9 of combined
+            // intensity, so a colour is drawn at roughly four times the value
+            // set here before clipping. At lightness 0.62 — a perfectly
+            // reasonable mid grey — eight hundred people came out pure white
+            // and read as a field of pale posts, brighter than anything else
+            // on a night basemap. The fleet is what has to stay loudest here;
+            // the crowd is read by its shape and its movement instead.
+            //
+            // Called unconditionally, and that is the whole trick: three
+            // allocates `instanceColor` *inside* `setColorAt`, so guarding the
+            // call on the attribute existing means it never does. The crowd
+            // then draws at white times its vertex tints, which the lights
+            // clip — which is what "a field of pale posts" actually was.
+            color.setHSL(walkers.tint[i], 0.25, 0.3);
+            mesh.setColorAt(slot, color);
+        }
+
+        for (let k = 0; k < meshes.length; k++) {
+            const mesh = meshes[k],
+                n = at[k];
+
+            mesh.count = n;
+            if (!n) {
+                continue;
+            }
+            // A walker changes pose as it walks, so unlike the fleet's colour
+            // buffer both of these are rewritten every frame — which is why
+            // only the written prefix is uploaded. At 800 people that is
+            // 51 KB against the 2 x 800 instances the buffers are sized for.
+            mesh.instanceMatrix.clearUpdateRanges();
+            mesh.instanceMatrix.addUpdateRange(0, n * 16);
+            mesh.instanceMatrix.needsUpdate = true;
+            if (mesh.instanceColor) {
+                mesh.instanceColor.clearUpdateRanges();
+                mesh.instanceColor.addUpdateRange(0, n * 3);
+                mesh.instanceColor.needsUpdate = true;
+            }
+        }
     }
 
 }

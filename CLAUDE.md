@@ -157,8 +157,10 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `public/artifacts/` | What the browser downloads. Generated; rebuildable from snapshots. |
 | `src/routing/` | `timetable.js` (schedule maths), `router.js` (RAPTOR, now only for reachability), `fares.js` |
 | `src/fleet.js` | Expands headways into runs, positions them each frame |
+| `src/walkers.js` | The crowd: which streets they may walk, and where each one is |
 | `src/layers/vehicle-layer.js` | The fleet, as one instanced three.js mesh per mode |
 | `src/layers/vehicle-geometry.js` | The Kapsul body, built per mode inside one base box |
+| `src/layers/walker-geometry.js` | A person, 48 triangles, in two poses |
 | `src/kodefikasi.js` | Line codes, line colours and the mode glyph sprite (JAKAR-50) |
 | `src/cameras.js` | Live CCTV: artifact loading, the map pin, and the HLS player |
 | `src/ui/` | Panels: clock, layers, search, detail, reach, follow, credits |
@@ -360,6 +362,107 @@ still holds each mode's real size and a service acceleration; a KRL set is
   would write past the end of a buffer the first time it was wrong. Only the
   prefix written each frame is uploaded (`addUpdateRange`), so the waste is
   memory, not bandwidth.
+
+## People on the pavements
+
+JAKAR-79. Six thousand vehicles moved through a city with nobody in it. The
+crowd is **decoration** — the only thing on this map not derived from a
+timetable — and everything below is about not letting decoration tell lies.
+
+**The ticket's premise was wrong, and finding out cost the first build.** It
+said the walk table already solved where people may walk: 40,466 edges really
+routed through Valhalla (JAKAR-40), so walkers on those paths are on real
+pavement. But **Valhalla's matrix endpoint never returned the paths** —
+`sources_to_targets` carries a time, a distance and the snapped endpoints, and
+nothing in between. We know how long each real path is and not where it runs.
+
+- **A length test cannot tell you a line is on the ground.** The way out looked
+  solid: an edge whose routed length is within 15% of the straight line between
+  its stops has no room in it for a detour. That selects 14,569 edges whose
+  *true* detour factor is p50 1.02, p99 1.16, max 1.21, and it excludes every
+  barrier case the routing was bought to find. It was built, and it put forty
+  people on the live tracks at Tanah Abang: `Tanah Abang → Jln. Taman Jatibaru
+  Timur` is 395 m apart with a true factor of **1.04**, because the real route
+  is the Jatibaru bridge running nearly parallel to the straight line. Same
+  length, different ground.
+- **Route shapes are on the ground by construction**, so that is what the
+  crowd walks beside. A walker is positioned exactly as a vehicle is — a shape
+  and a distance along it through `network.locate` — then pushed 2.6-4.8 m
+  sideways to the kerb, which is the whole remaining error in its position.
+- **Which shapes is a decision, and the exclusions carry it.** In: Mikrotrans,
+  Integrasi, Rusun, Bus Wisata — 440 of 740 shapes, 7,470 km of surface street.
+  Out: **BRT Koridor**, whose shape is the *median* busway, so the kerb is two
+  carriageways away; **Royaltrans and Transjabodetabek**, which spend the
+  journey on a toll road; and **every rail mode** — a viaduct, a tunnel or a
+  running line.
+- **The crowd is where Jakarta's street network is drawn**, which means
+  **nothing at Bekasi or Bogor**: Transjakarta runs no street service there, so
+  the map holds no surface geometry to walk beside. True rather than a bug, and
+  the honest limit of the feature.
+- **`querySourceFeatures` cannot reach the basemap's streets.** The obvious
+  fix for that gap — Mapbox Standard knows every road in view — does not
+  exist: Standard is a style fragment and its own sources are not in
+  `getStyle().sources` at all, so there is no source layer to query.
+
+**A person is 2.5 px tall at the zoom this project calls street level.** That
+is the measurement the whole feature is shaped by: 1.4 px at z16, 2.5 px at
+z16.8 — JAKAR-58's and JAKAR-60's street view — 5.7 px at z18, 11.5 px at z19.
+So the band starts at **z17.2**, deeper than street level, and they are never
+inflated the way vehicles are below `trueScaleZoom`: an 11x person is a giant
+standing over the buses.
+
+- **The row says so, because a layer you switch on that draws nothing is trap 9
+  again.** *Pejalan kaki* carries a hint below it until the map is zoomed in
+  far enough, the softer sibling of the camera layer's live-mode hint.
+- **Two poses, a mesh each, 48 triangles a figure.** Instancing varies the
+  matrix and the colour only, so an animated pose needs either a shader of our
+  own or a mesh per pose; a mesh per pose is one extra draw call for the whole
+  crowd. The legs alternate on the parity of the footfall count and the body
+  rises once per step, both derived from distance walked rather than from time,
+  so a slow walker steps slowly.
+- **Nobody holds any state.** Position is a function of one scalar clock and a
+  hash of which walker it is — pace, side of the street, kerb distance, start
+  offset, clothing. The in-view set is rebuilt whenever the camera moves a
+  fifth of the viewport, and a running random generator would have reshuffled
+  the entire crowd on every one of those.
+- **The wrap is hidden by the pad, not by cleverness.** A walker paces the
+  in-view run of its street and returns to the start at the end, which is a
+  teleport — so runs are cut at the edge of a box 40% larger than the
+  viewport, and every wrap happens off screen.
+- **Thin the crowd, never truncate it.** Tanah Abang asks for 1,300 walkers
+  against a cap of 800. The first version filled street by street until the cap
+  ran out, which is three crowded blocks and an empty view beyond them;
+  spacing widens instead, so 800 people cover all of it.
+- **The crowd stops when the clock stops, and is capped at 8x.** A vehicle has
+  a timetable and must be where the timetable says at 1200x; a walker has no
+  schedule and is not anywhere in particular, and at 1200x a pedestrian crosses
+  the frame inside one frame.
+
+**What it costs: less than this instrument can see.** `gpu-bench.mjs` grew a
+`crowd` view (z18.4 over Tanah Abang, where the cap of 800 is reached) and a
+`nowalkers` arm. Run twice against the shipped build, vsync off:
+
+| | as shipped | crowd off | basemap alone |
+| --- | --- | --- | --- |
+| 5 s sample | 19.7 ms | 18.4 ms | 19.0 ms |
+| 9 s sample | 20.0 ms | 20.0 ms | 18.8 ms |
+
+**The two runs disagree about the sign, so the honest answer is "at most about
+1.3 ms and probably less".** 800 figures at 48 triangles is 38k triangles
+against the fleet's ~2M, so this is the expected shape rather than a surprise —
+and it is the same conclusion as JAKAR-58: the basemap is 18.8-19.0 ms of a
+20 ms frame and everything we draw over it is rounding. Below the zoom band it
+is free and measurably so, 6.10 ms against 6.00 at z10.5 with the count at
+zero.
+
+Two cautions on those numbers. **Absolute values are inflated** — street level
+measured 23.3 ms here against JAKAR-58's 16.5 ms, because this run shared the
+machine with other Chrome instances; only the within-run deltas mean anything,
+which is the same rule the timer-query trap established. And **no real phone
+has drawn 800 walkers yet**: `?bench` now carries the same `crowd` view and a
+*Pejalan kaki off* arm, so the next device answers it in one run. That is the
+measurement the ticket said would be part of the work, and it is the part
+still outstanding.
 
 ## Kodefikasi: the city's own line codes
 
@@ -1000,6 +1103,19 @@ Each of these shipped broken once. They are cheap to reintroduce.
     three seconds behind, so a tap could not be expressed at all. Both halves
     now state the time rather than waiting it out.
 
+17. **`setColorAt` is what allocates `instanceColor`, so guarding on it means
+    it never exists.** Three creates the per-instance colour attribute lazily,
+    *inside* the setter. A crowd of 800 people was written as
+    `if (mesh.instanceColor) { mesh.setColorAt(...) }` — which reads like
+    ordinary defensiveness, is never true, and silently drew every figure at
+    white times its vertex tints. With the fleet's lights at ~3.9 of combined
+    intensity that clipped to flat white, so the bug presented as a *styling*
+    problem — "a field of pale posts" — and two rounds of picking darker
+    colours changed nothing at all, because none of them were being used. The
+    fleet gets this right by calling the setter unconditionally and guarding
+    only the update range. Same shape as traps 10, 11 and the timer query: an
+    answer that looks like the thing you asked about and is not.
+
 ## The live camera layer
 
 Public CCTV, playing in the map, after `mt3d-plugin-livecam` in Mini Tokyo 3D
@@ -1572,6 +1688,10 @@ KB of artifacts (JAKAR-61), the layout is one column below 700px (JAKAR-62), and
 the render path has been measured on hardware somebody actually rides the bus
 with (JAKAR-60).
 
+**And at street level the city is no longer empty** (JAKAR-79): up to 800
+people walk the pavements beside Jakarta's own street services, from z17.2 —
+which is where a person stops being 2.5 px tall.
+
 The app can: run live or replay a day, follow a vehicle (chase or on-board,
 with its own controls), preview a line and watch only its vehicles run, show
 how far you can get from any stop or any point in a time budget, answer "what
@@ -1656,11 +1776,15 @@ That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
 thing that has ever caught the interaction ones.
 
-**Next session is about interaction and craft** — JAKAR-79 (hand-crafted
-walkers along the routed walk paths) or JAKAR-65 (mobile type and controls).
-Both land on the same blind spot: JAKAR-63, that every frame number this
-project has is a static camera, and both of those features are looked at while
-panning.
+**JAKAR-79 and JAKAR-66 are done (2026-09-12), and both point at the same next
+thing.** The crowd is looked at while panning and the press gesture is a
+gesture, so **JAKAR-63 — interaction is unmeasured, every frame number this
+project has is a static camera — is now the blocking one.** The probe grew
+`_tap`, `_press` and `_drag` for JAKAR-66, which is the harness that work
+needs. After that, JAKAR-65 (mobile type and controls, still identical to the
+desktop scale) and the crowd's own unmeasured half: **no real phone has drawn
+800 walkers yet**, and `?bench` now has a `crowd` view and a *Pejalan kaki off*
+arm waiting for one.
 
 **Open work is in Plane.** Start a session by reading the project's
 **"Next Session — Start Here"** page, which is kept current. Next up are

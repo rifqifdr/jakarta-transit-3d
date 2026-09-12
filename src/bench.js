@@ -38,6 +38,14 @@ const VIEWS = {
     wide: {
         label: 'City-wide',
         camera: {center: [106.8272, -6.2], zoom: 10.5, pitch: 55, bearing: 0}
+    },
+    // The crowd's own view (JAKAR-79). Street level as this project
+    // benchmarks it is z16.8, where a person is 2.5 px tall and the walkers
+    // do not exist at all — their band starts at z17.2. Tanah Abang is the
+    // densest interchange measured, and where the cap of 800 is reached.
+    crowd: {
+        label: 'Crowd (Tanah Abang)',
+        camera: {center: [106.8112, -6.1858], zoom: 18.4, pitch: 65, bearing: 20}
     }
 };
 
@@ -52,7 +60,12 @@ const VIEWS = {
 // and nothing switches to a 2D renderer. Name an arm after what it changes.
 const ARMS = [
     {id: 'shipped', label: 'As shipped', show3d: true},
-    {id: 'no3d', label: 'Gedung 3D off', show3d: false}
+    {id: 'no3d', label: 'Gedung 3D off', show3d: false},
+    // Only in the view where there is a crowd to turn off. Everywhere else it
+    // would measure the shipped arm twice and cost somebody another eight
+    // seconds of standing still holding a phone.
+    {id: 'nocrowd', label: 'Pejalan kaki off', show3d: true, walkers: false,
+        views: ['crowd']}
 ];
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -206,11 +219,20 @@ export default async function runBench(app) {
 
     const was3d = map.getConfigProperty('basemap', 'show3dObjects');
 
+    const wasWalkers = app.walkersOn;
+
     for (const [id, view] of Object.entries(VIEWS)) {
         for (const arm of ARMS) {
+            if (arm.views && !arm.views.includes(id)) {
+                continue;
+            }
             ui.status.textContent = `${view.label} — ${arm.label}…`;
 
             map.setConfigProperty('basemap', 'show3dObjects', arm.show3d);
+            app.walkersOn = arm.walkers !== false;
+            if (!app.walkersOn) {
+                app.walkers.clear();
+            }
             map.jumpTo(view.camera);
             await sleep(400);
             await settle(map);
@@ -226,7 +248,8 @@ export default async function runBench(app) {
                     p50: percentile(frames, 0.5),
                     p90: percentile(frames, 0.9),
                     p99: percentile(frames, 0.99),
-                    fleet: app.fleet.activeCount
+                    fleet: app.fleet.activeCount,
+                    walkers: app.walkers ? app.walkers.count : 0
                 };
 
             results.push(row);
@@ -241,6 +264,9 @@ export default async function runBench(app) {
     }
 
     map.setConfigProperty('basemap', 'show3dObjects', was3d);
+    // Both levers back as they were found: a benchmark that leaves the map
+    // changed is a benchmark somebody has to undo by reloading.
+    app.walkersOn = wasWalkers;
 
     // A frame that fits the budget reports the budget, so the fastest median
     // across the arms is the ceiling this page was scheduled against. It is

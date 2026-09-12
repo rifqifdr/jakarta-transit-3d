@@ -1148,7 +1148,12 @@ input[type=range]::-moz-range-thumb {
    vanishes teaches nothing, one that greys out with a reason does. */
 .toggle.disabled { opacity: 0.45; cursor: not-allowed; }
 
-.cam-hint {
+/* One rule for both: a line under a layer row saying why it is not doing
+   anything yet. `.cam-hint` was the only one when it was written; the crowd's
+   zoom band needed the same thing, and two definitions of one line is how the
+   six pill buttons happened. */
+.cam-hint,
+.row-hint {
   font-size: var(--text-2xs);
   color: var(--text-3);
   padding: 0 0 4px 27px;
