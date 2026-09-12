@@ -168,7 +168,7 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/url-state.js` | Deep links, including `?cam=` for a live camera |
 | `src/bench.js` | `?bench` — the on-device render benchmark. Dynamically imported, so it costs a normal visitor nothing |
 | `worker/index.js` | Cloudflare only: re-declares the `Content-Encoding` its asset server strips (JAKAR-61) |
-| `scratchpad/probe.mjs` | Real Chrome over CDP, native clicks. Finds interaction bugs; its timings are meaningless |
+| `scratchpad/probe.mjs` | Real Chrome over CDP, native clicks and real touch. Finds interaction bugs; its timings are meaningless |
 | `scratchpad/gpu-bench.mjs` | The same idea inverted: real GPU, vsync off, A/B arms. Timings only |
 | `scratchpad/mobile-bench.mjs` | A phone's viewport and pixel density on the real GPU: fill rate, and what each lever costs |
 | `scratchpad/verify-artifacts.mjs` | Asks an origin whether it really serves the artifacts compressed. Exits non-zero, so it can gate a deploy |
@@ -622,7 +622,35 @@ and the frame loop's journey branch.
 - **A tap on empty map now offers reachability rather than an origin.** The
   "sekitar sini" card's one action used to be *plan from here*; it sets a reach
   origin instead, which is the spatial question a tap on nothing is actually
-  asking. That is also most of JAKAR-66 answered by subtraction.
+  asking. That is also most of JAKAR-66 answered by subtraction. The label had
+  gone on saying *Mulai perjalanan dari sini* for a handler that has set a
+  reach origin since the planner left; it says *Lihat jangkauan dari sini* now,
+  which is what the stop card's own filled action says.
+- **On a touch screen that card is a press, not a tap** (JAKAR-66, done
+  2026-09-12). Panning and pinching a map is a lot of touching, and a stray
+  tap threw the card over **49% of a 390x844 phone** — measured — in the half
+  of the screen the thumb is working in. Press and hold opens it, which a pan
+  cannot produce by accident and which is how both reference apps drop a pin.
+  - **Gated on the pointer, not the viewport**, though the complaint came from
+    a phone. The card hurts because it is large relative to the screen *and*
+    was not asked for, and both are properties of the input: the same phone in
+    landscape is 844px wide — past the 700px the layout switches at, so a
+    width rule would miss it — and 390px tall, where the card is taller than
+    the viewport. A mouse in a narrow window has neither problem and keeps its
+    click. `pointerdown`'s `pointerType` answers this once; a touch screen's
+    compatibility `mousedown` arrives *after* the click and would corrupt any
+    flag kept from mouse events.
+  - **A gesture nobody can find is a feature removed**, so the tap that no
+    longer opens the card says what does — a pill at the tap point, 54px above
+    it because the finger is on the point itself, twice per visit and then
+    never again. Someone still tapping bare map after two of those is panning,
+    not asking.
+  - **The click that ends the press has to be swallowed**, or it lands on
+    whatever was under the finger and overwrites the card the press just
+    opened.
+  - What is *not* fixed is the card's own size: six stops with two departures
+    each is 413px, so its filled action sits below the fold on a phone and is
+    reached by scrolling the card. That is JAKAR-65's subject, not this one's.
 - **The stop card has one filled action again** — *Lihat jangkauan*. It had
   three primary buttons when two of them were journey ends.
 - **`#ride` is gone and `#follow-hud` keeps the slot.** They shared it and were
@@ -955,6 +983,22 @@ Each of these shipped broken once. They are cheap to reintroduce.
     `test-transform` now asserts that every canonical stop field either
     reaches core or is named as deliberately dropped, and that every
     `core.stops.*` the client reads exists.
+
+16. **A gesture's duration is in the events, not in the clock when you read
+    them.** A long press built as a 480ms timer fires while the finger is
+    still down, so it has to be cancelled by the `touchend` of a short tap —
+    and that event is only *dispatched* promptly, then processed whenever the
+    main thread gets to it. Under the probe's software rasteriser a 60ms tap
+    arrived as `touchstart` at t=6667 and `touchend` at t=9221: **2.5 seconds**
+    of queueing, every tap a long press. Reading `performance.now()` in the
+    handler measures the frame, not the finger; `event.timeStamp` is when the
+    event was created. The exaggeration is the rasteriser's, the effect is
+    real, and it bites hardest exactly where it matters — this map is at its
+    jankiest while being panned, which is when JAKAR-66's stray taps happen.
+    **The harness had the same bug in mirror image**: omit `timestamp` from
+    `Input.dispatchTouchEvent` and Chrome stamps each event as it ingests it,
+    three seconds behind, so a tap could not be expressed at all. Both halves
+    now state the time rather than waiting it out.
 
 ## The live camera layer
 

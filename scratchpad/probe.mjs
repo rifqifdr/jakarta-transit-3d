@@ -14,6 +14,12 @@
  * A step of the form {_click: [x, y]} in the returned array is dispatched as a
  * genuine mouse press and release at those viewport coordinates; PROBE_JS2 is
  * then evaluated afterwards, so a check can straddle a real interaction.
+ *
+ * {_tap: [x, y]} and {_press: [x, y, ms]} are the same idea for a finger, as
+ * real touch events with a real `pointerType`. Trap 2 has a touch half: a
+ * `click` synthesised by the harness carries no touch at all, so anything
+ * that distinguishes a thumb from a mouse — which "sekitar sini" now does
+ * (JAKAR-66) — cannot be tested with `_click` either way round.
  */
 import {spawn} from 'node:child_process';
 import {mkdtempSync, writeFileSync} from 'node:fs';
@@ -108,6 +114,91 @@ async function click(x, y) {
     }
 }
 
+// Touch emulation is enabled on first use rather than up front: it changes
+// what the page detects about the device, and the mouse arms are meant to be
+// a mouse.
+let touchEnabled = false;
+
+/*
+   A finger down for `holdMs`, then up.
+
+   The duration is stated in the events rather than waited out, and that is
+   not a shortcut — it is the only way this harness can express a tap at all.
+   Omit `timestamp` and Chrome stamps each event as it ingests it, which on
+   this rasteriser runs seconds behind: a 60ms tap dispatched here arrived in
+   the page as `touchstart` at 5518 and `touchend` at 8545, three seconds
+   apart, and no gesture told apart by its duration could be tested either
+   way round. Same lesson as the frame timings — this harness is for what the
+   app does, never for how long anything took (trap 2's other half).
+
+   The wall-clock hold is kept, and short, because the events still have to
+   arrive in order.
+*/
+async function touch(x, y, holdMs) {
+    if (!touchEnabled) {
+        await send('Emulation.setTouchEmulationEnabled', {enabled: true, maxTouchPoints: 5});
+        touchEnabled = true;
+    }
+
+    const at = Date.now() / 1000,
+        point = (px, py) => [{x: px, y: py, id: 1, radiusX: 12, radiusY: 12, force: 1}];
+
+    await send('Input.dispatchTouchEvent', {
+        type: 'touchStart', timestamp: at, touchPoints: point(x, y)
+    });
+
+    // A real finger is never perfectly still. Nudging it inside the slop
+    // proves the press survives what a hand actually does — and a harness
+    // that only ever holds a pixel still would pass a press detector with no
+    // tolerance at all.
+    await send('Input.dispatchTouchEvent', {
+        type: 'touchMove',
+        timestamp: at + holdMs / 2000,
+        touchPoints: point(x + 2, y - 1)
+    });
+    await send('Input.dispatchTouchEvent', {
+        type: 'touchEnd', timestamp: at + holdMs / 1000, touchPoints: []
+    });
+    await sleep(120);
+}
+
+/*
+   A finger dragged from one point to another over `ms`, in eight steps.
+
+   Slow on purpose. A quick flick is not what JAKAR-66 is about: the tap that
+   opened a card was the tail of someone moving the map around deliberately,
+   and a press detector that only rejects fast gestures would still fire on
+   that.
+*/
+async function drag(x1, y1, x2, y2, ms) {
+    if (!touchEnabled) {
+        await send('Emulation.setTouchEmulationEnabled', {enabled: true, maxTouchPoints: 5});
+        touchEnabled = true;
+    }
+
+    const at = Date.now() / 1000,
+        steps = 8,
+        point = (px, py) => [{x: px, y: py, id: 1, radiusX: 12, radiusY: 12, force: 1}];
+
+    await send('Input.dispatchTouchEvent', {
+        type: 'touchStart', timestamp: at, touchPoints: point(x1, y1)
+    });
+    for (let i = 1; i <= steps; i++) {
+        await send('Input.dispatchTouchEvent', {
+            type: 'touchMove',
+            timestamp: at + (ms / 1000) * (i / steps),
+            touchPoints: point(
+                Math.round(x1 + (x2 - x1) * i / steps),
+                Math.round(y1 + (y2 - y1) * i / steps)
+            )
+        });
+    }
+    await send('Input.dispatchTouchEvent', {
+        type: 'touchEnd', timestamp: at + ms / 1000, touchPoints: []
+    });
+    await sleep(120);
+}
+
 await send('Runtime.enable');
 await send('Page.enable');
 
@@ -169,6 +260,9 @@ const script = process.env.PROBE_JS || 'return {ok: !!window.__tj};',
 // something, click it — and only real clicks prove anything (trap 2).
 //
 //   {_click: [x, y]}  a genuine press and release at those viewport coordinates
+//   {_tap: [x, y]}    the same as a finger — real touch events, pointerType touch
+//   {_press: [x, y]}  a finger held down, for a long press ([x, y, ms] to set it)
+//   {_drag: [x1, y1, x2, y2, ms]}  a finger dragged slowly — a pan, not a flick
 //   {_wait: ms}       let the app settle; the map needs frames, not promises
 //   {_eval: 'expr'}   evaluate between interactions, and keep the result
 //
@@ -178,6 +272,19 @@ async function run(step) {
     if (step && step._click) {
         await click(step._click[0], step._click[1]);
         output.push({clicked: step._click});
+    } else if (step && step._tap) {
+        await touch(step._tap[0], step._tap[1], 60);
+        output.push({tapped: step._tap});
+    } else if (step && step._press) {
+        const [x, y, ms = 700] = step._press;
+
+        await touch(x, y, ms);
+        output.push({pressed: [x, y, ms]});
+    } else if (step && step._drag) {
+        const [x1, y1, x2, y2, ms = 600] = step._drag;
+
+        await drag(x1, y1, x2, y2, ms);
+        output.push({dragged: step._drag});
     } else if (step && step._wait !== undefined) {
         await sleep(step._wait);
     } else if (step && step._shot) {

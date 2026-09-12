@@ -455,7 +455,11 @@ export default class DetailPanel {
             <div class="detail-body">
                 ${rows}
                 ${nearby.stops.length ?
-                    '<button class="btn btn-accent btn-lg btn-block js-from-point" type="button">Mulai perjalanan dari sini</button>' :
+                    // The handler has set a reach origin since the journey planner went;
+                    // the label still said *Mulai perjalanan*, which is a promise
+                    // this map no longer makes. Same wording as the stop card's
+                    // own filled action, because it is the same action.
+                    '<button class="btn btn-accent btn-lg btn-block js-from-point" type="button">Lihat jangkauan dari sini</button>' :
                     ''}
             </div>
         `;

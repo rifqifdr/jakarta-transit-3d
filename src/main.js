@@ -1140,10 +1140,28 @@ function clearRoutePreview(app) {
 
 // --------------------------------------------------------------- interaction
 
+/*
+   How long a finger has to stay down to mean "what is here" (JAKAR-66). Both
+   reference apps drop a pin in this range, and it is far longer than the tail
+   of a pan — 480ms of a finger held still is not something panning produces.
+*/
+const LONG_PRESS_MS = 480,
+    // A finger is never still. Past this it was a pan, not a press.
+    LONG_PRESS_SLOP = 12;
+
 function wireInteraction(app) {
     const {map} = app;
 
+    wireNearbyPress(app);
+
     map.on('click', event => {
+        // The click that ends a long press would otherwise land on whatever
+        // was under the finger and overwrite the card the press just opened.
+        if (app.pressConsumed) {
+            app.pressConsumed = false;
+            return;
+        }
+
         // Cameras first. A pin is a deliberate target drawn on top of
         // everything else, so a click that lands on one is not ambiguous the
         // way a bus sitting at a stop is.
@@ -1176,6 +1194,13 @@ function wireInteraction(app) {
 
         // Neither a bus nor a stop: answer for wherever they actually tapped.
         closeCamera(app);
+
+        // Under a thumb, that answer is a press rather than a tap — so say so
+        // and leave the map alone (JAKAR-66).
+        if (app.touchPointer) {
+            showPressHint(event.point);
+            return;
+        }
         showNearby(app, event.lngLat);
     });
 
@@ -1197,6 +1222,149 @@ function wireInteraction(app) {
             }
         });
     }
+}
+
+/*
+   "Sekitar sini" is a press on a touch screen, and a click with a mouse
+   (JAKAR-66).
+
+   A tap that landed on nothing used to open the nearby card. That is right
+   with a mouse — you do not pan by clicking — and wrong under a thumb:
+   panning and pinching a map is a lot of touching, and every stray tap threw
+   a card over **49% of a 390x844 phone**, measured, in the half of the screen
+   the thumb is working in. So the gesture is now press-and-hold, which a pan
+   cannot produce by accident and which is what both reference apps use to
+   drop a pin.
+
+   Gated on the pointer rather than on the viewport, though the complaint came
+   from a phone. What makes the card hurt is that it is large relative to the
+   screen *and* was not asked for, and both are properties of the input, not
+   the width: the same phone held in landscape is 844px wide — past the 700px
+   the layout switches at, so a width rule would miss it — and only 390px
+   tall, where this card is taller than the whole viewport. A mouse in a
+   narrow window has neither problem and keeps its click.
+*/
+function wireNearbyPress(app) {
+    const {map} = app,
+        surface = map.getCanvasContainer();
+
+    // Where a single finger went down, and when. Null the moment the gesture
+    // stops being a candidate — a second finger, or movement past the slop.
+    let down = null;
+
+    app.touchPointer = false;
+    app.pressConsumed = false;
+
+    // `pointerdown` rather than `touchstart` for this, because a touch screen
+    // also fires a compatibility `mousedown` — after the click, which is too
+    // late to be read as "this was a mouse" but early enough to corrupt a flag
+    // set from mouse events. A pointer event says which it was, once.
+    surface.addEventListener('pointerdown', event => {
+        app.touchPointer = event.pointerType === 'touch';
+    });
+
+    surface.addEventListener('touchstart', event => {
+        const touch = event.touches.length === 1 ? event.touches[0] : null;
+
+        app.pressConsumed = false;
+
+        // A second finger is a pinch, and a pinch is navigation.
+        down = touch ?
+            {x: touch.clientX, y: touch.clientY, at: event.timeStamp} :
+            null;
+    }, {passive: true});
+
+    surface.addEventListener('touchmove', event => {
+        const touch = event.touches[0];
+
+        if (down && (!touch ||
+            Math.hypot(touch.clientX - down.x, touch.clientY - down.y) > LONG_PRESS_SLOP)) {
+            down = null;
+        }
+    }, {passive: true});
+
+    surface.addEventListener('touchcancel', () => {
+        down = null;
+    }, {passive: true});
+
+    /*
+       Decided when the finger lifts, and from the events' own timestamps.
+
+       Two things are deliberate here, and each replaced something that looked
+       right and was measurably wrong.
+
+       Not a timer: one has to be cancelled by the `touchend` of a short tap,
+       and that event is only *dispatched* promptly — it is *processed*
+       whenever the main thread gets to it. So a 480ms timer fires first and
+       the cancellation arrives afterwards, and the tap has opened a card.
+
+       And not `performance.now()` in the handler, which is when the browser
+       got round to the event rather than when the finger moved. Measured in
+       the probe: a 60ms tap arrived as `touchstart` at t=6667 and `touchend`
+       at t=9221 — **2.5 seconds** of queueing, every tap a long press. That
+       is a software rasteriser exaggerating a real effect, and the real
+       effect matters here more than anywhere: this map is at its jankiest
+       while being panned, which is exactly when JAKAR-66's stray taps
+       happen. `timeStamp` is when the event was created, so it measures the
+       finger and not the frame.
+    */
+    surface.addEventListener('touchend', event => {
+        if (!down || event.timeStamp - down.at < LONG_PRESS_MS) {
+            down = null;
+            return;
+        }
+
+        const box = surface.getBoundingClientRect();
+
+        // The click that ends this gesture is its own tail; without this it
+        // lands on whatever was under the finger and overwrites the card.
+        app.pressConsumed = true;
+        hidePressHint();
+        showNearby(app, map.unproject([down.x - box.left, down.y - box.top]));
+        down = null;
+    }, {passive: true});
+}
+
+/*
+   A gesture nobody can find is a feature removed, so the tap that no longer
+   opens the card says what does.
+
+   Shown at the tap point rather than in a corner, because that is where the
+   eye already is — and 54px above it, because the finger is on the point
+   itself. Twice per visit and then never again: someone still tapping bare
+   map after two of these is panning, not asking a question.
+*/
+const PRESS_HINT_LIMIT = 2;
+let pressHintEl = null,
+    pressHintTimer = null,
+    pressHintsShown = 0;
+
+function showPressHint(point) {
+    if (pressHintsShown >= PRESS_HINT_LIMIT) {
+        return;
+    }
+    if (!pressHintEl) {
+        pressHintEl = document.createElement('div');
+        pressHintEl.id = 'press-hint';
+        pressHintEl.textContent = 'Tekan lama untuk lihat sekitar sini';
+        document.body.appendChild(pressHintEl);
+    }
+    pressHintsShown++;
+
+    // Clamped so the pill stays on screen when the tap was near an edge.
+    const margin = 132;
+
+    pressHintEl.style.left = `${Math.min(Math.max(point.x, margin), innerWidth - margin)}px`;
+    pressHintEl.style.top = `${Math.max(point.y - 54, 12)}px`;
+    pressHintEl.classList.add('open');
+
+    clearTimeout(pressHintTimer);
+    pressHintTimer = setTimeout(hidePressHint, 2600);
+}
+
+function hidePressHint() {
+    clearTimeout(pressHintTimer);
+    pressHintEl?.classList.remove('open');
 }
 
 /**
