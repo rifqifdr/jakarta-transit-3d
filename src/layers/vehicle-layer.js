@@ -1,17 +1,43 @@
 import {
-    AmbientLight, Camera, Color, DirectionalLight, DynamicDrawUsage,
-    InstancedMesh, Matrix4, Mesh, MeshLambertMaterial, MeshBasicMaterial, Quaternion,
-    RingGeometry, Scene, Vector3, WebGLRenderer
+    AmbientLight, BufferAttribute, Camera, Color, DirectionalLight,
+    DynamicDrawUsage, InstancedMesh, Matrix4, Mesh, MeshLambertMaterial,
+    MeshBasicMaterial, PlaneGeometry, Quaternion, RingGeometry, Scene,
+    Vector3, WebGLRenderer
 } from 'three';
 import mapboxgl from 'mapbox-gl';
 import configs from '../configs';
 import {CAPACITY} from '../fleet';
-import {WALKER_CAPACITY} from '../walkers';
 import vehicleGeometry from './vehicle-geometry';
-import walkerGeometry from './walker-geometry';
 
 // How much larger than life the tracked vehicle is drawn.
 const SELECTED_SCALE = 1.7;
+
+/*
+   A streak is how far the vehicle would travel in this many seconds, so its
+   length *is* its speed — a KRL at line speed draws a long comet and a
+   Mikrotrans in traffic draws a stub.
+
+   **Drawn on the fleet's common on-screen scale, not in real metres**, and
+   that is the whole difference between this being visible and not. Below
+   `trueScaleZoom` the bodies are inflated up to 11x towards a common length,
+   so at the default z12.4 a bus is drawn about 132 m long — and the first
+   build gave it a 105 m tail in real metres, which is *shorter than the box
+   it trails*, in the same colour, and therefore invisible. The A/B at that
+   zoom was two identical screenshots.
+
+   One scale for every mode rather than each mode's own: the per-mode factor
+   leaves a 160 m train at true size while inflating a bus 11x, which would
+   draw the fastest thing on the map with the shortest tail and invert the one
+   fact the layer exists to show.
+
+   Clamped in real metres before scaling. Below the floor a standing vehicle
+   would have no streak at all and the layer would flicker as it pulls away.
+*/
+const TRAIL_SECONDS = 8,
+    TRAIL_MIN = 8,
+    TRAIL_MAX = 200,
+    // Metres above the ground, before the zoom inflation is applied.
+    TRAIL_LIFT = 1.5;
 
 // What a focused vehicle is lifted towards, so it separates from the line it
 // is running on rather than melting into it.
@@ -45,7 +71,7 @@ const MODE_IDS = ['bus', ...Object.keys(configs.modes).filter(id => id !== 'bus'
  */
 export default class VehicleLayer {
 
-    constructor(fleet, walkers = null) {
+    constructor(fleet) {
         const me = this;
 
         me.id = 'buses';
@@ -53,26 +79,16 @@ export default class VehicleLayer {
         me.renderingMode = '3d';
         me.fleet = fleet;
 
-        /*
-           The crowd is drawn in this layer's own pass rather than in a layer
-           of its own (JAKAR-79).
-
-           A second Mapbox custom layer means a second `WebGLRenderer`, a
-           second scene and a second `resetState()` every frame — a full GL
-           state reset, to draw the smallest objects on the map. The people are
-           a different subject and live in their own files, `walkers.js` for
-           where they are and `walker-geometry.js` for what they look like;
-           what they share with the fleet is one pass, one camera and one
-           material, which is a rendering decision rather than a modelling one.
-        */
-        me.walkers = walkers;
-
         me.origin = mapboxgl.MercatorCoordinate.fromLngLat(configs.defaultCenter, 0);
         me.metre = me.origin.meterInMercatorCoordinateUnits();
 
         me._matrix = new Matrix4();
         me._position = new Vector3();
         me._scale = new Vector3();
+        // The streaks get their own scratch vector rather than sharing the
+        // bodies': both loops run in one `render` call and a shared one would
+        // be rewritten under whichever ran second.
+        me._trailScale = new Vector3();
         me._quaternion = new Quaternion();
         me._axis = new Vector3(0, 0, 1);
         me._color = new Color();
@@ -91,6 +107,10 @@ export default class VehicleLayer {
         // Scratch, so the per-frame scale table is not reallocated every frame.
         me._modeScale = MODE_DIMS.map(() => ({x: 1, y: 1, z: 1}));
         me._hideSelected = false;
+        me._trailOn = false;
+        // The trail buffer's own colour generation, deliberately not the
+        // bodies'. See `setTrails` for what sharing it cost.
+        me._trailGeneration = -1;
 
         me._originMatrix = new Matrix4()
             .makeTranslation(me.origin.x, me.origin.y, me.origin.z)
@@ -140,21 +160,6 @@ export default class VehicleLayer {
             return mesh;
         });
 
-        // Two poses of one figure, a mesh each, so the whole crowd is two
-        // draw calls whatever its size. Sharing the fleet's material is
-        // deliberate: the walk cycle needs no shader of its own, and a
-        // previewed line dims the city around it — people included.
-        me.walkerMeshes = walkerGeometry().map(geometry => {
-            const mesh = new InstancedMesh(geometry, material, WALKER_CAPACITY);
-
-            mesh.instanceMatrix.setUsage(DynamicDrawUsage);
-            mesh.frustumCulled = false;
-            mesh.count = 0;
-            scene.add(mesh);
-
-            return mesh;
-        });
-
         // A ring drawn under whichever vehicle is being tracked.
         const marker = me.marker = new Mesh(
             new RingGeometry(configs.vehicleLength * 0.75, configs.vehicleLength * 0.95, 32),
@@ -166,18 +171,99 @@ export default class VehicleLayer {
         marker.renderOrder = 10;
         marker.visible = false;
         scene.add(marker);
+
+        /*
+           A fading streak behind each vehicle: one `InstancedMesh` of flat
+           ribbons, the same machinery the bodies use and for the same reason —
+           one draw call for the whole fleet, varying only matrix and colour.
+
+           **Not `LineSegments`, and that was the first two builds.** WebGL
+           draws a line one device pixel wide whatever `linewidth` says, so a
+           GL line is a hairline at every zoom and simply too weak a mark
+           against a full-colour basemap. A ribbon has a width in metres that
+           can be set against the vehicle it trails.
+
+           The fade is baked into the geometry's vertex colours — 0.15 at the
+           tail, 1 at the head — which three multiplies into `instanceColor`,
+           so one route colour per instance still comes out as a comet. Exactly
+           the trick the Kapsul body uses for its window band, and the reason
+           neither needs a second mesh or a shader.
+        */
+        const trailGeo = new PlaneGeometry(1, 1);
+
+        // Head at the origin, tail running back along -Y, so scaling Y is
+        // scaling the streak's length and the head stays pinned to the vehicle.
+        trailGeo.translate(0, -0.5, 0);
+
+        const trailPos = trailGeo.attributes.position,
+            trailTint = new Float32Array(trailPos.count * 3);
+
+        for (let i = 0; i < trailPos.count; i++) {
+            const head = 1 + trailPos.getY(i),
+                v = 0.15 + 0.85 * head;
+
+            trailTint[i * 3] = v;
+            trailTint[i * 3 + 1] = v;
+            trailTint[i * 3 + 2] = v;
+        }
+        trailGeo.setAttribute('color', new BufferAttribute(trailTint, 3));
+
+        me._trailMesh = new InstancedMesh(trailGeo, new MeshBasicMaterial({
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            // Unlit on purpose: a ribbon lying flat on the ground catches
+            // almost nothing from a key light angled for box sides, and the
+            // streak is a diagram rather than an object in the scene.
+            //
+            // `depthWrite` off so six thousand overlapping ribbons do not
+            // punch each other out of the depth buffer at an interchange.
+            depthWrite: false
+        }), CAPACITY);
+        me._trailMesh.instanceMatrix.setUsage(DynamicDrawUsage);
+        me._trailMesh.frustumCulled = false;
+        me._trailMesh.count = 0;
+        me._trailMesh.visible = false;
+        // Under the vehicles, over the ground.
+        me._trailMesh.renderOrder = 5;
+        scene.add(me._trailMesh);
     }
 
     onRemove() {
         const me = this;
 
-        for (const mesh of [...me.meshes, ...me.walkerMeshes]) {
+        for (const mesh of me.meshes) {
             mesh.geometry.dispose();
         }
         me.material.dispose();
         me.marker.geometry.dispose();
         me.marker.material.dispose();
+        me._trailMesh.geometry.dispose();
+        me._trailMesh.material.dispose();
         me.renderer.dispose();
+    }
+
+    /**
+     * Toggles the motion-streak trail behind each vehicle.
+     *
+     * Switching on invalidates the trail's colour generation, and that is the
+     * whole point of it having one. The bodies recolour on `fleet.generation`,
+     * which only advances when the simulated *second* does — so with the clock
+     * paused, a trail buffer that shared that gate was never written at all
+     * and six thousand streaks drew at the zeroed colour: solid black over the
+     * city, indefinitely, until somebody pressed play. Measured: 12,346
+     * vertices in the draw range and not one non-zero byte of colour.
+     */
+    setTrails(on) {
+        const me = this;
+
+        me._trailOn = on;
+        if (on) {
+            me._trailGeneration = -1;
+        }
+        if (me._trailMesh) {
+            me._trailMesh.visible = on;
+        }
     }
 
     /** Highlights one slot of the active list, or -1 for none. */
@@ -255,7 +341,8 @@ export default class VehicleLayer {
     render(gl, matrix) {
         const me = this,
             {fleet, meshes, origin, metre, _matrix: m, _position: p,
-                _scale: s, _quaternion: q, _axis: axis, _color: color} = me,
+                _scale: s, _trailScale: s2, _quaternion: q, _axis: axis,
+                _color: color} = me,
             count = fleet.activeCount,
             zoom = me.map.getZoom(),
             scale = me._objectScale(zoom),
@@ -395,7 +482,100 @@ export default class VehicleLayer {
             me._generation = fleet.generation;
         }
 
-        me._drawWalkers();
+        /*
+           Motion streaks: a second pass over the same fleet, writing two
+           vertices per vehicle into one flat buffer. The forward direction in
+           scene space is (sin θ, cos θ) — the body is nose-first along +Y and
+           the rotation about Z is −θ — so the tail sits behind where the
+           vehicle is heading.
+
+           The colour gate is this buffer's own, and it takes the focus and
+           selection state as well as the fleet's generation. Unlike the
+           bodies, which write to a stable per-mode slot, the streaks compact
+           past anything hidden — so the moment a preview mask or the on-board
+           camera changes what is skipped, vertex n belongs to a different
+           vehicle than the colour at n does. The bodies cannot drift that way
+           and so do not need it in their gate.
+        */
+        if (me._trailOn) {
+            const trailKey = `${me._selection}:${me._hideSelected ? 1 : 0}:${me._focusRoute ?? ''}`,
+                trailRecolour = me._trailGeneration !== fleet.generation ||
+                    me._trailKey !== trailKey,
+                mesh = me._trailMesh,
+                // Half a drawn vehicle width, so the streak reads as coming
+                // out from under the body rather than as a separate bar
+                // beside it.
+                width = configs.vehicleWidth * scale * 0.5;
+            let at = 0;
+
+            for (let i = 0; i < count; i++) {
+                const hidden = focusMask && !focusMask[i] ||
+                    i === me._selection && me._hideSelected;
+
+                if (hidden) {
+                    continue;
+                }
+                const len = Math.min(TRAIL_MAX,
+                    Math.max(TRAIL_MIN, fleet.speed[i] * TRAIL_SECONDS)) * scale;
+
+                s2.set(width, len, 1);
+                p.set(
+                    (fleet.mercX[i] - origin.x) / metre,
+                    (origin.y - fleet.mercY[i]) / metre,
+                    // Lifted clear of the ground plane, and by the same factor
+                    // the fleet is inflated: a ribbon at exactly z = 0 is
+                    // coplanar with the basemap's ground and loses the depth
+                    // test outright — which is the *second* reason the first
+                    // build drew nothing at all.
+                    TRAIL_LIFT * scale
+                );
+                // Same negation as the bodies: scene +Y is north, bearings are
+                // clockwise from it, and the ribbon is modelled running back
+                // along -Y from its head.
+                q.setFromAxisAngle(axis, -fleet.bearing[i]);
+                m.compose(p, q, s2);
+                mesh.setMatrixAt(at, m);
+
+                if (trailRecolour) {
+                    const trip = trips[fleet.runTrip[fleet.active[i]]];
+
+                    color.setHex(lineColor.get(trip.route));
+                    /*
+                       Lifted hard towards white, and that is what makes the
+                       layer legible at all.
+
+                       In its line's own colour a streak is invisible by
+                       construction: it sits behind a vehicle of that colour,
+                       on a route line of that colour, and all three merge into
+                       one slightly longer dash. Drawn pale it reads as motion
+                       against the coloured network instead — the same
+                       reasoning as `FOCUS_TINT` on a previewed line, harder,
+                       because here there are three coincident things to
+                       separate from rather than one.
+                    */
+                    color.lerp(FOCUS_TINT, focusMask ? 0.82 : 0.72);
+                    // Unconditional, per trap 17: `setColorAt` is what
+                    // allocates `instanceColor`, so guarding on it existing
+                    // means it never does.
+                    mesh.setColorAt(at, color);
+                }
+                at++;
+            }
+
+            mesh.count = at;
+            mesh.instanceMatrix.clearUpdateRanges();
+            mesh.instanceMatrix.addUpdateRange(0, at * 16);
+            mesh.instanceMatrix.needsUpdate = true;
+            if (trailRecolour) {
+                if (mesh.instanceColor) {
+                    mesh.instanceColor.clearUpdateRanges();
+                    mesh.instanceColor.addUpdateRange(0, at * 3);
+                    mesh.instanceColor.needsUpdate = true;
+                }
+                me._trailGeneration = fleet.generation;
+                me._trailKey = trailKey;
+            }
+        }
 
         const slot = me._selection;
 
@@ -425,95 +605,6 @@ export default class VehicleLayer {
         me.renderer.resetState();
         me.renderer.render(me.scene, me.camera);
         me.map.triggerRepaint();
-    }
-
-    /**
-     * Places the crowd, from whatever `walkers.js` last worked out.
-     *
-     * The simulation is not run here — `main.js` advances it with the clock's
-     * own deltas, exactly as it does the fleet — so this is the placement half
-     * only, and it writes nothing at all when nobody is in view. Above the
-     * zoom band that is the common case: a walker count of zero costs two
-     * assignments and no upload.
-     */
-    _drawWalkers() {
-        const me = this,
-            walkers = me.walkers,
-            meshes = me.walkerMeshes,
-            {origin, metre, _matrix: m, _position: p, _scale: s,
-                _quaternion: q, _axis: axis, _color: color} = me,
-            count = walkers ? walkers.count : 0;
-
-        if (!count) {
-            for (const mesh of meshes) {
-                mesh.count = 0;
-            }
-            return;
-        }
-
-        // Never inflated, unlike the fleet: they are drawn at the size a
-        // person is, and the zoom band is chosen so that size is legible. What
-        // does vary is the scale-in across the bottom of the band.
-        const grow = walkers.scale,
-            at = [0, 0];
-
-        for (let i = 0; i < count; i++) {
-            const pose = walkers.pose[i],
-                mesh = meshes[pose],
-                slot = at[pose]++;
-
-            s.set(grow, grow, grow);
-            p.set(
-                (walkers.mercX[i] - origin.x) / metre,
-                (origin.y - walkers.mercY[i]) / metre,
-                walkers.lift[i]
-            );
-            q.setFromAxisAngle(axis, -walkers.bearing[i]);
-            m.compose(p, q, s);
-            mesh.setMatrixAt(slot, m);
-
-            // Clothing, as a per-instance colour the geometry's own tints
-            // multiply down from.
-            //
-            // Dark and desaturated, and twice as dark as it looks: this
-            // shares the fleet's lights, which come to about 3.9 of combined
-            // intensity, so a colour is drawn at roughly four times the value
-            // set here before clipping. At lightness 0.62 — a perfectly
-            // reasonable mid grey — eight hundred people came out pure white
-            // and read as a field of pale posts, brighter than anything else
-            // on a night basemap. The fleet is what has to stay loudest here;
-            // the crowd is read by its shape and its movement instead.
-            //
-            // Called unconditionally, and that is the whole trick: three
-            // allocates `instanceColor` *inside* `setColorAt`, so guarding the
-            // call on the attribute existing means it never does. The crowd
-            // then draws at white times its vertex tints, which the lights
-            // clip — which is what "a field of pale posts" actually was.
-            color.setHSL(walkers.tint[i], 0.25, 0.3);
-            mesh.setColorAt(slot, color);
-        }
-
-        for (let k = 0; k < meshes.length; k++) {
-            const mesh = meshes[k],
-                n = at[k];
-
-            mesh.count = n;
-            if (!n) {
-                continue;
-            }
-            // A walker changes pose as it walks, so unlike the fleet's colour
-            // buffer both of these are rewritten every frame — which is why
-            // only the written prefix is uploaded. At 800 people that is
-            // 51 KB against the 2 x 800 instances the buffers are sized for.
-            mesh.instanceMatrix.clearUpdateRanges();
-            mesh.instanceMatrix.addUpdateRange(0, n * 16);
-            mesh.instanceMatrix.needsUpdate = true;
-            if (mesh.instanceColor) {
-                mesh.instanceColor.clearUpdateRanges();
-                mesh.instanceColor.addUpdateRange(0, n * 3);
-                mesh.instanceColor.needsUpdate = true;
-            }
-        }
     }
 
 }

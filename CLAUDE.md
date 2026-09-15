@@ -63,7 +63,7 @@ npm run build          # production build
 npm run preview        # serve the build on :4173
 npm run build-data     # GTFS -> public/data/  (only when the feed changes)
 npm run test-routing   # 91 checks over the routing layer, against the real feed
-npm run test-transform # 114 checks over the canonical model and validation gate
+npm run test-transform # 120 checks over the canonical model and validation gate
 npm run ingest         # fetch raw dated snapshots from upstream sources
 npm run transform      # snapshots -> canonical dataset, through the validation gate
 ```
@@ -157,10 +157,10 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `public/artifacts/` | What the browser downloads. Generated; rebuildable from snapshots. |
 | `src/routing/` | `timetable.js` (schedule maths), `router.js` (RAPTOR, now only for reachability), `fares.js` |
 | `src/fleet.js` | Expands headways into runs, positions them each frame |
-| `src/walkers.js` | The crowd: which streets they may walk, and where each one is |
 | `src/layers/vehicle-layer.js` | The fleet, as one instanced three.js mesh per mode |
 | `src/layers/vehicle-geometry.js` | The Kapsul body, built per mode inside one base box |
-| `src/layers/walker-geometry.js` | A person, 48 triangles, in two poses |
+| `src/tour.js` | The cinematic flight along a line: pacing, bearing, captions |
+| `src/sky.js` | Where the sun is, and the faint tint over the canvas that follows it |
 | `src/kodefikasi.js` | Line codes, line colours and the mode glyph sprite (JAKAR-50) |
 | `src/cameras.js` | Live CCTV: artifact loading, the map pin, and the HLS player |
 | `src/ui/` | Panels: clock, layers, search, detail, reach, follow, credits |
@@ -363,106 +363,206 @@ still holds each mode's real size and a service acceleration; a KRL set is
   prefix written each frame is uploaded (`addUpdateRange`), so the waste is
   memory, not bandwidth.
 
-## People on the pavements
+## Playback that performs: timelapse, tours and the showreel
 
-JAKAR-79. Six thousand vehicles moved through a city with nobody in it. The
-crowd is **decoration** — the only thing on this map not derived from a
-timetable — and everything below is about not letting decoration tell lies.
+The crowd is gone (it was JAKAR-79, and `src/walkers.js` with it). What
+replaced it answers the same complaint from the other end — the map was
+accurate and static, and a map of six thousand moving vehicles ought to be
+worth watching without being operated.
 
-**The ticket's premise was wrong, and finding out cost the first build.** It
-said the walk table already solved where people may walk: 40,466 edges really
-routed through Valhalla (JAKAR-40), so walkers on those paths are on real
-pavement. But **Valhalla's matrix endpoint never returned the paths** —
-`sources_to_targets` carries a time, a distance and the snapped endpoints, and
-nothing in between. We know how long each real path is and not where it runs.
+**Three things, and they compose.** *Tonton 24 jam* runs the day; *Jelajahi
+jalur ini* flies a line; *Putar otomatis* does the second over and over. All
+three leave the clock and the fleet exactly where they were, because everything
+downstream already follows the clock.
 
-- **A length test cannot tell you a line is on the ground.** The way out looked
-  solid: an edge whose routed length is within 15% of the straight line between
-  its stops has no room in it for a detour. That selects 14,569 edges whose
-  *true* detour factor is p50 1.02, p99 1.16, max 1.21, and it excludes every
-  barrier case the routing was bought to find. It was built, and it put forty
-  people on the live tracks at Tanah Abang: `Tanah Abang → Jln. Taman Jatibaru
-  Timur` is 395 m apart with a true factor of **1.04**, because the real route
-  is the Jatibaru bridge running nearly parallel to the straight line. Same
-  length, different ground.
-- **Route shapes are on the ground by construction**, so that is what the
-  crowd walks beside. A walker is positioned exactly as a vehicle is — a shape
-  and a distance along it through `network.locate` — then pushed 2.6-4.8 m
-  sideways to the kerb, which is the whole remaining error in its position.
-- **Which shapes is a decision, and the exclusions carry it.** In: Mikrotrans,
-  Integrasi, Rusun, Bus Wisata — 440 of 740 shapes, 7,470 km of surface street.
-  Out: **BRT Koridor**, whose shape is the *median* busway, so the kerb is two
-  carriageways away; **Royaltrans and Transjabodetabek**, which spend the
-  journey on a toll road; and **every rail mode** — a viaduct, a tunnel or a
-  running line.
-- **The crowd is where Jakarta's street network is drawn**, which means
-  **nothing at Bekasi or Bogor**: Transjakarta runs no street service there, so
-  the map holds no surface geometry to walk beside. True rather than a bug, and
-  the honest limit of the feature.
-- **`querySourceFeatures` cannot reach the basemap's streets.** The obvious
-  fix for that gap — Mapbox Standard knows every road in view — does not
-  exist: Standard is a style fragment and its own sources are not in
-  `getStyle().sources` at all, so there is no source layer to query.
+### The timelapse is paced by the fleet, not by a constant speed
 
-**A person is 2.5 px tall at the zoom this project calls street level.** That
-is the measurement the whole feature is shaped by: 1.4 px at z16, 2.5 px at
-z16.8 — JAKAR-58's and JAKAR-60's street view — 5.7 px at z18, 11.5 px at z19.
-So the band starts at **z17.2**, deeper than street level, and they are never
-inflated the way vehicles are below `trueScaleZoom`: an 11x person is a giant
-standing over the buses.
+**A constant speed is what makes a day-in-a-minute boring.** The first build
+started at 00:00 and ran at a flat 1440x: twelve of its sixty seconds were a
+dark and very nearly empty city, and ten more crossed the middle of the
+afternoon where nothing changes. It starts at **04:00** now and is paced by
+`fleet.profile` — the same 144-bucket curve already drawn behind the scrubber
+decides how much of the minute each part of the day gets.
 
-- **The row says so, because a layer you switch on that draws nothing is trap 9
-  again.** *Pejalan kaki* carries a hint below it until the map is zoomed in
-  far enough, the softer sibling of the camera layer's live-mode hint.
-- **Two poses, a mesh each, 48 triangles a figure.** Instancing varies the
-  matrix and the colour only, so an animated pose needs either a shader of our
-  own or a mesh per pose; a mesh per pose is one extra draw call for the whole
-  crowd. The legs alternate on the parity of the footfall count and the body
-  rises once per step, both derived from distance walked rather than from time,
-  so a slow walker steps slowly.
-- **Nobody holds any state.** Position is a function of one scalar clock and a
-  hash of which walker it is — pace, side of the street, kerb distance, start
-  offset, clothing. The in-view set is rebuilt whenever the camera moves a
-  fifth of the viewport, and a running random generator would have reshuffled
-  the entire crowd on every one of those.
-- **The wrap is hidden by the pad, not by cleverness.** A walker paces the
-  in-view run of its street and returns to the start at the end, which is a
-  teleport — so runs are cut at the edge of a box 40% larger than the
-  viewport, and every wrap happens off screen.
-- **Thin the crowd, never truncate it.** Tanah Abang asks for 1,300 walkers
-  against a cap of 800. The first version filled street by street until the cap
-  ran out, which is three crowded blocks and an empty view beyond them;
-  spacing widens instead, so 800 people cover all of it.
-- **The crowd stops when the clock stops, and is capped at 8x.** A vehicle has
-  a timetable and must be where the timetable says at 1200x; a walker has no
-  schedule and is not anywhere in particular, and at 1200x a pedestrian crosses
-  the frame inside one frame.
+- **The clock is driven by `setTimeOffset` per frame, not by a speed.** A speed
+  is one number and this needs a curve. There are no clock listeners, so the
+  per-frame write costs nothing.
+- **Weight is cubed, and that is not a tuning whim.** Jakarta's profile is
+  broad rather than peaked — midday sits at about three quarters of the evening
+  maximum — so a proportional weight gave the peaks 0.317 hours a second
+  against midday's 0.33, a difference nobody can see. At `DWELL_GAMMA` 3 the
+  measured sweep is **1.02 h/s through the small hours against 0.30 h/s at the
+  evening peak**: night passes 3.4x faster than rush hour.
+- **`DWELL_FLOOR` is what stops the quiet hours being skipped outright.** At
+  zero weight they would take no time at all and the sweep would jump, which
+  loses the thing a timelapse is for — watching the city fill up.
+- **It re-shapes itself when a filter hides half the network**, because it is
+  built from the same profile the scrubber draws. Hiding Mikrotrans really
+  should change which part of the day is worth dwelling on.
+- **The speed readout was lying and now is not.** A timelapse drove the clock
+  at 1440x while the panel's `output` went on saying `1x` — the one number
+  whose whole job is to say how fast time is moving. It is differenced off the
+  curve four times a second, so it visibly slows through the peaks, which is
+  also the clearest evidence the pacing does anything.
+- **The profile fills up to now, with a playhead.** Two fills of one traced
+  path, clipped — so the boundary is exact — redrawn only when the 10-minute
+  bucket changes, which is at most 144 redraws over a whole sweep instead of
+  one per frame. It is what turns *Armada beroperasi 6.088* into a visible
+  thing rising and falling.
+- That canvas was still painting itself `rgba(53, 167, 255, …)` — the stock
+  blue the whole interface was repainted away from in JAKAR-64, surviving in a
+  canvas where no stylesheet sweep would ever have found it.
 
-**What it costs: less than this instrument can see.** `gpu-bench.mjs` grew a
-`crowd` view (z18.4 over Tanah Abang, where the cap of 800 is reached) and a
-`nowalkers` arm. Run twice against the shipped build, vsync off:
+### The tour flies a trip, and the trip knows its own shape
 
-| | as shipped | crowd off | basemap alone |
-| --- | --- | --- | --- |
-| 5 s sample | 19.7 ms | 18.4 ms | 19.0 ms |
-| 9 s sample | 20.0 ms | 20.0 ms | 18.8 ms |
+- **`network.lines` carries one feature per *shape*, not per route**, and
+  matching a tour to it by route id is the bug that shipped: 713 features for
+  249 routes, **202 routes with more than one**, corridor 1 with eighteen. So
+  `find(f => f.properties.route === id)` returned whichever pattern was first
+  in the buffer, and touring a vehicle regularly flew the opposite direction or
+  a short working rather than the run on screen. A trip knows its shape; use
+  that, and it needs no data rebuild and works on both boot paths.
+- **Ground speed, not duration.** A fixed 30 seconds end to end is 360 km/h
+  over a 3 km feeder and 6,000 km/h over a 50 km commuter line. `GROUND_SPEED`
+  is fixed instead and the duration clamped to 14–95 s.
+- **Waypoints are spaced by distance, not counted.** 80 points is one every
+  37 m on a feeder loop and one every 630 m on the Bogor run — and at the zoom
+  this flies at the viewport is about 1.5 km across, so the long route was
+  being cut corner to corner. Same for the bearing tangent, which looks a fixed
+  400 m ahead rather than a fixed number of waypoints.
+- **`network.cum` is kilometres, not metres.** It is compared directly against
+  `trip.offsets`, which the model carries in kilometres. Cost one bug here
+  (a showreel pool that filtered on `cum / 1000 >= 6` and came back empty).
+- **The longest pattern, for a line preview.** A route's patterns include short
+  workings, and a tour of Cikarang that stops at Bekasi is a tour of the wrong
+  thing.
+- **A cancel and a completion mean opposite things**, which is why `Tour`
+  carries both `onDone` and `onCancel`. To a showreel one is the cue for the
+  next line and the other is the user taking the map back. `onCancel` is taken
+  and cleared *before* the listeners come off, because it tears down a reel
+  that calls straight back into `stop()`.
+- **The button is on both cards.** It was only on the vehicle card, where you
+  have to select a moving bus to fly its corridor; the card where somebody is
+  actually looking at a line is the *Jalur* preview, and it knows the route id
+  directly.
 
-**The two runs disagree about the sign, so the honest answer is "at most about
-1.3 ms and probably less".** 800 figures at 48 triangles is 38k triangles
-against the fleet's ~2M, so this is the expected shape rather than a surprise —
-and it is the same conclusion as JAKAR-58: the basemap is 18.8-19.0 ms of a
-20 ms frame and everything we draw over it is rounding. Below the zoom band it
-is free and measurably so, 6.10 ms against 6.00 at z10.5 with the count at
-zero.
+### The showreel
 
-Two cautions on those numbers. **Absolute values are inflated** — street level
-measured 23.3 ms here against JAKAR-58's 16.5 ms, because this run shared the
-machine with other Chrome instances; only the within-run deltas mean anything,
-which is the same rule the timer-query trap established. And **no real phone
-has drawn 800 walkers yet**: `?bench` now carries the same `crowd` view and a
-*Pejalan kaki off* arm, so the next device answers it in one run. That is the
-measurement the ticket said would be part of the work, and it is the part
-still outstanding.
+`?show=1`, or *Putar otomatis*. Previews a line, flies it, picks another, at
+the evening peak where there is most to watch. **Ending it needs no code**: a
+tour already cancels on any gesture and only calls `onDone` when it runs to the
+end, so the same drag that takes the camera back breaks the chain.
+
+- **Every line before any line twice.** A plain random pick repeats about a
+  third of the time, and a reel that shows the same corridor twice running
+  looks broken rather than random.
+- **Filtered to 6–32 km**, so the reel is not stranded on one line for ninety
+  seconds or over before it registers. 187 routes of 249 qualify.
+- **It waits 1.5 s after the preview's `fitBounds`**, or the tour's first
+  `jumpTo` fights a flight still easing in and the opening shot stutters.
+- **Cameras are deliberately not in it.** They are gated to live mode and the
+  reel replays the peak; putting them in would hand the frame loop's live gate
+  exactly the state it exists to tear down (trap 12).
+
+### Can I still get home?
+
+*Bus terakhir* colours every stop by how long is left until its last
+departure — green over three hours, then yellow, orange, red under thirty
+minutes, and grey once it has gone. Run forward from about nine in the evening
+it shows the network **going dark from the edges inward**, which is a spatial
+fact about Jakarta that reading one stop card at a time cannot convey. Measured
+over the drawn stops:
+
+| | 20:00 | 21:00 | 22:00 | 23:00 |
+| --- | --- | --- | --- | --- |
+| over 3 h left | 3,807 | 1,386 | 406 | 146 |
+| under 30 min | 17 | 14 | 1,753 | 1,347 |
+| already gone | 51 | 74 | 410 | **3,826** |
+
+**The network halves between 22:00 and 23:00.** 7,607 of 7,633 drawn stops
+carry a last departure; the earliest is 08:12 (a stop with only a morning
+service), the median 23:00, the latest 31:35 — and 1,386 stops have a last
+departure past midnight, which is the `00:00-23:59` declaration in the feed
+showing through rather than a bug.
+
+- **`serviceSpan` had this the whole time.** It has driven the stop card's
+  first/last since that card was written; nothing had ever put it on the map.
+- **The last value rides on the feature, and only the reference time changes.**
+  That is what lets a repaint be one `setPaintProperty` rather than 7,600
+  feature-state writes or a `setData` of the whole collection.
+- **Throttled on the real clock, not the simulated one** (trap 3). At 1200x a
+  simulated-time throttle fires every frame; this is twice a second.
+- **One scalar decides the service day, not an expression.** GTFS states a bus
+  leaving at 00:44 tomorrow as 24:44, so a stop's last departure can be past
+  86,400 while the clock has wrapped to a small number. Anything before 03:00
+  is read as the previous service day — one JS decision, no branching inside a
+  Mapbox expression.
+- **`applyStopTheme` has to know about it**, exactly as it already knows about
+  `__accessibleOnly`. The theme owns the stop palette and re-applies it on
+  every light-preset change, so without the guard the colours revert at the
+  next hour boundary — which during a timelapse is every couple of seconds.
+  Trap 4's shape, in a new place.
+- **The dot has to become the mark.** The first build kept the resting stop
+  style, and at the city zoom where the emptying is legible at all a stop is
+  1.6 px with a 1 px ring: two screenshots an hour apart were almost
+  indistinguishable. It now drops to z9, drops the ring, and draws every stop
+  at one size — the question is "can I get home from here", which a halte and
+  a stasiun answer alike — with the dead ones dimmed to 45% as well as greyed,
+  because at that zoom the *dimming* is what reads as emptying.
+- **`STOP_PAINT` is named once** because two things restore it: `applyStopTheme`
+  on every light change, and this view when it is switched off. A restore that
+  only puts back the properties somebody remembered is how a layer ends up
+  permanently three pixels bigger than it was.
+
+### Reachability arrives instead of appearing
+
+The search has always returned an arrival *time* per stop and the map threw it
+away, painting the whole set at once in four bands. It is now released in
+arrival order over six seconds — the frontier crawls along the corridors and
+jumps down the rail lines, which is the network working rather than a blob.
+
+- **It cost nothing.** The same points, filtered on a rising threshold against
+  the `secs` the search already computed. No new search, no new data.
+- **Six seconds regardless of budget**, so 15 minutes and 60 minutes take the
+  same time to watch: the thing being read is the *shape* of the spread.
+- **A new origin sweeps, an adjustment does not.** Re-running a six-second
+  animation on every tap of `30 mnt` would be a toll rather than a flourish,
+  so the budget and free-routes controls repaint instantly and the card
+  carries a replay button.
+- **The sweep has its own callback, not `onChange`.** `onChange` rebuilds the
+  card, and rebuilding an interactive panel sixty times a second is trap 1
+  with a new trigger.
+- **A `zoom` expression may not be nested.** The leading edge is drawn larger
+  and settles, which wants `radius x pulse` — but Mapbox rejects `zoom`
+  anywhere except the top level of a step or interpolate, so the multiply is
+  pushed inside each zoom stop. Wrapped the other way round it throws from
+  `setPaintProperty` on every frame, and because the *filter* keeps sweeping
+  the animation still looks like it works while the radius silently never
+  applies.
+
+### Three links that do something on arrival
+
+`?tl=1` plays the day, `?tour=<routeId>` flies a line, `?show=1` runs the reel.
+**Only `show` is serialised back out** — it is a mode somebody is in, where a
+timelapse and a tour are one-shots that would be over before the link was
+pasted.
+
+### Streaks, and why they carry speed
+
+*Jejak kendaraan* draws a fading comet behind each vehicle: one `LineSegments`
+mesh, two vertices per vehicle, one draw call for the whole fleet.
+
+- **The length is the speed.** `fleet.speed` is new — the leg's length over the
+  time the timetable gives it — and a streak is 30 seconds of it, clamped to
+  18–260 m. A constant-length streak is decoration; a speed-scaled one turns a
+  city zoom into a picture of **where Jakarta moves and where it clots**, which
+  is the most interesting thing in this dataset and nothing else draws it.
+  Measured across the fleet: 27 m to 260 m, 37 distinct lengths.
+- **The leg's mean, not the instantaneous rate under `ease`.** A streak that
+  shrank to nothing at every stop approach and snapped back out flickers.
+- **The streak buffer needs its own colour generation** — see trap 17's
+  sibling, trap 18 below.
+
 
 ## Kodefikasi: the city's own line codes
 
@@ -711,6 +811,47 @@ card in Jakarta daylight. Both reference apps are light for that reason.
   its own chrome, and it keeps playback reading as a day passing over the city.
   Pinning the preset light was considered and rejected.
 
+### The sky tint, and where the continuous day actually came from
+
+The panels are paper and stay paper. What carries the hour across the *whole
+frame* is a faint gradient over the map canvas — `src/sky.js` — whose colour
+and strength follow the sun's altitude. It is what makes the transition
+something you see rather than something you infer from the stop labels.
+
+**It is the answer to trap 19.** `setLights` would give real moving light on
+the basemap and is a one-way door: calling it resets `lightPreset` to `day` for
+the life of the style. A DOM overlay composites on top of whatever Mapbox is
+doing, costs one style write, and can be taken away again — so the four-step
+preset keeps the palette and this fills in everything between.
+
+- **Zero at noon, by construction.** The ramp starts at alpha 0 above 60° and
+  peaks at **0.13 at the top of the frame**, which averages well under 10% over
+  the map. Measured through a day: 12:00 is `0`, 16:00 `0.020`, 17:30 `0.075`,
+  17:54 `0.110`, 05:54 `0.086`, 03:00 `0.130`.
+- **Dawn and dusk are different ramps**, because they look different: dawn
+  comes out pink over a pale ground (`206,120,142`), dusk amber over a dark one
+  (`232,96,78`). One ramp for both makes a day-in-a-minute look like it runs
+  backwards in the evening.
+- **Strongest at the top, zero by 84% down.** That is what a pitched camera
+  should show, and it is also what keeps the tint off the Mapbox wordmark and
+  the attribution badge in the bottom strip — a licence condition, not a gap to
+  fill (trap 13).
+- **`pointer-events: none` is load-bearing, not defensive.** A full-bleed
+  element over the map swallows every drag, tap and long press, including
+  JAKAR-66's, which is the one gesture that must reach the canvas. Verified
+  with `elementFromPoint` at three points: all `CANVAS`.
+- **Mono keeps the hour and loses the hue.** The monochrome basemap exists so
+  six thousand vehicles have the only colour on screen; washing an amber sunset
+  back over it undoes exactly that. The tint drops to its own luminance there —
+  `243,123,76` becomes `145,145,145` at the same alpha — so the frame still
+  darkens and lifts without colour coming back.
+- **Quantised to a fifth of a degree of altitude**, so the frame loop compares a
+  key rather than rebuilding a gradient string sixty times a second for a
+  colour that has not visibly moved.
+- **The sun maths lives in one place now.** `sunPosition` returns altitude and
+  whether it is rising; `lightPreset` and the tint both read it, rather than
+  each deriving the hour their own way.
+
 ## What went, and what stayed
 
 The router did not go with the journey planner. **Reachability still needs
@@ -796,6 +937,63 @@ says which without a tab having to be chosen first.
 - **Stops no route serves are not listed.** 43 of 8,281 never appear in a
   pattern, including a dead Transjakarta "Manggarai" that sat next to the real
   KRL station reading "0 rute" and could not be planned to.
+
+## Navigasi: the egocentric view
+
+The default framing when you follow something is now an automotive navigation
+view rather than a map that happens to be tracking. `chase` — 65 degrees, the
+whole district in frame — is still one click away as *Peta*, and *Dari dalam*
+is unchanged.
+
+**The difference is not where the camera is, it is what is on screen.** Chase
+already followed the vehicle geographically; what makes a nav view is pitch,
+hierarchy and subtraction.
+
+- **Pitch 78 of Mapbox's 85 maximum.** This is where the ground plane stops
+  reading as a tilted map and starts reading as road surface receding towards a
+  horizon. 65 is a bird looking down at a city.
+- **The ego sits low in the frame**, via a larger `lookAhead` fraction (0.46
+  against chase's 0.34): the camera centres on a point ahead, so the vehicle
+  lands where a driver's own bonnet would be. `onboard`'s 0.75 pushes it off
+  the bottom entirely, which is a different shot.
+- **The road ahead is a trimmed line, not a rebuilt one.** The followed trip's
+  whole shape goes into `nav-route` once, when the vehicle is picked up; what
+  moves every frame is **`line-trim-offset`**, which paints the travelled part
+  transparent and leaves exactly the road in front. That is a *paint* property,
+  so the ribbon re-anchors to the vehicle sixty times a second without the
+  source being touched — a `setData` per frame would round-trip through the
+  GeoJSON worker and the ribbon would visibly lag the vehicle it starts at.
+  Verified against the simulation: over six samples the trim delta and the
+  vehicle's own distance travelled agree to within 1e-4 of the route length.
+- **Casing under core**, the way every automotive renderer draws a route: a
+  dark casing is what separates a bright ribbon from a bright road under it.
+  `line-emissive-strength: 1` so the ribbon holds its colour at night — it is a
+  signal, not a painted road marking.
+- **The hierarchy is made by subtraction.** POI, place and transit labels off,
+  pedestrian roads off, `roadsBrightness` 0.4 → 0.35, the network's own 700
+  route lines down to 0.05, generic stops hidden. Road *labels* stay on: a
+  navigation view without street names is a diagram. Same lesson as the line
+  preview — with everything drawn, a brighter needle is still in the same
+  haystack.
+- **Everything it changes is captured on entry and put back on exit.**
+  Measured across three vehicles and nine mode switches: the restored state is
+  byte-identical to the pre-follow state. A view that restores only what
+  somebody remembered is how a map ends up permanently missing its POI labels.
+- **The card's job moves to the HUD, and the rail is hidden with it.** They say
+  the same things — line, headsign, next stop — and on a 390px screen the pair
+  of them left the road ahead as a strip across the middle. Hiding the card
+  then put the finder at y=744 *underneath* a HUD starting at 637 at
+  `z-index: 30`: present, `visible`, and completely unreachable. **Trap 13's
+  shape in a new place**, and the reason `body.navigating` hides the whole left
+  rail rather than nudging it.
+- **Three framings need a segmented control, not a toggle.** One button
+  flipping between two states does not extend to three, and three loose
+  outlines read as three unrelated actions. At 390px the three plus a slider
+  plus a stop do not fit on one line — measured, the track wrapped inside
+  itself and the speed row collapsed to **zero width** — so the row becomes
+  two, which is what the ride HUD already does at that width.
+- **A vehicle at its terminus draws no ribbon**, because there is no road
+  ahead. Correct rather than broken, and worth knowing before chasing it.
 
 **Following a vehicle has its own controls**, in the ride HUD's slot at the
 bottom — the two are never open together, and both are the same kind of view:
@@ -1115,6 +1313,59 @@ Each of these shipped broken once. They are cheap to reintroduce.
     fleet gets this right by calling the setter unconditionally and guarding
     only the update range. Same shape as traps 10, 11 and the timer query: an
     answer that looks like the thing you asked about and is not.
+
+18. **A buffer that borrows another buffer's generation gate is not gated,
+    it is coupled.** The motion streaks recoloured on `fleet.generation`,
+    copying what the vehicle bodies do. But generation only advances when the
+    simulated *second* does, so with the clock **paused** it never advances at
+    all — and switching the layer on then wrote six thousand streaks into a
+    zeroed colour buffer and drew them solid black over the city, indefinitely,
+    until somebody pressed play. Measured: 12,346 vertices in the draw range
+    and **not one non-zero byte of colour**. Worse, the two buffers are not
+    even indexed alike — the bodies write to a stable per-mode slot, the
+    streaks compact past anything hidden — so a preview mask or the on-board
+    camera made vertex *n* and colour *n* different vehicles. A derived buffer
+    gets its own generation, and that generation takes everything its own
+    indexing depends on. Same family as trap 17: the gate looked like ordinary
+    caching and was never true.
+
+19. **`map.setLights()` works on Mapbox Standard, and it is a one-way door.**
+    A continuously moving sun is the obvious way to make a 24-hour timelapse
+    read as a day rather than as four slides, and `setLights` with an `ambient`
+    plus a `directional` does render it — a real low sun with long shadows
+    sweeping the city, verified by screenshot. What is not documented is that
+    calling it **silently resets `lightPreset` to `day`**, and the preset never
+    takes effect again for the life of the style. `setLights(null)`, re-setting
+    the preset, and bouncing it through another value were all tried: the
+    config goes on *reporting* `night` while the map renders a flat bright
+    noon. The night palette it eats is load-bearing — `applyStopTheme` reads
+    the preset, and trap 4 is what happens when stops are inked for the wrong
+    map. So the presets stay, and what was fixed instead is *when* they change:
+    `lightPreset` now takes a solar altitude rather than an hour band. Same
+    shape as traps 10, 11 and 17 — an API that answers, convincingly, and is
+    not about what it appears to be about.
+
+20. **`Float32BufferAttribute` copies the array you hand it, so the array you
+    kept is not the array that uploads.** Its constructor is
+    `super(new Float32Array(array), …)`. The motion-streak layer built its
+    buffers, kept references, and wrote 6,247 correct streaks into them every
+    frame while flagging `needsUpdate` on attributes holding a zeroed copy —
+    drawing 6,247 degenerate black lines at the origin. Every check passed:
+    nothing errored, the draw range was right, the mesh was `visible` and in
+    the scene, and reading the arrays back reported perfect geometry, because
+    that was the copy nobody drew. **The verification was measuring the wrong
+    side of the bug**, which is the part worth remembering — it took an A/B
+    screenshot, not an assertion, to see that the layer had never rendered at
+    all. Use `BufferAttribute`, which shares, or take the arrays back off
+    `geometry.attributes` after construction.
+
+    Two more came out of the same layer once it could be seen. A GL line is
+    **one device pixel wide whatever `linewidth` says**, so `LineSegments` is
+    simply too weak a mark against a full-colour basemap — it is an
+    `InstancedMesh` of flat ribbons now, which have a width in metres. And a
+    ribbon at exactly `z = 0` is coplanar with the basemap's ground and loses
+    the depth test outright, so it is lifted by the same factor the fleet is
+    inflated by.
 
 ## The live camera layer
 
@@ -1688,12 +1939,17 @@ KB of artifacts (JAKAR-61), the layout is one column below 700px (JAKAR-62), and
 the render path has been measured on hardware somebody actually rides the bus
 with (JAKAR-60).
 
-**And at street level the city is no longer empty** (JAKAR-79): up to 800
-people walk the pavements beside Jakarta's own street services, from z17.2 —
-which is where a person stops being 2.5 px tall.
+**And it performs rather than just running.** *Tonton 24 jam* sweeps a whole
+day in a minute, paced by the fleet's own profile so the peaks are dwelt on and
+the small hours blink past; *Jelajahi jalur ini* flies any line end to end,
+naming its stops; *Putar otomatis* does that line after line, unattended. All
+three are shareable as links. The crowd that used to stand on the pavements
+(JAKAR-79) was removed to get here.
 
-The app can: run live or replay a day, follow a vehicle (chase or on-board,
-with its own controls), preview a line and watch only its vehicles run, show
+The app can: run live or replay a day, sweep a whole day in a minute, follow a
+vehicle in three framings — an egocentric navigation view, a map that follows,
+or from the roof — fly any line end to end and do that unattended line after
+line, preview a line and watch only its vehicles run, show
 how far you can get from any stop or any point in a time budget, answer "what
 is near this point", show first/last departure, colour by live frequency, and
 share any view as a link — a camera included — and watch the actual street, or
@@ -1707,6 +1963,26 @@ typeface is Plus Jakarta Sans, the accent is Transjakarta's own signage blue,
 type sits on a seven-step scale where fifteen ad-hoc sizes used to be, and the
 controls are the size Google Maps makes them. The rider can also choose what the
 map underneath looks like — Warna, Pudar or Mono.
+
+**Everything the 2026-09-15/16 session changed**, so it is not re-derived:
+
+| | |
+| --- | --- |
+| Crowd | Removed — `walkers.js` and `walker-geometry.js` are gone, with their layer row, bench arm and configs |
+| Timelapse | A day in a minute, starting 04:00 and paced by `fleet.profile`; night runs 3.4x faster than the peak |
+| Profile | Fills up to now, with a playhead, and finally uses the brand token instead of the old stock blue |
+| Speed readout | Stopped saying `1x` over a clock running at 1440x |
+| Tour | Flies the trip's *own* shape at a fixed ground speed, naming each stop; on the line card as well as the vehicle card |
+| Showreel | *Putar otomatis* — line after line at the evening peak, ended by any gesture |
+| Links | `?tl=1`, `?tour=<routeId>`, `?show=1`; only `show` is written back |
+| Streaks | *Jejak kendaraan*, length carrying speed. Three bugs: a colour gate that never fired (trap 18), a buffer that was never uploaded (trap 20), and GL lines being the wrong mark entirely — they are instanced ribbons now |
+| Lighting | `lightPreset` now takes a solar altitude, so dawn and dusk land on Jakarta's real sun. `setLights` was tried and rejected (trap 19) |
+| Sky | A faint app-side gradient over the canvas tracks the sun continuously — zero at noon, 13% at the top of the frame at night, hue dropped on Mono |
+| Clock controls | The jump pills and the two actions are `.btn` at `--ctl-sm` / `--ctl`, with 44px hit areas |
+| Fleet | `fleet.speed`, in m/s, from the leg the timetable gives |
+| Navigasi | Following is an egocentric nav view by default: pitch 78, the road ahead as a trimmed ribbon, the surroundings subtracted |
+| Bus terakhir | Stops coloured by time until the last departure; the network halves between 22:00 and 23:00 |
+| Reachability | Released in arrival order over six seconds instead of painted all at once |
 
 **Everything the 2026-09-11 session changed**, so it is not re-derived:
 
@@ -1776,15 +2052,26 @@ That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
 thing that has ever caught the interaction ones.
 
-**JAKAR-79 and JAKAR-66 are done (2026-09-12), and both point at the same next
-thing.** The crowd is looked at while panning and the press gesture is a
-gesture, so **JAKAR-63 — interaction is unmeasured, every frame number this
-project has is a static camera — is now the blocking one.** The probe grew
-`_tap`, `_press` and `_drag` for JAKAR-66, which is the harness that work
-needs. After that, JAKAR-65 (mobile type and controls, still identical to the
-desktop scale) and the crowd's own unmeasured half: **no real phone has drawn
-800 walkers yet**, and `?bench` now has a `crowd` view and a *Pejalan kaki off*
-arm waiting for one.
+**JAKAR-63 is the blocking one, and this session made it sharper.**
+Interaction is still unmeasured — every frame number this project has is a
+static camera — and there are now four things that drive the camera or repaint
+continuously and have never been run on hardware:
+
+- **the tour and the showreel**, which move the camera for up to ninety seconds
+  at a stretch, the closest thing to a sustained gesture this map has;
+- **Navigasi**, which jumps the camera every frame at pitch 78 *and* writes two
+  paint properties per frame for the route ribbon;
+- **Jejak kendaraan**, one extra draw call and a second pass over the fleet,
+  never culled by zoom;
+- **Bus terakhir**, which rebuilds a paint expression twice a second.
+
+`?bench` carries a *Jejak kendaraan* arm and no moving-camera arm at all. A
+moving-camera arm is the next thing that harness needs.
+
+After that: **JAKAR-65** (mobile type and controls — the clock panel's controls
+and the follow HUD were put on the `.btn` scale on the way past, the rest of the
+app was not), and the open design question on *Jejak kendaraan*, which works
+but reads subtly at the default zoom and may not be worth its row.
 
 **Open work is in Plane.** Start a session by reading the project's
 **"Next Session — Start Here"** page, which is kept current. Next up are

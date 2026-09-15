@@ -39,14 +39,10 @@ const LAYER_TOGGLES = [
     {layer: 'routes', icon: 'jalur', label: 'Jalur rute', on: true},
     {layer: 'stops', icon: 'halte', label: 'Halte', on: true},
     {layer: 'buildings', icon: 'gedung', label: 'Gedung 3D', on: true},
-    // Scenery, beside the other scenery. Only drawn from z17.2 up, where a
-    // person is finally more than a couple of pixels tall (JAKAR-79) — hence
-    // the hint, which is trap 9's lesson: a layer somebody deliberately
-    // switches on and which then draws nothing is worse than no layer.
-    {layer: 'walkers', icon: 'pejalan', label: 'Pejalan kaki', on: true,
-        className: 'walk-toggle'},
     {layer: 'accessible', icon: 'aksesibel', label: 'Halte aksesibel'},
-    {layer: 'headway', icon: 'frekuensi', label: 'Warnai per frekuensi'}
+    {layer: 'headway', icon: 'frekuensi', label: 'Warnai per frekuensi'},
+    {layer: 'trails', icon: 'jejak', label: 'Jejak kendaraan'},
+    {layer: 'lastbus', icon: 'terakhir', label: 'Bus terakhir'}
 ];
 
 const CAMERA_TOGGLE = {layer: 'cameras', icon: 'cctv', label: 'CCTV', className: 'cam-toggle'};
@@ -132,12 +128,9 @@ export default class LayerPanel {
                 `).join('')}
             </div>
             <div class="layer-sep"></div>
-            ${LAYER_TOGGLES.map(t => `${toggle(t)}${
-        t.layer === 'walkers' ?
-            '<div class="row-hint js-walk-hint" hidden>Tampak saat peta diperbesar</div>' :
-            ''
-    }`).join('')}
+            ${LAYER_TOGGLES.map(t => toggle(t)).join('')}
             <div class="headway-legend"></div>
+            <div class="lastbus-legend"></div>
             ${toggle(CAMERA_TOGGLE)}
             <div class="cam-hint" hidden>Hanya tersedia dalam mode LIVE</div>
             </div>
@@ -216,6 +209,23 @@ export default class LayerPanel {
         return me;
     }
 
+    /**
+     * The last-departure legend. Same shape as `setMode`'s, deliberately: two
+     * colour ramps in one panel that explained themselves differently would
+     * read as two unrelated features.
+     */
+    setLastBus(on, bands) {
+        const legend = this.el.querySelector('.lastbus-legend');
+
+        legend.innerHTML = on ? bands.map(b => `
+            <div class="cat static">
+                <span class="dot" style="background:${b.color}"></span>
+                <span class="name">${b.label}</span>
+            </div>
+        `).join('') : '';
+        return this;
+    }
+
     /** Reflects a category's visibility in the UI, without firing callbacks. */
     setCategoryUI(category, visible) {
         const row = this.el.querySelector(`.cat[data-cat="${category}"]`);
@@ -248,24 +258,6 @@ export default class LayerPanel {
         box.closest('.toggle').classList.toggle('disabled', !available);
         hint.hidden = available;
         return me;
-    }
-
-    /**
-     * Whether the crowd's zoom band has been reached (JAKAR-79).
-     *
-     * Same job as `setCamerasAvailable`, one step softer: a camera outside
-     * live mode cannot be shown at all, where people simply are not drawn yet,
-     * so the switch stays usable and the row explains itself. Written from the
-     * frame loop, so it is compared against the last value rather than set
-     * sixty times a second.
-     */
-    setWalkersVisible(visible) {
-        const hint = this.el.querySelector('.js-walk-hint');
-
-        if (hint) {
-            hint.hidden = visible;
-        }
-        return this;
     }
 
     /** Reflects a layer toggle in the UI, without firing callbacks. */

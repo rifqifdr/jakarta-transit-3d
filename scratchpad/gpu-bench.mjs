@@ -291,15 +291,13 @@ window.__benchInstall = () => {
         });
     };
 
-    // The crowd (JAKAR-79) is switched at its own flag rather than in the
-    // render patch above, because the simulation runs in the frame loop and
-    // the drawing is only the second half of it — turning it off here measures
-    // both, which is what the ticket asks about.
-    b.setWalkers = on => {
-        app.walkersOn = on;
-        if (!on) {
-            app.walkers.clear();
-        }
+    // Motion streaks are switched through the layer's own setter rather than
+    // in the render patch above, so the arm measures what a viewer switching
+    // *Jejak kendaraan* on actually pays: the second pass over the fleet and
+    // one more draw call. They ship off, so this arm is the one that adds
+    // work rather than removes it.
+    b.setTrails = on => {
+        layer.setTrails(on);
     };
 
     for (const mesh of layer.meshes) {
@@ -377,7 +375,6 @@ window.__benchInstall = () => {
     b.summary = () => ({
         samples: b.frame.length,
         fleet: fleet.activeCount,
-        walkers: app.walkers ? app.walkers.count : 0,
         zoom: Number(app.map.getZoom().toFixed(2)),
         frame: {
             p50: pct(b.frame, 0.5), p90: pct(b.frame, 0.9), p99: pct(b.frame, 0.99),
@@ -461,14 +458,14 @@ if (process.env.BENCH_THROTTLE) {
 }
 
 async function scenario(label, mode) {
-    // Neither `box` nor `nowalkers` is a render mode: both are the shipped
-    // path with one thing swapped, so the layer runs `full` and only the
-    // meshes or the crowd change.
+    // Neither `box` nor `trails` is a render mode: both are the shipped path
+    // with one thing swapped, so the layer runs `full` and only the meshes or
+    // the streaks change.
     await evaluate(`
         window.__bench.setGeometry(${JSON.stringify(mode === 'box' ? 'box' : 'kapsul')});
-        window.__bench.setWalkers(${mode !== 'nowalkers'});
+        window.__bench.setTrails(${mode === 'trails'});
         window.__bench.mode = ${JSON.stringify(
-        mode === 'box' || mode === 'nowalkers' ? 'full' : mode
+        mode === 'box' || mode === 'trails' ? 'full' : mode
     )};
         return true;
     `);
@@ -486,8 +483,7 @@ async function scenario(label, mode) {
 
     process.stderr.write(`  ${label.padEnd(28)} ${
         p50 === null ? 'no frames recorded' : `${p50} ms p50, ${
-            summary.frame.fps.toFixed(0)} fps`}, fleet ${summary.fleet}, walkers ${
-        summary.walkers}\n`);
+            summary.frame.fps.toFixed(0)} fps`}, fleet ${summary.fleet}\n`);
     return {label, mode, ...summary};
 }
 
@@ -511,21 +507,11 @@ const VIEWS = [
         label: 'street level (z16.8)',
         camera: {center: [106.8230, -6.2010], zoom: 16.8, pitch: 65, bearing: 20}
     },
-    // The crowd's own view. Street level as this project benchmarks it is
-    // z16.8, and the walkers do not exist there at all — a person is 2.5 px
-    // tall, so their band starts at z17.2. Tanah Abang because it is the
-    // densest interchange measured, 24 km of eligible street in view, which
-    // is where the cap of 800 is actually reached.
-    {
-        id: 'crowd',
-        label: 'crowd (z18.4, Tanah Abang)',
-        camera: {center: [106.8112, -6.1858], zoom: 18.4, pitch: 65, bearing: 20}
-    }
 ];
 
 const results = [];
 
-// BENCH_VIEWS=crowd,street runs a subset. The matrix is four views by six
+// BENCH_VIEWS=street,wide runs a subset. The matrix is three views by six
 // arms at five seconds each, and a question about one of them should not cost
 // two minutes of the other three.
 const only = (process.env.BENCH_VIEWS || '').split(',').filter(Boolean);
@@ -540,10 +526,10 @@ for (const v of VIEWS.filter(v => !only.length || only.includes(v.id))) {
         ['no fleet (basemap only)', 'nofleet'],
         ['no draw (CPU loop only)', 'nodraw'],
         ['full-buffer upload', 'noupload'],
-        // Only means anything in the crowd view, and it is run everywhere
-        // anyway: a walker arm that measures the same as `full` at z12 is the
-        // evidence that the zoom band really does cost nothing below it.
-        ['no crowd (JAKAR-79 off)', 'nowalkers']
+        // Run in every view because the streaks are drawn in every view:
+        // unlike the fleet's bodies they are never culled by zoom, so a city
+        // zoom is where the second pass costs the most.
+        ['trails on (Jejak kendaraan)', 'trails']
     ]) {
         results.push({view: v.id, ...await scenario(label, mode)});
     }

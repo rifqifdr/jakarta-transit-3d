@@ -1,6 +1,28 @@
 import configs from '../configs';
 import {routeColor} from '../kodefikasi';
 
+/*
+   Three framings, as a segmented control rather than a toggle.
+
+   It was one button flipping between two states, which stops working the
+   moment there are three — and three loose outline buttons would read as three
+   unrelated actions. `.sorts` is the app's segmented control: one inset track
+   with the current choice filled inside it, the same shape the reachability
+   budgets and the basemap themes use.
+
+   **Navigasi is the default.** Following a vehicle is a navigation task, and
+   the bird's-eye framing was the thing this view kept being mistaken for; the
+   old `chase` framing stays a click away for anyone who wants the map back.
+*/
+const CAMERAS = [
+        {id: 'nav', label: 'Navigasi', hint: 'Pandangan mengemudi dari belakang kendaraan'},
+        {id: 'chase', label: 'Peta', hint: 'Peta yang mengikuti kendaraan'},
+        {id: 'onboard', label: 'Dari dalam', hint: 'Dari atap kendaraan'}
+    ],
+    DEFAULT_CAMERA = 'nav';
+
+export {CAMERAS, DEFAULT_CAMERA};
+
 /**
  * The controls for following a vehicle.
  *
@@ -28,7 +50,7 @@ export default class FollowHUD {
         me.onStop = onStop;
         me.onCamera = onCamera;
         me.onSpeed = onSpeed;
-        me.camera = 'chase';
+        me.camera = DEFAULT_CAMERA;
         me.visible = false;
         me._key = null;
         me._render();
@@ -49,7 +71,13 @@ export default class FollowHUD {
                 </div>
             </div>
             <div class="fh-controls">
-                <button class="btn js-fh-camera" type="button">Dari dalam</button>
+                <div class="sorts fh-cameras">
+                    ${CAMERAS.map(c => `
+                        <button class="btn btn-sm js-fh-camera${c.id === 'nav' ? ' on' : ''}"
+                                type="button" data-camera="${c.id}"
+                                title="${c.hint}">${c.label}</button>
+                    `).join('')}
+                </div>
                 <div class="fh-speed">
                     <span>Kecepatan</span>
                     <input class="js-fh-speed" type="range" min="0"
@@ -64,15 +92,17 @@ export default class FollowHUD {
         me._badge = el.querySelector('.fh-badge');
         me._headsign = el.querySelector('.fh-headsign');
         me._next = el.querySelector('.fh-next');
-        me._cameraBtn = el.querySelector('.js-fh-camera');
+        me._cameraBtns = [...el.querySelectorAll('.js-fh-camera')];
         me._speed = el.querySelector('.js-fh-speed');
         me._speedOut = el.querySelector('output');
 
         el.addEventListener('click', event => {
+            const camera = event.target.closest('.js-fh-camera');
+
             if (event.target.closest('.js-fh-stop')) {
                 me.onStop();
-            } else if (event.target.closest('.js-fh-camera')) {
-                me.setCamera(me.camera === 'chase' ? 'onboard' : 'chase');
+            } else if (camera) {
+                me.setCamera(camera.dataset.camera);
                 me.onCamera(me.camera);
             }
         });
@@ -89,8 +119,9 @@ export default class FollowHUD {
         const me = this;
 
         me.camera = mode;
-        me._cameraBtn.textContent = mode === 'onboard' ? 'Dari luar' : 'Dari dalam';
-        me._cameraBtn.classList.toggle('on', mode === 'onboard');
+        for (const button of me._cameraBtns) {
+            button.classList.toggle('on', button.dataset.camera === mode);
+        }
     }
 
     show(info) {
@@ -141,7 +172,7 @@ export default class FollowHUD {
         me.visible = false;
         me.el.classList.remove('open');
         me._key = null;
-        me.setCamera('chase');
+        me.setCamera(DEFAULT_CAMERA);
         return true;
     }
 

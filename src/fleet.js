@@ -103,6 +103,14 @@ export default class Fleet {
         me.offset = new Float32Array(CAPACITY);
         me.section = new Int32Array(CAPACITY);
         me.standing = new Uint8Array(CAPACITY);
+        // Metres per second, as the timetable implies it: the leg's length over
+        // the time the leg is given. The vehicle layer draws each streak at a
+        // length proportional to this, which is what makes a KRL at line speed
+        // read differently from a Mikrotrans in traffic. It is the leg's mean
+        // rather than the instantaneous rate under `ease` — a streak that
+        // shrank to nothing at every stop approach and snapped back out again
+        // flickers, where the mean holds steady for the length of the leg.
+        me.speed = new Float32Array(CAPACITY);
 
         // Per-run scratch, so a bus resumes its search where it left off.
         me.hintVertex = new Int32Array(me.runCount);
@@ -239,7 +247,8 @@ export default class Fleet {
             hintSection[run] = i;
 
             let distance,
-                standing;
+                standing,
+                speed = 0;
 
             if (i >= lastStop) {
                 distance = offsets[lastStop];
@@ -259,6 +268,8 @@ export default class Fleet {
 
                     distance = from + (to - from) * ease(u, accelFractions[i]);
                     standing = 0;
+                    // Offsets are kilometres and the timetable is seconds.
+                    speed = (to - from) * 1000 / (arrives - leaves);
                 }
             }
 
@@ -295,6 +306,7 @@ export default class Fleet {
             me.offset[n] = distance;
             me.section[n] = i;
             me.standing[n] = standing;
+            me.speed[n] = speed;
         }
     }
 

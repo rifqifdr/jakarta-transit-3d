@@ -71,6 +71,12 @@ export function readState() {
     state.access = params.get('access') === '1';
     state.camera = params.get('cam');
     state.hidden = (params.get('hide') || '').split(',').filter(Boolean);
+    // Three links that *do* something on arrival rather than describing a
+    // view: play the day, fly a line, run the reel. A link nobody has to
+    // operate after opening is worth more than one that lands on a still.
+    state.timelapse = params.get('tl') === '1';
+    state.tour = params.get('tour');
+    state.showreel = params.get('show') === '1';
     return state;
 }
 
@@ -143,6 +149,12 @@ export function serialise(app) {
     }
     if (map.__accessibleOnly) {
         params.set('access', '1');
+    }
+    // The reel is a mode somebody is in, so it belongs in the link; a
+    // timelapse and a tour are one-shots that would be over before the link
+    // was pasted, so they are accepted on the way in and never written out.
+    if (app.showreel) {
+        params.set('show', '1');
     }
     return params.toString();
 }
@@ -232,6 +244,24 @@ export function applyState(app, state, handlers) {
     // map somewhere else — the same rule reachability follows above.
     if (state.camera) {
         handlers.onCamera?.(state.camera, {framed: !!state.center});
+    }
+
+    /*
+       The three that act, last of all and in this order, because each takes
+       the camera and the later one should win if a link somehow carries two.
+
+       A tour and a timelapse compose — flying a corridor while the day runs
+       over it is the best thing this map does — so both may fire. The reel
+       sets its own time and its own line, so it comes last and overrides.
+    */
+    if (state.timelapse) {
+        handlers.onTimelapse?.();
+    }
+    if (state.tour && network.routes.has(state.tour)) {
+        handlers.onTour?.(network.routes.get(state.tour));
+    }
+    if (state.showreel) {
+        handlers.onShowreel?.();
     }
 }
 

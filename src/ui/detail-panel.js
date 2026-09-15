@@ -58,7 +58,7 @@ export default class DetailPanel {
     constructor(network, {
         onTrack, onClose,
         onReach, onBudget, onFreeOnly, onFromPoint,
-        onCameraExpand, onCameraChannel
+        onCameraExpand, onCameraChannel, onTour, onReachPlay
     }) {
         const me = this;
 
@@ -71,6 +71,8 @@ export default class DetailPanel {
         me.onBudget = onBudget;
         me.onFreeOnly = onFreeOnly;
         me.onFromPoint = onFromPoint;
+        me.onTour = onTour;
+        me.onReachPlay = onReachPlay;
         me.mode = null;
         me._key = null;
         me._render();
@@ -98,10 +100,14 @@ export default class DetailPanel {
                 me.onClose();
             } else if (event.target.closest('.js-track')) {
                 me.onTrack();
+            } else if (event.target.closest('.js-tour')) {
+                me.onTour?.();
             } else if (event.target.closest('.js-from-point')) {
                 me.onFromPoint();
             } else if (event.target.closest('.js-reach')) {
                 me.onReach();
+            } else if (event.target.closest('.js-reach-play')) {
+                me.onReachPlay?.();
             } else if (event.target.closest('.js-cam-ch')) {
                 me.onCameraChannel?.(event.target.closest('.js-cam-ch').dataset.camera);
             } else if (event.target.closest('.js-cam-expand')) {
@@ -179,6 +185,7 @@ export default class DetailPanel {
                 <div class="progress"><span class="js-progress"></span></div>
                 <div class="stoplist js-stoplist"></div>
                 <button class="btn btn-accent btn-lg btn-block js-track" type="button"></button>
+                <button class="btn btn-lg btn-block js-tour" type="button">Jelajahi rute ini</button>
             </div>
         `;
 
@@ -303,6 +310,9 @@ export default class DetailPanel {
             </div>
             <div class="detail-body">
                 <div class="line-stops" style="--line-color:${color}">${list}</div>
+                <button class="btn btn-accent btn-lg btn-block js-tour" type="button">
+                    Jelajahi jalur ini
+                </button>
             </div>
         `;
         me.el.scrollTop = 0;

@@ -19,6 +19,24 @@ const BANDS = [
     {minutes: 60, color: '#8b3f9e'}
 ];
 
+/*
+   How long the sweep takes, in real milliseconds, and how wide its leading
+   edge is in simulated seconds.
+
+   The search already returns an arrival *time* per stop and the map was
+   throwing that away, painting the whole set at once in four bands. Releasing
+   it in arrival order instead costs nothing — the same points, filtered on a
+   rising threshold — and it is the difference between a blob and watching the
+   network work: the frontier crawls along the corridors and jumps down the
+   rail lines, which is a fact about Jakarta that four static bands flatten.
+
+   Six seconds regardless of budget, so 15 minutes and 60 minutes take the same
+   time to watch. The thing being read is the *shape* of the spread, not its
+   duration.
+*/
+const SWEEP_MS = 6000,
+    EDGE_SECONDS = 150;
+
 export default class Reach {
 
     constructor({network, router, onChange}) {
@@ -33,6 +51,14 @@ export default class Reach {
         me.freeOnly = false;
         me.results = [];
         me.elapsed = 0;
+
+        // How far the sweep has got, in seconds of journey time. `Infinity`
+        // means "not sweeping" and therefore "show everything", which is what
+        // the set should look like at rest and after the sweep ends.
+        me.frontier = Infinity;
+        me._raf = null;
+        // Set by `main.js`, which owns the map layer this drives.
+        me.onFrontier = null;
     }
 
     get active() {
@@ -45,16 +71,72 @@ export default class Reach {
         me.origin = stop;
         me.compute(time, dayOfWeek);
         me.onChange();
+        // A new origin is a new question, so it is answered by showing the
+        // answer arrive. Changing the budget or the free filter is not — it is
+        // an adjustment to a question already on screen, and re-running a
+        // six-second animation on every tap of `30 mnt` would be a toll rather
+        // than a flourish. That is what the replay button is for.
+        me.play();
         return me;
     }
 
     clear() {
         const me = this;
 
+        me.stopSweep();
         me.origin = null;
         me.results = [];
         me.onChange();
         return me;
+    }
+
+    /**
+     * Releases the reachable set in arrival order.
+     *
+     * Its own `requestAnimationFrame` loop, like `Tour` and `bench.js`, rather
+     * than a branch in the frame loop: nothing else needs to know this is
+     * happening, and the loop ends by itself.
+     */
+    play() {
+        const me = this;
+
+        if (!me.results.length) {
+            return me;
+        }
+        me.stopSweep();
+
+        const ceiling = me.budget * 60,
+            started = performance.now(),
+            tick = () => {
+                const p = Math.min(1, (performance.now() - started) / SWEEP_MS);
+
+                // Past the ceiling at the end rather than exactly on it, so
+                // the last band is not left flickering on a rounding error.
+                me.frontier = p >= 1 ? Infinity : p * (ceiling + EDGE_SECONDS);
+                me.onFrontier?.();
+                me._raf = p >= 1 ? null : requestAnimationFrame(tick);
+            };
+
+        me.frontier = 0;
+        me._raf = requestAnimationFrame(tick);
+        return me;
+    }
+
+    /** Ends a sweep and shows the whole set. Idempotent. */
+    stopSweep() {
+        const me = this;
+
+        if (me._raf) {
+            cancelAnimationFrame(me._raf);
+            me._raf = null;
+        }
+        me.frontier = Infinity;
+        me.onFrontier?.();
+        return me;
+    }
+
+    get sweeping() {
+        return this._raf !== null;
     }
 
     compute(time, dayOfWeek) {
@@ -104,6 +186,10 @@ export default class Reach {
                 properties: {
                     band: band.minutes,
                     color: band.color,
+                    // Seconds as well as minutes: the sweep filters on this,
+                    // and a value already rounded to the minute would release
+                    // the set in sixty visible steps rather than smoothly.
+                    secs: Math.round(seconds),
                     minutes: Math.round(seconds / 60),
                     name: stop.name
                 },
@@ -114,7 +200,13 @@ export default class Reach {
         if (me.origin) {
             features.push({
                 type: 'Feature',
-                properties: {band: 0, color: '#ffffff', origin: 1, name: me.origin.name},
+                // `secs` of -1 so the origin is inside every frontier,
+                // including a frontier of zero: the sweep starts from
+                // somewhere, and that somewhere should be on screen first.
+                properties: {
+                    band: 0, color: '#ffffff', origin: 1,
+                    secs: -1, name: me.origin.name
+                },
                 geometry: {type: 'Point', coordinates: [me.origin.lon, me.origin.lat]}
             });
         }
@@ -147,6 +239,9 @@ export default class Reach {
                     `<button class="btn btn-sm js-budget ${m === me.budget ? 'on' : ''}" data-budget="${m}">${m} mnt</button>`
                 ).join('')}
             </div>
+            <button class="btn btn-block js-reach-play" type="button">
+                Putar penyebaran
+            </button>
             <div class="detail-body">
                 <label class="toggle free-toggle">
                     <input type="checkbox" class="js-free" ${me.freeOnly ? 'checked' : ''}>
@@ -179,4 +274,4 @@ export default class Reach {
 
 }
 
-export {BANDS};
+export {BANDS, EDGE_SECONDS};

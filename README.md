@@ -80,7 +80,18 @@ rebuilding then changed the network the routing checks ran over.
 
 - **Live or replayed.** The clock follows real Jakarta time, or you can scrub to
   any time of day and run it at up to 1200×. The basemap's lighting follows the
-  simulated hour, so replaying a day takes the city from dawn through to night.
+  sun over Jakarta — its altitude, not a round hour — so dawn and dusk land
+  where the sky actually changes and replaying a day takes the city from dawn
+  through to night. A faint tint over the map follows the sun continuously
+  between those four steps: nothing at noon, pink at dawn, amber at dusk, a
+  cool wash at night.
+- **Watch a whole day in a minute.** *Tonton 24 jam* sweeps 04:00 to 04:00,
+  paced by the fleet's own service curve: it dwells on the morning and evening
+  peaks and passes the small hours about three times faster, because a linear
+  sweep spends a fifth of its run on an empty, dark city. The scrubber's
+  profile fills as it goes.
+- **Jump to a moment** — Fajar, Pagi, Siang, Sore — without hunting along the
+  scrubber.
 - **Click a bus** for its route, headsign, fare, progress along the trip, and a
   live window of its timetable.
 - **Follow a bus** and the view drops to street level, rotates so the bus's
@@ -88,30 +99,45 @@ rebuilding then changed the network the routing checks ran over.
   Pan or rotate by hand to take the wheel back.
 - **Click a stop** for the routes calling there, the next departures, and any
   official interchange walks.
-- **Plan a journey.** Open any stop and pick "Dari sini" / "Ke sini". Results
-  rank by fastest, fewest transfers or cheapest, with a leg-by-leg breakdown,
-  and the chosen one is drawn along the roads the buses actually take while the
-  rest of the network fades behind it.
-- **Ride from on board or from behind.** While following anything, switch
-  between the chase view and a first-person view from the bus roof.
-- **Ride the journey you planned.** Press "Jalankan perjalanan" and the clock
-  winds to your departure, the camera picks up the *actual bus* serving the
-  first leg, follows it, walks the transfer, and boards the next one. Not an
-  animation laid over the map — the vehicle is a real run in the simulation.
-- **See how far you can get.** Pick a stop, choose a budget, and the map paints
-  everything reachable in 15/30/45/60 minutes. Restrict it to the 101 free
+- **Fly a line end to end.** *Jelajahi jalur ini*, on a vehicle's card or a
+  line's, takes the camera along the route's real geometry at a steady ground
+  speed, turning into the bends and naming each stop as it passes. Touch the
+  map and you have the wheel back.
+- **Let it run itself.** *Putar otomatis* previews a line, flies it, and moves
+  on to the next, at the evening peak where there is most to watch. Any gesture
+  ends it.
+- **Ride it like a navigation system.** Following a vehicle opens an egocentric
+  view: the camera sits behind and just above it at a strong forward pitch, the
+  road ahead is drawn as a route ribbon running from the vehicle to the
+  horizon, and the surrounding city is pulled back — POI labels off, other
+  routes faded, roads dimmed — so what you read is vehicle, then route, then
+  street. *Peta* restores the map-that-follows framing, and *Dari dalam* rides
+  on the roof.
+- **See how far you can get** — and watch it arrive. Pick a stop, choose a
+  budget, and the map releases everything reachable in 15/30/45/60 minutes *in
+  arrival order*, so the frontier crawls along the corridors and jumps down the
+  rail lines instead of appearing all at once. Restrict it to the 101 free
   routes and it answers a question few networks can: how far can you travel
   without paying anything?
-- **Share any view.** The URL carries the time, camera, selection, journey,
-  reachability and filters, so "look at Koridor 1 at 07:30" is a link rather
-  than a set of instructions.
+- **Share any view — or any performance.** The URL carries the time, camera,
+  selection, reachability and filters, so "look at Koridor 1 at 07:30" is a
+  link rather than a set of instructions. `?tl=1` opens playing the day,
+  `?tour=<route>` opens flying a line, and `?show=1` opens running the reel.
 - **Tap anywhere**, not just a dot. Open map answers with the stops within
-  walking distance, their next departures, and an option to start a journey
-  from that exact point.
+  walking distance, their next departures, and how far you can get from that
+  exact point. On a touch screen it is a press rather than a tap, so panning
+  never throws the card over the map.
 - **First and last bus** on every stop card, with a warning when the last one
-  is close or already gone.
-- **See the shape of the day** on the time scrubber, and **colour the network by
-  live frequency** instead of by service type.
+  is close or already gone — and *Bus terakhir* puts the same fact on the whole
+  map at once, colouring every stop by how long is left. Run it forward from
+  nine in the evening and the network goes dark from the edges inward: 51 stops
+  finished at 20:00, 3,826 by 23:00.
+- **See the shape of the day** on the time scrubber, filled up to the moment
+  being shown, and **colour the network by live frequency** instead of by
+  service type.
+- **Streak the fleet.** *Jejak kendaraan* draws a comet behind every vehicle
+  whose length is its speed, so a city-wide view shows at a glance where the
+  network runs freely and where it crawls.
 - **Watch the real street.** Switch on *Kamera langsung* and 801 public CCTV
   cameras appear on the network — 658 city cameras beside stops, and 143 on the
   toll roads the Royaltrans and Transjabodetabek services actually drive. Click one and it

@@ -160,6 +160,30 @@ html, body {
 
 #map { position: absolute; inset: 0; }
 
+/* The hour, over the whole frame.
+
+   Mapbox Standard has four lighting presets and nothing between them, so its
+   own transition is a step — `day` holds for ten hours and then the city
+   changes at once. This is the continuous half: a faint gradient whose colour
+   and strength follow the sun's altitude, built in `sky.js`.
+
+   `z-index: 1` puts it over the map canvas and under every panel, which sit at
+   10 and above. The panels are paper and stay paper (`Paper, not night`); what
+   this tints is the city, not the cards over it.
+
+   `pointer-events: none` is load-bearing, not defensive: a full-bleed element
+   over the map would otherwise swallow every drag, tap and long press —
+   including JAKAR-66's, which is the one gesture that must reach the canvas. */
+#sky {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  /* The gradient itself is written from JS, and reaches zero alpha at 84% of
+     the height — so the Mapbox wordmark and the attribution badge in the
+     bottom strip are never tinted at all (trap 13). */
+}
+
 /* ---------------------------------------------------------------- loader */
 
 #loader {
@@ -444,6 +468,120 @@ input[type=range]::-moz-range-thumb {
   font-size: var(--text-xs); color: var(--text-3);
 }
 .clock-count b { color: var(--text); font-family: var(--mono); font-size: var(--text-sm); }
+
+/* The day's four moments, and the two things the clock can perform.
+   Both rows are `.btn` — intent and size on the class, layout on the
+   container, which is the rule the six pill buttons were collapsed into. */
+.clock-jumps,
+.clock-actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
+.clock-jumps > .btn,
+.clock-actions > .btn { flex: 1; min-width: 0; }
+
+/* One-tap day-in-a-minute. The button is the trigger and the progress bar is
+   the state, so a single element says both what it does and how far through
+   it is — which is also why the progress line is inside the button rather
+   than under the row. */
+.timelapse { position: relative; overflow: hidden; }
+.timelapse.on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+.tl-progress {
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 2px; width: 0;
+  background: var(--brand);
+}
+.timelapse.on .tl-progress { background: var(--brand-ink); opacity: 0.7; }
+.js-showreel.on {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+/* ------------------------------------------------------------- tour */
+
+/* The bar sits above the reserved credit strip, never in it: the Mapbox
+   wordmark and the attribution badge are a licence condition, not a gap to
+   fill (trap 13). */
+.tour-hud {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(44px + env(safe-area-inset-bottom, 0px));
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s3);
+  pointer-events: none;
+  z-index: 30;
+}
+.tour-hud.open { display: flex; }
+.tour-hud > * { pointer-events: auto; }
+
+.tour-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  position: relative;
+  overflow: hidden;
+  padding: var(--s2) var(--s3);
+  max-width: 100%;
+}
+.tour-meta { min-width: 0; }
+.tour-line { display: flex; align-items: center; font-weight: 600; }
+.tour-sub {
+  font-size: var(--text-2xs);
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 34ch;
+}
+.tour-progress {
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 2px; width: 100%;
+  background: var(--track);
+}
+.tour-progress i { display: block; height: 100%; width: 0; background: var(--brand); }
+
+/* The caption names the line as the flight sets off and each stop as it
+   passes. Over the map rather than in the bar, because it is the subtitle of
+   the shot and the bar is the transport. */
+.tour-caption {
+  padding: var(--s2) var(--s4);
+  border-radius: 999px;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  animation: tour-caption-in 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.tour-caption.title {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-lg);
+  padding: var(--s2) var(--s4);
+}
+@keyframes tour-caption-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-caption { animation: none; }
+}
+
+/* A phone has no room for the line's name beside a button and a label. */
+@media (max-width: 700px) {
+  .tour-sub { display: none; }
+  .tour-hud { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+}
 
 /* ------------------------------------------------------------- layers */
 
@@ -1075,10 +1213,37 @@ input[type=range]::-moz-range-thumb {
 /* The speed slider is the only thing here allowed to take up slack. */
 .fh-controls .btn { flex: none; }
 
+/* While navigating, the HUD is the whole interface.
+
+   The card's job moves to the HUD (they say the same things), and the rail
+   that held it would otherwise be an empty column whose finder lands under the
+   HUD on a phone — present, visible and unreachable. Hidden rather than
+   nudged: "if a panel must move, say where" (trap 13), and the honest place
+   for a finder while you are riding a bus is nowhere. */
+body.navigating #left-rail { display: none; }
+
+/* The three framings, as one segmented track. `.sorts` supplies the inset
+   well; this only says how it sits in the row, which is the rule the six pill
+   buttons were collapsed into — intent and size on the class, layout on the
+   container. */
+.fh-cameras { flex: none; margin: 0; }
+.fh-cameras .btn { white-space: nowrap; }
+
 @media (max-width: 700px) {
   /* Clear of the credit strip. */
   #follow-hud { bottom: 34px; }
   .fh-speed span { display: none; }
+
+  /* Three framings, a slider and a stop do not fit on one 390px line: the
+     segmented control wrapped inside its own track and the speed row
+     collapsed to zero width. So the row becomes two — the framing choice
+     across the top, speed and stop beneath it — which is what the ride HUD
+     already does with its own controls at this width, and measured rather
+     than guessed (`PROBE_WIDTH=390`). */
+  .fh-controls { flex-wrap: wrap; }
+  .fh-cameras { order: -1; width: 100%; }
+  .fh-cameras .btn { flex: 1; min-width: 0; }
+  .fh-speed { flex: 1 1 auto; }
 }
 
 /* ---------------------------------------------------------------- cameras */
@@ -1149,9 +1314,7 @@ input[type=range]::-moz-range-thumb {
 .toggle.disabled { opacity: 0.45; cursor: not-allowed; }
 
 /* One rule for both: a line under a layer row saying why it is not doing
-   anything yet. `.cam-hint` was the only one when it was written; the crowd's
-   zoom band needed the same thing, and two definitions of one line is how the
-   six pill buttons happened. */
+   anything yet. */
 .cam-hint,
 .row-hint {
   font-size: var(--text-2xs);

@@ -53,12 +53,6 @@ export default {
         light_rail: {length: 80, width: 2.65, height: 3.7, acceleration: 1.0}
     },
 
-    // A person, in metres: the base box the walker geometry is built inside,
-    // the same arrangement as the vehicles above. Unlike them it is never
-    // inflated — see the zoom band in `walkers.js` — so this is the size they
-    // are always drawn at.
-    walker: {height: 1.7, width: 0.5, depth: 0.34},
-
     // Below this zoom vehicles are drawn larger than life so the network stays
     // legible; at closer zooms they settle to true size.
     trueScaleZoom: 16,

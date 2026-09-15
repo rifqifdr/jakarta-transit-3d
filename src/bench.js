@@ -38,14 +38,6 @@ const VIEWS = {
     wide: {
         label: 'City-wide',
         camera: {center: [106.8272, -6.2], zoom: 10.5, pitch: 55, bearing: 0}
-    },
-    // The crowd's own view (JAKAR-79). Street level as this project
-    // benchmarks it is z16.8, where a person is 2.5 px tall and the walkers
-    // do not exist at all — their band starts at z17.2. Tanah Abang is the
-    // densest interchange measured, and where the cap of 800 is reached.
-    crowd: {
-        label: 'Crowd (Tanah Abang)',
-        camera: {center: [106.8112, -6.1858], zoom: 18.4, pitch: 65, bearing: 20}
     }
 };
 
@@ -61,11 +53,11 @@ const VIEWS = {
 const ARMS = [
     {id: 'shipped', label: 'As shipped', show3d: true},
     {id: 'no3d', label: 'Gedung 3D off', show3d: false},
-    // Only in the view where there is a crowd to turn off. Everywhere else it
-    // would measure the shipped arm twice and cost somebody another eight
-    // seconds of standing still holding a phone.
-    {id: 'nocrowd', label: 'Pejalan kaki off', show3d: true, walkers: false,
-        views: ['crowd']}
+    // Motion streaks ship off, so this is the arm that adds work rather than
+    // removing it: one more draw call and a second pass over the fleet. It is
+    // run in every view because the streaks are never culled by zoom — a city
+    // zoom draws all six thousand of them.
+    {id: 'trails', label: 'Jejak kendaraan', show3d: true, trails: true}
 ];
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -217,22 +209,15 @@ export default async function runBench(app) {
     app.clock.setSpeed(1);
     app.clock.setTimeOffset(17.5 * 3600);
 
-    const was3d = map.getConfigProperty('basemap', 'show3dObjects');
-
-    const wasWalkers = app.walkersOn;
+    const was3d = map.getConfigProperty('basemap', 'show3dObjects'),
+        wasTrails = app.vehicleLayer._trailOn;
 
     for (const [id, view] of Object.entries(VIEWS)) {
         for (const arm of ARMS) {
-            if (arm.views && !arm.views.includes(id)) {
-                continue;
-            }
             ui.status.textContent = `${view.label} — ${arm.label}…`;
 
             map.setConfigProperty('basemap', 'show3dObjects', arm.show3d);
-            app.walkersOn = arm.walkers !== false;
-            if (!app.walkersOn) {
-                app.walkers.clear();
-            }
+            app.vehicleLayer.setTrails(!!arm.trails);
             map.jumpTo(view.camera);
             await sleep(400);
             await settle(map);
@@ -249,7 +234,7 @@ export default async function runBench(app) {
                     p90: percentile(frames, 0.9),
                     p99: percentile(frames, 0.99),
                     fleet: app.fleet.activeCount,
-                    walkers: app.walkers ? app.walkers.count : 0
+                    trails: !!arm.trails
                 };
 
             results.push(row);
@@ -266,7 +251,7 @@ export default async function runBench(app) {
     map.setConfigProperty('basemap', 'show3dObjects', was3d);
     // Both levers back as they were found: a benchmark that leaves the map
     // changed is a benchmark somebody has to undo by reloading.
-    app.walkersOn = wasWalkers;
+    app.vehicleLayer.setTrails(wasTrails);
 
     // A frame that fits the budget reports the budget, so the fastest median
     // across the arms is the ceiling this page was scheduled against. It is

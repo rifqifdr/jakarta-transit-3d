@@ -6,18 +6,21 @@ import configs from './configs';
 import Clock from './clock';
 import Network from './network';
 import Fleet from './fleet';
-import Walkers, {WALKER_MIN_ZOOM} from './walkers';
 import VehicleLayer from './layers/vehicle-layer';
 import ClockControl from './ui/clock-control';
 import LayerPanel from './ui/layer-panel';
 import SearchControl from './ui/search-control';
 import Credits from './ui/credits';
-import {installSprite, lineColorExpression, routeColor, vehicleColors} from './kodefikasi';
+import {
+    installSprite, lineColorExpression, routeColor, routeMark, vehicleColors
+} from './kodefikasi';
 import DetailPanel from './ui/detail-panel';
 import {nextDeparture, serviceSpan, servesOn} from './routing/timetable';
 import Router from './routing/router';
-import FollowHUD from './ui/follow-hud';
-import Reach from './ui/reach';
+import FollowHUD, {DEFAULT_CAMERA} from './ui/follow-hud';
+import Tour from './tour';
+import Sky, {sunPosition} from './sky';
+import Reach, {EDGE_SECONDS} from './ui/reach';
 import {applyState, readState, startSync} from './url-state';
 import {StreamPlayer, cameraIcon, loadCameras} from './cameras';
 
@@ -38,6 +41,30 @@ const RAD = Math.PI / 180,
     // The pitched view compresses this, so the bus lands around two thirds
     // down the screen rather than at the literal fraction.
     NAV_LOOK_AHEAD = 0.34,
+    /*
+       Navigasi: the egocentric view.
+
+       `chase` is a map that happens to be following something — 65 degrees is
+       still a bird looking down at a city. This is the automotive one: the
+       camera sits behind and just above the vehicle, the horizon is in frame,
+       and what fills the screen is the road ahead rather than the district
+       around it. Pitch 78 of Mapbox's 85 maximum is where the ground plane
+       starts reading as *road surface receding* instead of as a tilted map.
+
+       The look-ahead is what puts the ego low in the frame: it centres the
+       camera on a point this fraction of a viewport ahead, so the vehicle
+       itself sits near the bottom where a driver's own bonnet would be. Larger
+       than `chase` for that reason, and smaller than `onboard`, which pushes
+       the vehicle off the bottom of the screen entirely.
+    */
+    EGO_ZOOM = 17.6,
+    EGO_PITCH = 78,
+    EGO_LOOK_AHEAD = 0.46,
+    // How much of the road ahead the nav ribbon fades out over, as a fraction
+    // of the whole trip. Beyond it the route dissolves rather than running to
+    // a hard stop at the horizon.
+    EGO_FADE = 0.06,
+
     // Riding on board rather than behind: the camera drops to roughly roof
     // height and looks along the road. Mapbox caps pitch at 85, and the
     // look-ahead is much larger so the bus itself falls below the frame.
@@ -101,12 +128,30 @@ function setBasemapTheme(app, theme) {
     }
 }
 
-// Mapbox Standard ships four lighting presets; picking one from the simulated
-// hour makes playback read as a day passing over the city.
-function lightPreset(hour) {
-    return hour < 5 || hour >= 19 ? 'night' :
-        hour < 7 ? 'dawn' :
-            hour < 17 ? 'day' : 'dusk';
+/*
+   Which of Standard's four presets the sky is closest to.
+
+   Four is all Mapbox Standard offers, so what is left to get right is *when*
+   they change — and round hours get that wrong everywhere. The old bands put
+   dawn at 05:00 and dusk at 17:00-19:00; Jakarta's sun comes up around 05:55
+   and goes down around 17:50, so the map was lighting its dawn an hour before
+   the sky did and holding dusk for an hour after dark. The sun maths lives in
+   `sky.js`, which is also what drives the continuous tint over the canvas.
+
+   A continuously moving sun on the basemap itself was tried and rejected —
+   see trap 19 for why `setLights` is a one-way door.
+*/
+function lightPreset({altitude, rising}) {
+    if (altitude > 6) {
+        return 'day';
+    }
+    // Civil twilight, near enough: the sky still carries colour down to about
+    // six degrees below the horizon, which is where Standard's dawn and dusk
+    // presets stop being believable too.
+    if (altitude > -6) {
+        return rising ? 'dawn' : 'dusk';
+    }
+    return 'night';
 }
 
 /**
@@ -124,6 +169,13 @@ function lightPreset(hour) {
  * genuinely dark and the ink flips.
  */
 function applyStopTheme(map, preset) {
+    // The last-departure view owns the stop palette while it is on, and this
+    // runs on every light-preset change — so without the guard the stops
+    // revert to the ordinary ink the first time the simulated hour rolls over,
+    // which during a timelapse is every couple of seconds.
+    if (map.__lastBus) {
+        return;
+    }
     const theme = map.getConfigProperty('basemap', 'theme'),
         dark = theme !== 'monochrome' &&
             (preset === 'night' || preset === 'dusk'),
@@ -192,8 +244,7 @@ async function main() {
             status.textContent = text;
         }),
         clock = new Clock(),
-        fleet = new Fleet(network),
-        walkers = new Walkers(network);
+        fleet = new Fleet(network);
 
     status.textContent = 'Menyiapkan peta...';
 
@@ -275,23 +326,22 @@ async function main() {
     map.addControl(new mapboxgl.NavigationControl({visualizePitch: true}), 'bottom-right');
     map.addControl(new mapboxgl.GeolocateControl({trackUserLocation: true}), 'bottom-right');
 
-    const vehicleLayer = new VehicleLayer(fleet, walkers);
+    const vehicleLayer = new VehicleLayer(fleet);
 
     vehicleLayer.lineColor = vehicleColors(network.routes);
 
     const app = {
-        map, clock, network, fleet, vehicleLayer, walkers,
-        // People on the pavements, above their own zoom band (JAKAR-79). On by
-        // default — it is decoration, but decoration nobody ever sees is not
-        // worth the code — and switchable, because street level is where a
-        // phone has least headroom (JAKAR-60).
-        walkersOn: true,
+        map, clock, network, fleet, vehicleLayer,
+        // Built before the frame loop rather than in `buildUI`, because the
+        // loop's first pass writes to it — the same reason the basemap theme
+        // is established before the layers (trap 12).
+        sky: new Sky(),
         selectedRun: -1,
         trackedRun: -1,
         selectedStop: null,
         lastPreset: null,
         router: new Router(network),
-        cameraMode: 'chase',
+        cameraMode: DEFAULT_CAMERA,
         routeColouring: 'category',
         // The live CCTV layer. `cameras` stays null until the layer is first
         // switched on — its artifact is not fetched before then.
@@ -313,6 +363,7 @@ async function main() {
     map.setConfigProperty('basemap', 'theme', readBasemapTheme());
 
     addRouteLayers(app);
+    addNavLayers(app);
     addReachLayers(app);
     addStopLayers(app);
     addCameraLayers(app);
@@ -332,7 +383,16 @@ async function main() {
             app.layerPanel.setLayerUI('accessible', on);
             setAccessibleOnly(app, on);
         },
-        onCamera: (id, options) => restoreCamera(app, id, options)
+        onCamera: (id, options) => restoreCamera(app, id, options),
+        onTimelapse: () => app.clockControl.startTimelapse(),
+        onTour: route => {
+            selectRoute(app, route);
+            // After the preview's `fitBounds`, for the same reason the reel
+            // waits: a tour's first `jumpTo` against a flight still easing in
+            // makes the opening shot stutter.
+            setTimeout(() => tourPreviewedRoute(app), 1500);
+        },
+        onShowreel: () => startShowreel(app)
     });
     startSync(app);
 
@@ -388,6 +448,103 @@ function addRouteLayers({map, network}) {
     });
 }
 
+/*
+   The road ahead, in the egocentric view.
+
+   A nav view's subject is not "the route" but "the route *from here forward*",
+   and the difference is the whole feel of the thing. The followed trip's whole
+   shape goes into the source once, when the vehicle is picked up; what moves
+   every frame is `line-trim-offset`, which paints the travelled part
+   transparent. That is a **paint** property, so the ribbon re-anchors to the
+   vehicle sixty times a second without the source being touched at all — a
+   `setData` per frame would round-trip through the GeoJSON worker and the
+   ribbon would visibly lag behind the vehicle it is supposed to start at.
+
+   Casing under core, the way every automotive renderer draws a route: the dark
+   casing is what separates a bright ribbon from a bright road underneath it.
+*/
+function addNavLayers({map}) {
+    map.addSource('nav-route', {
+        type: 'geojson',
+        // `line-trim-offset` and `line-gradient` both measure along the line,
+        // and neither works without this.
+        lineMetrics: true,
+        data: {type: 'FeatureCollection', features: []}
+    });
+
+    map.addLayer({
+        id: 'nav-route-casing',
+        type: 'line',
+        source: 'nav-route',
+        layout: {'line-cap': 'round', 'line-join': 'round', visibility: 'none'},
+        paint: {
+            'line-color': '#05070c',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 14, 9, 18, 26],
+            'line-opacity': 0.55,
+            'line-blur': 2
+        }
+    });
+
+    map.addLayer({
+        id: 'nav-route-core',
+        type: 'line',
+        source: 'nav-route',
+        layout: {'line-cap': 'round', 'line-join': 'round', visibility: 'none'},
+        paint: {
+            'line-color': '#4da3ff',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 14, 5, 18, 16],
+            // Lit rather than shaded, so the ribbon holds its colour at night
+            // as well as at noon — it is a signal, not a painted road marking.
+            'line-emissive-strength': 1
+        }
+    });
+
+    map.addSource('nav-stops', {
+        type: 'geojson',
+        data: {type: 'FeatureCollection', features: []}
+    });
+
+    map.addLayer({
+        id: 'nav-stop-dots',
+        type: 'circle',
+        source: 'nav-stops',
+        layout: {visibility: 'none'},
+        paint: {
+            'circle-radius': ['case', ['==', ['get', 'next'], 1], 8, 5],
+            'circle-color': ['case', ['==', ['get', 'next'], 1], '#ffd400', '#ffffff'],
+            'circle-stroke-width': 2.5,
+            'circle-stroke-color': '#05070c',
+            'circle-emissive-strength': 1
+        }
+    });
+
+    map.addLayer({
+        id: 'nav-stop-labels',
+        type: 'symbol',
+        source: 'nav-stops',
+        layout: {
+            visibility: 'none',
+            'text-field': ['get', 'name'],
+            'text-size': 13,
+            'text-offset': [0, -1.4],
+            'text-anchor': 'bottom',
+            // The one place in this app that sets `text-allow-overlap`. A nav
+            // view has a handful of labels and they are the point of it, so
+            // losing the next stop's name to the basemap's own collision
+            // budget would be trap 9 in its most annoying form.
+            'text-allow-overlap': true,
+            'text-ignore-placement': true
+        },
+        filter: ['==', ['get', 'next'], 1],
+        paint: {
+            'text-color': '#ffffff',
+            'text-halo-color': '#05070c',
+            'text-halo-width': 1.8,
+            'text-emissive-strength': 1
+        }
+    });
+}
+
 function addReachLayers({map}) {
     map.addSource('reach', {
         type: 'geojson',
@@ -412,8 +569,255 @@ function addReachLayers({map}) {
     });
 }
 
-function addStopLayers({map, network}) {
-    const features = [];
+/**
+ * Follows the sweep: which stops have been reached yet, and which have just
+ * been reached.
+ *
+ * A filter and a radius, both driven off `secs` — the arrival time the search
+ * was already returning. The leading edge is drawn larger and then settles,
+ * which is what makes the spread read as a wavefront rather than as dots
+ * appearing. At rest the frontier is `Infinity`, the filter passes everything,
+ * and the interpolation collapses to the resting radius.
+ */
+function applyReachFrontier(app) {
+    const {map, reach} = app;
+
+    if (!map.getLayer('reach-points')) {
+        return;
+    }
+    const frontier = reach.frontier,
+        sweeping = Number.isFinite(frontier);
+
+    map.setFilter('reach-points',
+        sweeping ? ['<=', ['get', 'secs'], frontier] : null);
+
+    /*
+       1.9x at the instant of arrival, back to 1x a couple of minutes of
+       journey time later.
+
+       The multiply is pushed *inside* each zoom stop rather than wrapped
+       around the whole interpolation, which looks like a needless
+       complication and is not: Mapbox rejects a `zoom` expression anywhere
+       but at the top level of a step or interpolate, so `['*', <zoom
+       interpolate>, <pulse>]` throws on every frame — and throws from
+       `setPaintProperty`, so the filter carries on sweeping and only the
+       radius silently never applies.
+    */
+    const pulse = sweeping ? [
+            'interpolate', ['linear'],
+            ['-', frontier, ['get', 'secs']],
+            0, 1.9,
+            EDGE_SECONDS, 1
+        ] : 1,
+        at = (station, other) => ['*',
+            ['case', ['==', ['get', 'band'], 0], station, other], pulse];
+
+    map.setPaintProperty('reach-points', 'circle-radius', [
+        'interpolate', ['linear'], ['zoom'],
+        10, at(6, 2.5),
+        16, at(12, 7)
+    ]);
+}
+
+/*
+   "Can I still get home?" — the last departure at every stop, and how long is
+   left.
+
+   Everyone who uses this network at night knows the feeling, and the data has
+   been sitting in `serviceSpan` since the stop card was written; it was just
+   never drawn on the map. Switched on and run forward from about nine in the
+   evening, it shows Jakarta's network **going dark from the edges inward** —
+   Mikrotrans first, the corridors last — which is a spatial fact about the
+   network that no amount of reading one stop card at a time conveys.
+
+   It also makes an honest oddity visible rather than buried: 88 trips declare
+   `00:00-23:59` against 558 at `05:00-22:00`, which is why a couple of
+   thousand buses are still out at 23:30. That is the feed's claim, and this
+   draws it rather than hiding it.
+*/
+const LAST_BUS_BANDS = [
+    {seconds: 0, color: '#8d98a8', label: 'Sudah berakhir'},
+    {seconds: 1800, color: '#d93b3b', label: 'Kurang dari 30 mnt'},
+    {seconds: 3600, color: '#e8873a', label: 'Kurang dari 1 jam'},
+    {seconds: 10800, color: '#d9c33a', label: 'Kurang dari 3 jam'},
+    {seconds: Infinity, color: '#2fa95f', label: 'Lebih dari 3 jam'}
+];
+
+/*
+   Anything before this hour is read as belonging to the previous service day.
+
+   GTFS states a bus leaving at 00:44 tomorrow as 24:44, so a stop's last
+   departure can legitimately be past 86,400 while the clock has wrapped to a
+   small number. One scalar decision here beats branching inside a Mapbox
+   expression, and 03:00 is comfortably after the latest thing this feed runs
+   and comfortably before the earliest.
+*/
+const SERVICE_DAY_START = 3 * 3600;
+
+/**
+ * The latest departure at each drawn stop, for one service day.
+ *
+ * Folded up to the parent station, because platforms are what `stop_times`
+ * references and stations are what the map draws — the same rule everything
+ * else asking "what serves this stop?" has to follow.
+ */
+function lastDepartures(network, dayOfWeek) {
+    const last = new Map();
+
+    for (const trip of network.trips) {
+        if (!servesOn(trip, network.calendar, dayOfWeek)) {
+            continue;
+        }
+        for (let i = 0; i < trip.stops.length; i++) {
+            const span = serviceSpan(trip, i);
+
+            if (!span) {
+                continue;
+            }
+            const stop = network.stops.get(trip.stops[i]);
+
+            if (!stop) {
+                continue;
+            }
+            const id = stop.parent || stop.id;
+
+            if (!(last.get(id) >= span.last)) {
+                last.set(id, span.last);
+            }
+        }
+    }
+    return last;
+}
+
+/**
+ * Paints the stop layer by time remaining, or puts it back.
+ *
+ * The `last` value rides on the feature so the expression is a subtraction
+ * against one number that changes — which is what lets this be a single
+ * `setPaintProperty` rather than 7,600 feature-state writes or a `setData` of
+ * the whole collection.
+ */
+function applyLastBusColours(app) {
+    const {map, clock} = app;
+
+    if (!map.__lastBus) {
+        return;
+    }
+    const now = clock.getTimeOffset(),
+        reference = now < SERVICE_DAY_START ? now + 86400 : now,
+        remaining = ['-', ['coalesce', ['get', 'last'], -1], reference],
+        // One `case` shape, built twice: once for the colour and once for the
+        // opacity, so a stop whose last bus has gone dims as well as greys.
+        // Read at a city zoom the dimming is what carries it — the map should
+        // look like it is emptying, not like it is changing hue.
+        ramp = pick => {
+            const out = ['case'];
+
+            for (const band of LAST_BUS_BANDS) {
+                if (Number.isFinite(band.seconds)) {
+                    out.push(['<', remaining, band.seconds], pick(band));
+                }
+            }
+            out.push(pick(LAST_BUS_BANDS[LAST_BUS_BANDS.length - 1]));
+            return out;
+        };
+
+    map.setPaintProperty('stop-circles', 'circle-color', ramp(b => b.color));
+    map.setPaintProperty('stop-circles', 'circle-opacity',
+        ramp(b => (b.seconds === 0 ? 0.45 : 0.95)));
+}
+
+/**
+ * Switches the last-departure view on or off.
+ *
+ * `map.__lastBus` is read by `applyStopTheme`, exactly as `__accessibleOnly`
+ * already is: the theme owns the stop palette and re-applies it whenever the
+ * light preset changes, so a view that paints stops has to be declared there
+ * or the next hour boundary quietly reverts it (trap 4's shape).
+ */
+function setLastBus(app, on) {
+    const {map, network, clock} = app;
+
+    map.__lastBus = on;
+    if (on) {
+        const table = lastDepartures(network, clock.getDayOfWeek()),
+            // Our own handle on the collection rather than the source's
+            // `_data`, which is private and has no promise to keep existing.
+            data = app.stopData;
+
+        for (const feature of data.features) {
+            const value = table.get(feature.properties.id);
+
+            // Deleted rather than set to a sentinel: `coalesce` in the
+            // expression then treats an unserved stop as already finished,
+            // which is what a stop with no departures today actually is.
+            if (value === undefined) {
+                delete feature.properties.last;
+            } else {
+                feature.properties.last = value;
+            }
+        }
+        map.getSource('stops').setData(data);
+
+        /*
+           Below their own minzoom, and bigger, and solid.
+
+           This view is *about* the colour, and at the city zoom where the
+           network emptying is legible at all, a stop is drawn at 1.6 px with
+           a 1 px ring — which is a colour ramp nobody can read. The first
+           build shipped exactly that and the two screenshots an hour apart
+           were almost indistinguishable. So the dot becomes the mark: no
+           ring, one size for every stop (the question is "can I get home from
+           here", which a halte and a stasiun answer alike), and down to z9
+           because the emptying is a regional shape rather than a local one —
+           trap 9's lesson in its milder form, a layer switched on that draws
+           almost nothing.
+        */
+        map.setLayerZoomRange('stop-circles', 9, 24);
+        map.setPaintProperty('stop-circles', 'circle-radius', [
+            'interpolate', ['linear'], ['zoom'],
+            9, 2.4, 12, 3.6, 17, 7
+        ]);
+        map.setPaintProperty('stop-circles', 'circle-stroke-width', 0);
+        applyLastBusColours(app);
+    } else {
+        map.setLayerZoomRange('stop-circles', STOP_MINZOOM, 24);
+        for (const [property, value] of Object.entries(STOP_PAINT)) {
+            map.setPaintProperty('stop-circles', property, value);
+        }
+        applyStopTheme(map, app.lastPreset);
+    }
+    app.legend.setLastBus(on, LAST_BUS_BANDS);
+}
+
+/*
+   The stop layer at rest: a hole punched in the ground, filled with the ground
+   colour and outlined in the ink colour, which reads correctly on a noon map
+   and on a midnight one.
+
+   Named once because two things restore it — `applyStopTheme` on every light
+   change, and `setLastBus` when its view is switched off — and a restore that
+   only puts back the properties somebody remembered is how a layer ends up
+   permanently three pixels bigger than it was.
+*/
+const STOP_MINZOOM = 12,
+    STOP_PAINT = {
+        'circle-radius': [
+            'interpolate', ['linear'], ['zoom'],
+            12, ['case', ['==', ['get', 'station'], 1], 3, 1.6],
+            17, ['case', ['==', ['get', 'station'], 1], 8, 4.5]
+        ],
+        'circle-color': '#0b0f14',
+        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 17, 2],
+        'circle-stroke-color': [
+            'case', ['==', ['get', 'station'], 1], '#ffffff', '#93a1b3'
+        ],
+        'circle-opacity': 0.9
+    };
+
+function addStopLayers(app) {
+    const {map, network} = app,
+        features = [];
 
     for (const stop of network.stops.values()) {
         // Platforms sit metres from their parent station; drawing only the
@@ -433,26 +837,17 @@ function addStopLayers({map, network}) {
         });
     }
 
-    map.addSource('stops', {type: 'geojson', data: {type: 'FeatureCollection', features}});
+    // Kept on the app so the last-departure view can annotate the features and
+    // re-set them without reaching into the source's private `_data`.
+    app.stopData = {type: 'FeatureCollection', features};
+    map.addSource('stops', {type: 'geojson', data: app.stopData});
 
     map.addLayer({
         id: 'stop-circles',
         type: 'circle',
         source: 'stops',
-        minzoom: 12,
-        paint: {
-            'circle-radius': [
-                'interpolate', ['linear'], ['zoom'],
-                12, ['case', ['==', ['get', 'station'], 1], 3, 1.6],
-                17, ['case', ['==', ['get', 'station'], 1], 8, 4.5]
-            ],
-            'circle-color': '#0b0f14',
-            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 17, 2],
-            'circle-stroke-color': [
-                'case', ['==', ['get', 'station'], 1], '#ffffff', '#93a1b3'
-            ],
-            'circle-opacity': 0.9
-        }
+        minzoom: STOP_MINZOOM,
+        paint: {...STOP_PAINT}
     });
 
     map.addLayer({
@@ -750,6 +1145,7 @@ function buildUI(app) {
     const {map, clock, fleet, network} = app;
 
     app.clockControl = new ClockControl(clock, fleet);
+    app.clockControl.onShowreel = () => startShowreel(app);
 
     app.layerPanel = new LayerPanel(fleet, {
         basemapTheme: readBasemapTheme(),
@@ -768,13 +1164,12 @@ function buildUI(app) {
                 setAccessibleOnly(app, on);
             } else if (layer === 'headway') {
                 setRouteColouring(app, on ? 'headway' : 'category');
-            } else if (layer === 'walkers') {
-                app.walkersOn = on;
-                if (!on) {
-                    app.walkers.clear();
-                }
             } else if (layer === 'cameras') {
                 setCameras(app, on);
+            } else if (layer === 'trails') {
+                app.vehicleLayer.setTrails(on);
+            } else if (layer === 'lastbus') {
+                setLastBus(app, on);
             } else {
                 map.setConfigProperty('basemap', 'show3dObjects', on);
             }
@@ -809,6 +1204,11 @@ function buildUI(app) {
             app.syncUrl?.();
         }
     });
+    // The sweep only touches the map, not the card or the URL, so it gets its
+    // own callback rather than going through `onChange` — which rebuilds the
+    // panel, and rebuilding an interactive panel sixty times a second is
+    // trap 1 with a new trigger.
+    app.reach.onFrontier = () => applyReachFrontier(app);
 
     app.followHud = new FollowHUD({
         clock,
@@ -822,9 +1222,22 @@ function buildUI(app) {
         }
     });
 
+    app.tour = new Tour(map);
+
     app.detail = new DetailPanel(network, {
         onTrack: () => {
             app.trackedRun = app.trackedRun === app.selectedRun ? -1 : app.selectedRun;
+        },
+        // One button id on two cards, because it is one idea — fly this line —
+        // and the card already says which line it is about. Which trip that
+        // means differs: the vehicle card tours the run on screen, the preview
+        // card tours the longest pattern of the line it is showing.
+        onTour: () => {
+            if (app.detail.mode === 'route') {
+                tourPreviewedRoute(app);
+            } else {
+                tourRoute(app);
+            }
         },
         onReach: () => {
             const stop = app.selectedStop;
@@ -839,6 +1252,7 @@ function buildUI(app) {
         },
         onBudget: minutes => app.reach.set('budget', minutes),
         onFreeOnly: on => app.reach.set('freeOnly', on),
+        onReachPlay: () => app.reach.play(),
         onFromPoint: () => {
             if (!app.nearby) {
                 return;
@@ -874,6 +1288,7 @@ function buildUI(app) {
             app.nearby = null;
             app.vehicleLayer.setSelection(-1);
             app.reach.clear();
+            app.tour?.stop();
             clearRoutePreview(app);
             // Closing the card has to stop the stream too, or the video keeps
             // pulling segments for a panel nobody can see.
@@ -1614,12 +2029,17 @@ function lookAhead(map, [lon, lat], bearingDeg, fraction = NAV_LOOK_AHEAD) {
 }
 
 /** Rides along with the tracked bus, turning with it. */
-function followCamera(app, info) {
+function followCamera(app, info, slot) {
     const {map, nav} = app,
-        onboard = app.cameraMode === 'onboard',
-        zoom = onboard ? ONBOARD_ZOOM : NAV_ZOOM,
-        pitch = onboard ? ONBOARD_PITCH : NAV_PITCH,
-        fraction = onboard ? ONBOARD_LOOK_AHEAD : NAV_LOOK_AHEAD;
+        mode = app.cameraMode,
+        // Three framings of the same ride: over the shoulder, from the
+        // driver's seat, and the automotive one in between.
+        shot = mode === 'onboard' ?
+            {zoom: ONBOARD_ZOOM, pitch: ONBOARD_PITCH, fraction: ONBOARD_LOOK_AHEAD} :
+            mode === 'nav' ?
+                {zoom: EGO_ZOOM, pitch: EGO_PITCH, fraction: EGO_LOOK_AHEAD} :
+                {zoom: NAV_ZOOM, pitch: NAV_PITCH, fraction: NAV_LOOK_AHEAD},
+        {zoom, pitch, fraction} = shot;
 
     // Switching viewpoint mid-follow has to re-settle the camera, so treat it
     // like picking up a new bus.
@@ -1635,6 +2055,13 @@ function followCamera(app, info) {
         nav.bearing = info.bearing;
         nav.settling = true;
         nav.time = performance.now();
+        // The road ahead is loaded once per vehicle, before the camera swings
+        // in, so the ribbon is already under the bus when the view arrives
+        // rather than appearing a beat later.
+        setNavEmphasis(app, mode === 'nav');
+        if (mode === 'nav') {
+            setNavRoute(app, info);
+        }
         map.easeTo({
             center: lookAhead(map, info.lngLat, info.bearing, fraction),
             bearing: info.bearing,
@@ -1663,13 +2090,403 @@ function followCamera(app, info) {
         center: lookAhead(map, info.lngLat, nav.bearing, fraction),
         bearing: nav.bearing
     });
+
+    if (mode === 'nav') {
+        updateNavRoute(app, info, slot);
+    }
 }
 
-/** Switches between riding behind the bus and riding on it. */
+const NAV_LAYERS = ['nav-route-casing', 'nav-route-core',
+    'nav-stop-dots', 'nav-stop-labels'];
+
+/*
+   What the egocentric view takes away.
+
+   A nav view is a hierarchy — ego, then the road ahead, then just enough of
+   the surroundings to place it — and the way to get one is subtraction, not
+   emphasis. The same lesson the line preview learned: with seven hundred route
+   lines drawn, a brighter needle is still in the same haystack.
+
+   Everything here is a Standard config property or a layer we own, and every
+   one of them is captured on the way in and put back on the way out. A view
+   that restores only what somebody remembered is how a map ends up permanently
+   missing its POI labels.
+*/
+const NAV_BASEMAP = {
+    showPointOfInterestLabels: false,
+    showPlaceLabels: false,
+    showTransitLabels: false,
+    showPedestrianRoads: false,
+    // Road *labels* stay on — a navigation view without street names is a
+    // diagram. What comes down is the roads' own brightness, so the ribbon
+    // reads against them rather than competing with them.
+    roadsBrightness: 0.35
+};
+
+function setNavEmphasis(app, on) {
+    const {map} = app;
+
+    if (on && !app.navRestore) {
+        const restore = app.navRestore = {basemap: {}, layers: {}};
+
+        for (const key of Object.keys(NAV_BASEMAP)) {
+            restore.basemap[key] = map.getConfigProperty('basemap', key);
+        }
+        for (const id of ['stop-circles', 'stop-labels']) {
+            restore.layers[id] = map.getLayoutProperty(id, 'visibility') ?? 'visible';
+        }
+        restore.routeOpacity = map.getPaintProperty('route-lines', 'line-opacity');
+    }
+
+    if (on) {
+        for (const [key, value] of Object.entries(NAV_BASEMAP)) {
+            map.setConfigProperty('basemap', key, value);
+        }
+        // The network's own lines all but vanish: the one line that matters is
+        // being drawn by `nav-route` instead, from the vehicle forward.
+        map.setPaintProperty('route-lines', 'line-opacity', 0.05);
+        for (const id of ['stop-circles', 'stop-labels']) {
+            map.setLayoutProperty(id, 'visibility', 'none');
+        }
+    } else if (app.navRestore) {
+        const restore = app.navRestore;
+
+        for (const [key, value] of Object.entries(restore.basemap)) {
+            map.setConfigProperty('basemap', key, value);
+        }
+        for (const [id, value] of Object.entries(restore.layers)) {
+            map.setLayoutProperty(id, 'visibility', value);
+        }
+        map.setPaintProperty('route-lines', 'line-opacity', restore.routeOpacity);
+        app.navRestore = null;
+    }
+
+    for (const id of NAV_LAYERS) {
+        map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+    }
+
+    /*
+       The class the stylesheet hangs the rest of the view on.
+
+       With the card closed the left rail is an empty column holding only the
+       finder — and on a 390px screen that column's last item lands at y=744,
+       directly under a HUD that starts at 637 and sits at `z-index: 30`. The
+       finder was still there, still `visible`, and completely unreachable:
+       trap 13's shape exactly, two things laying claim to one place. It is
+       hidden outright instead, which is also the honest answer to what a
+       finder is for while you are riding something.
+    */
+    document.body.classList.toggle('navigating', on);
+}
+
+/**
+ * Loads the followed trip's road into the nav source.
+ *
+ * Once per vehicle, not per frame. The whole shape goes in; which part of it
+ * is *ahead* is decided every frame by `line-trim-offset`, which costs a paint
+ * write rather than a source update.
+ */
+function setNavRoute(app, info) {
+    const {map, network} = app,
+        shape = info.trip?.shape;
+
+    if (!shape) {
+        return;
+    }
+    const lengthKm = network.cum[shape.start + shape.count - 1];
+
+    map.getSource('nav-route').setData({
+        type: 'FeatureCollection',
+        features: [{
+            type: 'Feature',
+            properties: {},
+            geometry: {
+                type: 'LineString',
+                coordinates: network.sliceShape(shape, 0, lengthKm)
+            }
+        }]
+    });
+    map.setPaintProperty('nav-route-core', 'line-color', routeColor(info.route));
+    app.navLength = lengthKm;
+    app.navStopIndex = -1;
+}
+
+/** The stops still ahead, with the immediate one marked. */
+function setNavStops(app, info) {
+    const {map, network} = app,
+        trip = info.trip,
+        features = [];
+
+    if (trip) {
+        // A short horizon on purpose: a nav view shows the next call and a
+        // hint of what follows, not the remaining forty stops as a chain of
+        // dots running to the horizon.
+        const from = info.stopIndex,
+            to = Math.min(trip.stops.length, from + 4);
+
+        for (let i = from; i < to; i++) {
+            const stop = network.stops.get(trip.stops[i]);
+
+            if (!stop) {
+                continue;
+            }
+            features.push({
+                type: 'Feature',
+                properties: {
+                    name: stop.name,
+                    next: i === (info.standing ? from : from + 1) ? 1 : 0
+                },
+                geometry: {type: 'Point', coordinates: [stop.lon, stop.lat]}
+            });
+        }
+    }
+    map.getSource('nav-stops').setData({type: 'FeatureCollection', features});
+}
+
+/**
+ * Re-anchors the ribbon to the vehicle.
+ *
+ * `line-trim-offset` paints the given range of the line transparent, so
+ * `[0, progress]` erases the road already driven and leaves exactly the road
+ * ahead — the automotive primitive, and cheap enough to run every frame
+ * because it is a paint property on a source that never changes.
+ */
+function updateNavRoute(app, info, slot) {
+    const {map, fleet} = app,
+        // Distance along the shape over the shape's own length, both in
+        // kilometres — `info.progress` is along the *trip's* stop offsets,
+        // which stop at the last call and can leave a tail of shape
+        // unaccounted for.
+        progress = app.navLength > 0 ?
+            Math.max(0, Math.min(1, fleet.offset[slot] / app.navLength)) :
+            0;
+
+    for (const id of ['nav-route-casing', 'nav-route-core']) {
+        map.setPaintProperty(id, 'line-trim-offset', [0, progress]);
+        // A soft edge where the ribbon meets the vehicle, so the road does not
+        // begin with a hard cut across the bonnet.
+        map.setPaintProperty(id, 'line-trim-fade-range', [0, EGO_FADE]);
+    }
+
+    // The stop list only changes when the vehicle passes one.
+    if (app.navStopIndex !== info.stopIndex) {
+        app.navStopIndex = info.stopIndex;
+        setNavStops(app, info);
+    }
+}
+
+/** Switches between the three ways of riding along. */
 function setCameraMode(app, mode) {
     app.cameraMode = mode;
     // From on board you are inside the vehicle, so drawing it fills the frame.
+    // In `nav` it stays drawn and is the point — it is the ego, the thing
+    // every other element on screen is positioned relative to.
     app.vehicleLayer.setSelectionHidden(mode === 'onboard');
+    // Gated on actually following, not on the mode alone: the mode is reset to
+    // its default when a ride ends, and without this that reset would switch
+    // the navigation view *on* over a map nobody is riding.
+    setNavEmphasis(app, mode === 'nav' && app.trackedRun >= 0);
+}
+
+/**
+ * Flies the camera along a trip's own geometry, end to end.
+ *
+ * The path comes from the trip's shape rather than from `network.lines`, and
+ * that is the whole correctness of it: `lines` carries one feature per
+ * *shape*, not per route — 713 features for 249 routes, with 202 routes
+ * carrying more than one and corridor 1 carrying eighteen. Matching on the
+ * route id therefore returned whichever pattern happened to be first in the
+ * buffer, so touring a vehicle regularly flew the opposite direction, or a
+ * short working, rather than the run on screen. A trip knows its own shape.
+ *
+ * Stops come along with it, at their distances in metres, so the caption can
+ * name each one as the camera reaches it. The offsets are on the pattern in
+ * kilometres, which is the unit the whole simulation carries.
+ */
+function tourTrip(app, trip, route, {onDone, onCancel} = {}) {
+    const {network} = app,
+        shape = trip?.shape;
+
+    if (!shape) {
+        return false;
+    }
+    // `cum` is kilometres — the unit the whole simulation carries, because
+    // `trip.offsets` are kilometres and `locate` compares the two directly.
+    const lengthKm = network.cum[shape.start + shape.count - 1],
+        coordinates = network.sliceShape(shape, 0, lengthKm);
+
+    if (coordinates.length < 2) {
+        return false;
+    }
+    const stops = trip.stops.map((id, i) => {
+        const stop = network.stops.get(id);
+
+        return stop ? {name: stop.name, distance: trip.offsets[i] * 1000} : null;
+    }).filter(Boolean);
+
+    // The tour takes the camera; stop following whatever was under it.
+    app.trackedRun = -1;
+    app.tour.start(coordinates, {
+        title: routeMark(route),
+        subtitle: trip.headsign || route.longName || '',
+        stops,
+        onDone: onDone || (() => app.detail.close()),
+        onCancel
+    });
+    return true;
+}
+
+/** The longest pattern of a route — see `tourPreviewedRoute` for why longest. */
+function longestTrip(network, routeId) {
+    let best = null,
+        bestLength = -1;
+
+    for (const trip of network.trips) {
+        if (trip.route !== routeId || !trip.shape) {
+            continue;
+        }
+        const {start, count} = trip.shape,
+            length = network.cum[start + count - 1];
+
+        if (length > bestLength) {
+            bestLength = length;
+            best = trip;
+        }
+    }
+    return best;
+}
+
+/** Tours the route of the vehicle the card is currently showing. */
+function tourRoute(app) {
+    const {fleet, selectedRun} = app,
+        slot = fleet.slotOfRun(selectedRun);
+
+    if (slot < 0) {
+        return;
+    }
+    const info = fleet.describe(slot);
+
+    if (info) {
+        tourTrip(app, info.trip, info.route);
+    }
+}
+
+/**
+ * Tours the line the preview card is showing.
+ *
+ * The longest pattern, not the first: a route's patterns include short
+ * workings, and a tour of Cikarang that stops at Bekasi is a tour of the wrong
+ * thing. Length is the honest tiebreak — it is the one that shows the most of
+ * the line.
+ */
+function tourPreviewedRoute(app) {
+    const {network, previewedRoute} = app;
+
+    if (!previewedRoute) {
+        return;
+    }
+    const {route} = previewedRoute,
+        best = longestTrip(network, route.id);
+
+    if (best) {
+        tourTrip(app, best, route);
+    }
+}
+
+/*
+   The showreel: the map performing when nobody is touching it.
+
+   One line previewed and flown, then another, at the evening peak where there
+   is most to watch. It is the thing a map like this is for — somebody opens
+   the link, puts it on a second monitor, and it keeps showing them the city
+   rather than sitting at whatever view the URL carried.
+
+   Ending it needs no code of its own. A tour already cancels on any gesture
+   and only calls `onDone` when it runs to the end, so the chain is broken by
+   the same drag that takes the camera back, and `stopShowreel` only has to
+   tidy up the flag and the preview.
+*/
+const SHOWREEL_PEAK = 17.5 * 3600,
+    // Long enough to be worth flying and short enough not to strand the reel
+    // on one line for a minute and a half.
+    SHOWREEL_MIN_KM = 6,
+    SHOWREEL_MAX_KM = 32;
+
+function showreelRoutes(app) {
+    const {network} = app,
+        out = [];
+
+    for (const route of network.routes.values()) {
+        const trip = longestTrip(network, route.id);
+
+        if (!trip) {
+            continue;
+        }
+        const {start, count} = trip.shape,
+            km = network.cum[start + count - 1];
+
+        if (km >= SHOWREEL_MIN_KM && km <= SHOWREEL_MAX_KM) {
+            out.push({route, trip});
+        }
+    }
+    return out;
+}
+
+function startShowreel(app) {
+    if (app.showreel) {
+        return stopShowreel(app);
+    }
+    const pool = showreelRoutes(app);
+
+    if (!pool.length) {
+        return;
+    }
+    app.showreel = {pool, seen: new Set()};
+    app.clockControl.setShowreelUI(true);
+    app.clockControl.stopTimelapse(false);
+    app.clock.setTimeOffset(SHOWREEL_PEAK);
+    nextShowreelItem(app);
+}
+
+function nextShowreelItem(app) {
+    const reel = app.showreel;
+
+    if (!reel) {
+        return;
+    }
+    // Every line before any line twice, which a plain random pick does not
+    // give — it repeats about a third of the time, and a reel that shows the
+    // same corridor twice running looks broken rather than random.
+    if (reel.seen.size >= reel.pool.length) {
+        reel.seen.clear();
+    }
+    const remaining = reel.pool.filter(item => !reel.seen.has(item.route.id)),
+        pick = remaining[Math.floor(Math.random() * remaining.length)];
+
+    reel.seen.add(pick.route.id);
+    selectRoute(app, pick.route);
+    // After the preview's own `fitBounds`, or the tour's first `jumpTo` fights
+    // a flight that is still easing towards the line.
+    reel.timer = setTimeout(() => {
+        if (app.showreel) {
+            tourTrip(app, pick.trip, pick.route, {
+                onDone: () => nextShowreelItem(app),
+                onCancel: () => stopShowreel(app)
+            });
+        }
+    }, 1500);
+}
+
+function stopShowreel(app) {
+    if (!app.showreel) {
+        return;
+    }
+    clearTimeout(app.showreel.timer);
+    app.showreel = null;
+    app.clockControl.setShowreelUI(false);
+    app.tour?.stop();
+    clearRoutePreview(app);
+    app.detail.close();
 }
 
 /** Leaves the ride and restores the camera the user had before it. */
@@ -1683,12 +2500,11 @@ function setCameraMode(app, mode) {
 // -------------------------------------------------------------- frame loop
 
 function loop(app) {
-    const {map, clock, fleet, walkers, vehicleLayer, clockControl, detail} = app;
+    const {map, clock, fleet, vehicleLayer, clockControl, detail} = app;
     let lastStopRefresh = 0,
         lastLive = null,
         lastNow = null,
-        lastReal = 0,
-        lastWalkZoom = null;
+        lastReal = 0;
 
     const frame = () => {
         const now = clock.getTimeOffset(),
@@ -1696,39 +2512,34 @@ function loop(app) {
 
         fleet.update(now, clock.getDayOfWeek());
 
-        // The crowd takes both deltas: the simulated one because it stops when
-        // the clock stops, and the real one because its pace is capped
-        // against it — a pedestrian at 1200x crosses the frame within one
-        // frame, and nothing about a walker is owed to the timetable
-        // (JAKAR-79). The first frame has no previous time to difference.
-        if (app.walkersOn && lastNow !== null) {
-            walkers.update(map, now - lastNow, real - lastReal);
-        } else if (!app.walkersOn) {
-            walkers.clear();
-        }
         lastNow = now;
         lastReal = real;
 
-        // Whether the crowd's zoom band has been reached. Compared against
-        // the last frame for the same reason the live gate is: this writes to
-        // the DOM, and doing that sixty times a second to set the value it
-        // already holds is work for nothing.
-        const inWalkBand = map.getZoom() >= WALKER_MIN_ZOOM;
-
-        if (inWalkBand !== lastWalkZoom) {
-            lastWalkZoom = inWalkBand;
-            app.layerPanel.setWalkersVisible(inWalkBand);
-        }
-
         clockControl.update();
 
-        const hour = Math.floor(now / 3600),
-            preset = lightPreset(hour);
+        // One sun position per frame, read by two things: which of Standard's
+        // four presets the basemap wears, and the continuous tint over the
+        // canvas that fills in everything between them.
+        const sun = sunPosition(clock.getLocalDate(), now),
+            preset = lightPreset(sun);
+
+        app.sky.update(sun, {
+            monochrome: map.getConfigProperty('basemap', 'theme') === 'monochrome'
+        });
 
         if (app.routeColouring === 'headway' &&
             Math.abs(now - (app.lastHeadwayAt ?? -1e9)) > 120) {
             app.lastHeadwayAt = now;
             applyHeadwayColours(app);
+        }
+
+        // Throttled on the *real* clock, not the simulated one (trap 3): this
+        // rebuilds a paint expression, and at 1200x a simulated-time throttle
+        // fires every frame. Twice a second is smooth enough to watch the
+        // network go dark and cheap enough not to be felt.
+        if (map.__lastBus && real - (app.lastBusPaintedAt ?? -1e9) > 500) {
+            app.lastBusPaintedAt = real;
+            applyLastBusColours(app);
         }
 
         if (preset !== app.lastPreset) {
@@ -1741,8 +2552,10 @@ function loop(app) {
         // rather than a hide() in every other branch.
         if (app.trackedRun < 0 && app.followHud.hide()) {
             // Stopping while on board would otherwise leave the vehicle hidden
-            // — the camera was inside it, so it was scaled away.
-            setCameraMode(app, 'chase');
+            // — the camera was inside it, so it was scaled away. `trackedRun`
+            // is already -1 here, which is what makes this also tear the
+            // navigation view down.
+            setCameraMode(app, DEFAULT_CAMERA);
         }
 
         // A camera shows the street *now*; the clock may be replaying a
@@ -1797,11 +2610,28 @@ function loop(app) {
 
             vehicleLayer.setSelection(slot);
             if (slot >= 0) {
-                const info = fleet.describe(slot);
+                const info = fleet.describe(slot),
+                    tracking = app.trackedRun === app.selectedRun,
+                    // The navigation view hands the card's job to the HUD.
+                    //
+                    // They say the same things — line, headsign, next stop —
+                    // and on a 390px screen the pair of them plus the finder
+                    // and the two header panels leave the road ahead as a
+                    // strip across the middle, which is the opposite of what
+                    // an egocentric view is for. The card comes back the
+                    // moment the framing changes, because this loop reasserts
+                    // its branch every frame.
+                    navigating = tracking && app.cameraMode === 'nav';
 
-                detail.showVehicle(info, {tracking: app.trackedRun === app.selectedRun});
-                if (app.trackedRun === app.selectedRun) {
-                    followCamera(app, info);
+                if (navigating) {
+                    if (detail.mode) {
+                        detail.close();
+                    }
+                } else {
+                    detail.showVehicle(info, {tracking});
+                }
+                if (tracking) {
+                    followCamera(app, info, slot);
                     app.followHud.show(info);
                 } else {
                     app.followHud.hide();
