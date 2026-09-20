@@ -2162,3 +2162,15 @@ audit of all nineteen sources.
   GPU point above.
 - **Four Cikarang patterns are undrawable**, and the gap is in OSM rather than
   here — 6 trips, 0.2%. See the KCI feed notes above and JAKAR-44.
+
+## Shared knowledge (vault)
+
+Cross-cutting lessons live outside this repo because they span several. Read the
+ones that match what you are doing:
+
+- `~/ai-vault/memory/method/MEMORY.md` — how to know something actually worked — verification discipline
+- `~/ai-vault/memory/design/MEMORY.md` — universal UI principles
+- `~/ai-vault/memory/how-i-work/MEMORY.md` — how Rifqi wants work done
+
+Record a new one with `ai-mem -p <subject> "…"`. Anything that is only true of
+this repo belongs in *Traps* above instead.
