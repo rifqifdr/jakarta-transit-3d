@@ -168,13 +168,14 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/data/artifact-loader.js` | Manifest-first loading, mode gating, IndexedDB cache |
 | `src/data/decode.worker.js` | Binary decode, off the main thread |
 | `src/url-state.js` | Deep links, including `?cam=` for a live camera |
-| `src/bench.js` | `?bench` — the on-device render benchmark. Dynamically imported, so it costs a normal visitor nothing |
+| `src/bench.js` | `?bench` — the on-device render benchmark: three static views and six camera moves (`=static`, `=motion`). Dynamically imported, so it costs a normal visitor nothing |
 | `worker/index.js` | Cloudflare only: re-declares the `Content-Encoding` its asset server strips (JAKAR-61) |
 | `scratchpad/probe.mjs` | Real Chrome over CDP, native clicks and real touch. Finds interaction bugs; its timings are meaningless |
 | `scratchpad/gpu-bench.mjs` | The same idea inverted: real GPU, vsync off, A/B arms. Timings only |
 | `scratchpad/mobile-bench.mjs` | A phone's viewport and pixel density on the real GPU: fill rate, and what each lever costs |
 | `scratchpad/verify-artifacts.mjs` | Asks an origin whether it really serves the artifacts compressed. Exits non-zero, so it can gate a deploy |
-| `scratchpad/device-bench/` | `?bench` output from real phones, one file per run. A number without its device is not a measurement |
+| `scratchpad/bench-local.mjs` | `?bench` in a real Chrome on this machine, vsync on, nothing patched — the shipped bundle as a visitor runs it. `PHONE=1` for a phone's viewport |
+| `scratchpad/device-bench/` | `?bench` output from real devices, one file per run, and what each column means. A number without its device is not a measurement |
 | `scripts/plane*.mjs` | Plane issue tracker sync (see below) |
 
 ## Project management
@@ -736,6 +737,45 @@ the geometry stops mattering at all (16.6 ms box against 16.6 ms Kapsul).
 Turning off Standard's 3D buildings — the app's own *Gedung 3D* switch — barely
 moves the median at street level but lifts the mean from 65 to 78 fps, so what
 they cost is tail frames rather than every frame.
+
+### While the camera moves (JAKAR-63)
+
+`?bench=motion` moves the camera the way the app does — a pan, a zoom through
+the 3D and true-scale thresholds, a rotation, four search-result flights, the
+tour, and Navigasi following a bus — and reports what a person sees: dropped
+refreshes, frames over 50 ms, tiles loaded, main-thread blocking, and how far
+the camera actually went. `scratchpad/device-bench/README.md` says what each
+column means. On the M4, vsync on, 120 Hz:
+
+| | pan | zoom | rotate | flyTo | tour | Navigasi (16x) |
+| --- | --- | --- | --- | --- | --- | --- |
+| as shipped | 90 fps | 90 | 74 | 89 | 86 | 82 |
+| Gedung 3D off | 102 | 99 | 83 | 105 | 102 | 97 |
+
+- **Nothing stalls on the M4.** One frame over 50 ms in eighteen rows, and no
+  main-thread blocking to speak of. A moving camera costs frames — the static
+  default view holds 120 — but it does not hitch.
+- **Rotate is the slow move, as the ticket expected.** Its median frame is
+  15-16 ms — half the display's rate — in every clean run, against 8.4 for
+  every other motion. Gedung 3D off brings it to 9.
+- **Gedung 3D off is worth 10-16 fps in every motion**, the same lever the
+  static views found.
+- **The first run after Chrome launches is a different machine.** It ran every
+  motion near 60 fps, with seven zoom stalls up to 388 ms and 1.3 s of
+  main-thread blocking; the next four runs never came close. A cold shader or
+  pipeline cache fits and is not proven. It is also exactly what a first visit
+  is, which is why the run is kept.
+- **A hidden page gets no frames, and the sample timer does not care.** A
+  Chrome window that went behind another one produced a Navigasi row of zero
+  frames and zero movement that read as a result. Rows are now flagged
+  `interrupted`, and the bench holds a screen wake lock so a phone does not dim
+  halfway through a three-minute run.
+- **Navigasi runs at 16x.** At 1x the followed bus moved ten metres in a
+  sample, which is a parked view with a moving-camera label. The `moved`
+  column is what caught it, and is what proves every other arm moved.
+- **A scripted camera is not a finger**: no touch events, no input latency, no
+  refresh-rate boost a phone may give a finger. These rows are rendering under
+  motion, which is the half of the question a page can answer about itself.
 
 ## Icons, and the rows they sit in
 
@@ -2065,8 +2105,10 @@ continuously and have never been run on hardware:
   never culled by zoom;
 - **Bus terakhir**, which rebuilds a paint expression twice a second.
 
-`?bench` carries a *Jejak kendaraan* arm and no moving-camera arm at all. A
-moving-camera arm is the next thing that harness needs.
+`?bench=motion` now covers the tour and Navigasi, alongside a pan, a zoom, a
+rotation and search-result flights (2026-10-01). On the M4 nothing stalls and
+rotation is the slow move; what is missing is the same run on a phone, which is
+what closes the ticket. *Bus terakhir* still has no arm.
 
 After that: **JAKAR-65** (mobile type and controls — the clock panel's controls
 and the follow HUD were put on the `.btn` scale on the way past, the rest of the
@@ -2128,12 +2170,12 @@ audit of all nineteen sources.
   that arm as a floor for a slow device and never as a phone. And **a mid-range
   Android is still unmeasured**: an S25 is the good case, and `?bench` makes
   the next device a one-minute job.
-- **Interaction is entirely unmeasured.** Every frame-rate number this project
-  has — JAKAR-58's, JAKAR-60's, all of them — is a *static camera*. A map is
-  used by panning and pinching, and nothing here has ever measured hitching
-  during a gesture. It is the most likely home for "feels bad on a phone" and
-  the largest remaining blind spot; an external review raised it and was
-  right.
+- **Interaction is unmeasured on a phone.** `?bench=motion` exists and has
+  run on the M4 (see "While the camera moves"), but every *device* number this
+  project has is still a static camera. A map is used by panning and
+  pinching, and that is the most likely home for "feels bad on a phone" — an
+  external review raised it and was right. Even on a phone the bench measures
+  a scripted camera, not a finger: input latency stays unmeasured.
 - **The basemap is the expensive half, and on a slow CPU it is the whole
   problem.** At street level Mapbox Standard alone is ~95% of the frame, and at
   4x CPU throttle it is 52 ms of a 59 ms frame with the fleet removed entirely.

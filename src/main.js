@@ -27,8 +27,9 @@ import {StreamPlayer, cameraIcon, loadCameras} from './cameras';
 // Read at module load, not at the point of use: `startSync` writes the query
 // string from app state on its first tick, so any flag it does not serialise
 // is gone by the time the app is built. `?bench` is not app state and never
-// should be — it is an instrument, not a view worth sharing.
-const WANTS_BENCH = new URLSearchParams(location.search).has('bench');
+// should be — it is an instrument, not a view worth sharing. Its value picks
+// the arms: `?bench=static`, `?bench=motion`, or bare for both.
+const BENCH = new URLSearchParams(location.search).get('bench');
 
 const RAD = Math.PI / 180,
     // How close to a bus, in screen pixels, a click has to land.
@@ -403,9 +404,9 @@ async function main() {
     // imported, so a visitor who never asks for it downloads none of it —
     // the same arrangement `hls.js` has. Failure is deliberately silent
     // beyond the console: a debug flag must never be able to break a boot.
-    if (WANTS_BENCH) {
+    if (BENCH !== null) {
         import('./bench.js')
-            .then(module => module.default(app))
+            .then(module => module.default(app, {only: BENCH}))
             .catch(error => console.error('bench failed', error));
     }
 

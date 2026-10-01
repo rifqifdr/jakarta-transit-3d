@@ -1,0 +1,373 @@
+{
+  "ticket": "JAKAR-63",
+  "bench": 2,
+  "only": "motion",
+  "when": "2026-10-01T14:05:12.976Z",
+  "env": {
+    "ua": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+    "dpr": 2,
+    "viewport": [
+      1440,
+      801
+    ],
+    "canvas": [
+      2880,
+      1602
+    ],
+    "cores": 10,
+    "memoryGb": 16,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+    "vendor": "Google Inc. (Apple)",
+    "frameBudgetMs": 7.9,
+    "observedCeilingHz": 127
+  },
+  "results": [
+    {
+      "kind": "motion",
+      "view": "pan",
+      "arm": "first",
+      "samples": 238,
+      "fps": 59.8,
+      "p50": 16.6,
+      "p90": 24.9,
+      "p99": 33.9,
+      "max": 150.1,
+      "droppedPct": 50.4,
+      "long": 2,
+      "tiles": 90,
+      "loaf": {
+        "count": 2,
+        "blockingMs": 118
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "pan",
+      "arm": "shipped",
+      "samples": 242,
+      "fps": 60.6,
+      "p50": 16.7,
+      "p90": 25,
+      "p99": 33.9,
+      "max": 42.5,
+      "droppedPct": 49.5,
+      "long": 0,
+      "tiles": 43,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "pan",
+      "arm": "no3d",
+      "samples": 227,
+      "fps": 57,
+      "p50": 16.7,
+      "p90": 25.5,
+      "p99": 41.1,
+      "max": 66.7,
+      "droppedPct": 52.9,
+      "long": 2,
+      "tiles": 42,
+      "loaf": {
+        "count": 2,
+        "blockingMs": 31
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "zoom",
+      "arm": "first",
+      "samples": 133,
+      "fps": 33.4,
+      "p50": 17.4,
+      "p90": 28.9,
+      "p99": 358.3,
+      "max": 382.2,
+      "droppedPct": 72.9,
+      "long": 7,
+      "tiles": 419,
+      "loaf": {
+        "count": 7,
+        "blockingMs": 1286
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "zoom",
+      "arm": "shipped",
+      "samples": 169,
+      "fps": 42.6,
+      "p50": 17.2,
+      "p90": 28.1,
+      "p99": 158.5,
+      "max": 387.9,
+      "droppedPct": 64.8,
+      "long": 7,
+      "tiles": 433,
+      "loaf": {
+        "count": 6,
+        "blockingMs": 537
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "zoom",
+      "arm": "no3d",
+      "samples": 218,
+      "fps": 54.5,
+      "p50": 16.9,
+      "p90": 25,
+      "p99": 28.6,
+      "max": 175.8,
+      "droppedPct": 55,
+      "long": 2,
+      "tiles": 402,
+      "loaf": {
+        "count": 1,
+        "blockingMs": 120
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "rotate",
+      "arm": "first",
+      "samples": 159,
+      "fps": 40.1,
+      "p50": 24.1,
+      "p90": 28.9,
+      "p99": 45.3,
+      "max": 307.3,
+      "droppedPct": 66.8,
+      "long": 1,
+      "tiles": 162,
+      "loaf": {
+        "count": 1,
+        "blockingMs": 256
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "rotate",
+      "arm": "shipped",
+      "samples": 177,
+      "fps": 44.3,
+      "p50": 24.4,
+      "p90": 27.6,
+      "p99": 31.2,
+      "max": 34.3,
+      "droppedPct": 62.9,
+      "long": 0,
+      "tiles": 87,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "rotate",
+      "arm": "no3d",
+      "samples": 192,
+      "fps": 48.3,
+      "p50": 19.7,
+      "p90": 26.3,
+      "p99": 34.9,
+      "max": 36.6,
+      "droppedPct": 60.7,
+      "long": 0,
+      "tiles": 69,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6240
+    },
+    {
+      "kind": "motion",
+      "view": "flyTo",
+      "arm": "first",
+      "samples": 204,
+      "fps": 51.9,
+      "p50": 17,
+      "p90": 27,
+      "p99": 38.8,
+      "max": 111.8,
+      "droppedPct": 56.7,
+      "long": 1,
+      "tiles": 440,
+      "loaf": {
+        "count": 1,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "flyTo",
+      "arm": "shipped",
+      "samples": 211,
+      "fps": 53.1,
+      "p50": 17.3,
+      "p90": 25.5,
+      "p99": 38.2,
+      "max": 91.1,
+      "droppedPct": 56.2,
+      "long": 1,
+      "tiles": 438,
+      "loaf": {
+        "count": 1,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "flyTo",
+      "arm": "no3d",
+      "samples": 248,
+      "fps": 62.8,
+      "p50": 16.7,
+      "p90": 23.8,
+      "p99": 28.6,
+      "max": 39.5,
+      "droppedPct": 47.6,
+      "long": 0,
+      "tiles": 385,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "tour",
+      "arm": "first",
+      "samples": 200,
+      "fps": 50.3,
+      "p50": 19.1,
+      "p90": 26.2,
+      "p99": 33.2,
+      "max": 36.3,
+      "droppedPct": 58.4,
+      "long": 0,
+      "tiles": 126,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "tour",
+      "arm": "shipped",
+      "samples": 204,
+      "fps": 51.2,
+      "p50": 17.7,
+      "p90": 26.6,
+      "p99": 31,
+      "max": 34.7,
+      "droppedPct": 57.6,
+      "long": 0,
+      "tiles": 79,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "tour",
+      "arm": "no3d",
+      "samples": 239,
+      "fps": 60,
+      "p50": 16.7,
+      "p90": 24.6,
+      "p99": 26.9,
+      "max": 28.8,
+      "droppedPct": 50,
+      "long": 0,
+      "tiles": 31,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "navigasi",
+      "arm": "first",
+      "samples": 269,
+      "fps": 67.2,
+      "p50": 15.9,
+      "p90": 20.4,
+      "p99": 25.2,
+      "max": 26,
+      "droppedPct": 46.2,
+      "long": 0,
+      "tiles": 0,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "navigasi",
+      "arm": "shipped",
+      "samples": 265,
+      "fps": 66.3,
+      "p50": 15.5,
+      "p90": 20.4,
+      "p99": 26.7,
+      "max": 32.4,
+      "droppedPct": 47.3,
+      "long": 0,
+      "tiles": 0,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    },
+    {
+      "kind": "motion",
+      "view": "navigasi",
+      "arm": "no3d",
+      "samples": 297,
+      "fps": 74.3,
+      "p50": 15.2,
+      "p90": 17.3,
+      "p99": 25.3,
+      "max": 34.9,
+      "droppedPct": 38.9,
+      "long": 0,
+      "tiles": 0,
+      "loaf": {
+        "count": 0,
+        "blockingMs": 0
+      },
+      "fleet": 6239
+    }
+  ],
+  "harness": {
+    "script": "scratchpad/bench-local.mjs",
+    "phone": false,
+    "url": "http://localhost:4173/?bench=motion"
+  }
+}

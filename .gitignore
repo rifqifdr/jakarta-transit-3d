@@ -11,6 +11,10 @@ data/build/
 # Server output redirected while probing; not a record of anything.
 scratchpad/*.log
 
+# `bench-local.mjs` writes here unless told otherwise. A run worth keeping is
+# filed in scratchpad/device-bench/ under its device and date, on purpose.
+scratchpad/bench-local.json
+
 # Local state from `npx wrangler dev`, which runs the real workerd runtime
 # against dist/. Regenerated on every run and specific to this machine.
 .wrangler/
