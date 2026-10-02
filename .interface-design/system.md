@@ -53,9 +53,20 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
 - **Type** — 15px base, ratio ~1.2: `--text-2xs` 11 (tracked caps only),
   `--text-xs` 13, `--text-sm` 14, `--text-md` 15, `--text-lg` 18, `--text-xl` 22,
   `--text-2xl` 28. Hierarchy from size **and** weight **and** ink level.
+  **Tracked caps only means only**: eleven rules had drifted onto 11px for
+  times, notes and sentence-case labels, departure times among them.
+- **On a phone** (≤700px) the bottom four steps move up one — 12 / 14 / 15 /
+  16, Material's own label and body sizes — and the top three stay. 16 is also
+  where iOS stops zooming into an input. Measured, not eyeballed: 58% of the
+  text on a 390px screen was under 14px; it is 12%, all of it tracked caps.
 - **Space** — 4px grid, `--s1` 4 … `--s6` 24. No value off the grid.
 - **Controls** — `--ctl-sm` 36, `--ctl` 40, `--ctl-lg` 48. 44px is the floor;
-  a 36px control keeps its paint and extends its hit area with `::after`.
+  a 36px control keeps its paint and extends its hit area with `::after`. On a
+  phone `--ctl-sm` is 40 and `--ctl` 44, and every control a thumb needs
+  reaches 44 in paint or in reach — the clock's fold, LIVE and play, both
+  sliders (a 44px band round a 4px track), the card's close, *Sumber data*,
+  Mapbox's own buttons, filter rows. The zoom buttons stay: they are the
+  single-pointer alternative to a pinch.
 - **Radius** — `--r-btn` 10, `--r-card` 14 (12 on `.itin`, kept concentric with
   the 16px panel padding), `--r-panel` 18.
 
@@ -66,6 +77,10 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
   for. **One per card.**
 - `.btn-lg` — 48px h · 0 20px pad · 12px radius · 15px. Primary actions.
 - `.btn-sm` — 36px h · 0 12px pad · 8px radius · 13px, hit area extended
+- `.sorts` — the segmented control: one inset `--sink` track, 4px padding, the
+  choice filled inside it. Reach budget, follow framings, map theme. It lost
+  its rules once with the journey planner while all three still used it, and
+  nothing failed — see `unstyled` in `scratchpad/mobile-audit.mjs`.
 - `.field` — 48px h, `--sink` fill, `--brand-lift` border + 3px tint ring on
   focus-within
 - `.result` — 52px min, 15px/500. The most-tapped row in the app.
@@ -80,10 +95,20 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
 - `.stop-mark` — 38x26 well holding a halte or stasiun glyph. The finder's
   stop row.
 - `.toggle` — 40px row: icon, label, then `.switch` at the trailing edge. The
-  real `<input>` is visually hidden inside it, never removed.
+  real `<input>` is visually hidden inside it, never removed — so a toggle
+  without its `.switch` shows no state at all, which is what *Hanya rute
+  gratis* did until JAKAR-65.
 - `.switch` — 38x22 pill, 18px knob, `--track` off and `--brand` on.
 - `.step` — two rows: `.step-top` (mark, then time at 15px mono) over
   `.step-body`.
+- **The card is a sheet** — `.detail-head`, then `.detail-body`, which
+  scrolls, then `.detail-actions`, which holds the filled action and does not.
+  The whole card used to scroll as one, and on a phone that put the action a
+  card exists for below the fold of every card long enough to matter.
+- `.layers-head` — Layanan's header is its control, a `<button>` with
+  `aria-expanded`: glyph, *Layanan* at `--text-md`/600, a summary (*249 rute*,
+  or *151 dari 249 rute* when a filter is on) at the trailing edge, chevron.
+  It spans the panel's padding, so folded it is the whole 48px bar.
 - `.credits-scrim` / `.credits` — the data-source panel, opened from the
   `Sumber data` control in the map's bottom-left corner. Scrim closes, panel
   does not; Escape closes; the close control takes focus on open.
@@ -124,3 +149,14 @@ PROBE_WIDTH=390 PROBE_HEIGHT=844 node scratchpad/probe.mjs # the one-column layo
 ```
 
 A size change is a layout change on a phone, and the desktop arm will not show it.
+
+For a measurement of every panel state at once:
+
+```
+node scratchpad/mobile-audit.mjs <label>    # needs npm run dev; 390×844
+```
+
+It records every rendered type size, controls under 44px, overflow, clipping,
+anything meant to be one line that wrapped, controls whose centre is covered
+(trap 13), and classes no stylesheet rule mentions. Screenshots land in
+`scratchpad/mobile-audit/<label>/`, which is ignored.

@@ -171,6 +171,7 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/bench.js` | `?bench` — the on-device render benchmark: three static views and six camera moves (`=static`, `=motion`). Dynamically imported, so it costs a normal visitor nothing |
 | `worker/index.js` | Cloudflare only: re-declares the `Content-Encoding` its asset server strips (JAKAR-61) |
 | `scratchpad/probe.mjs` | Real Chrome over CDP, native clicks and real touch. Finds interaction bugs; its timings are meaningless |
+| `scratchpad/mobile-audit.mjs` | Every panel state at 390x844 through `probe.mjs`: type sizes, small targets, wraps, covered controls, unstyled classes |
 | `scratchpad/gpu-bench.mjs` | The same idea inverted: real GPU, vsync off, A/B arms. Timings only |
 | `scratchpad/mobile-bench.mjs` | A phone's viewport and pixel density on the real GPU: fill rate, and what each lever costs |
 | `scratchpad/verify-artifacts.mjs` | Asks an origin whether it really serves the artifacts compressed. Exits non-zero, so it can gate a deploy |
@@ -279,6 +280,45 @@ rests neutral (a toggle, a secondary action) and `.btn-accent` is filled brand
   sees it, and the 1440 px arm shows nothing at all. That row now wraps
   deliberately on a phone — label above, four 44px buttons below — which is what
   both reference apps do with a bottom sheet.
+
+### On a phone (JAKAR-65)
+
+The scale was identical on a 390px phone and a 1440px desk, and **58% of the
+text on a phone was under 14px** — measured across every panel state by
+`scratchpad/mobile-audit.mjs`, which is the instrument for this and should be
+run before and after any size change. It is **12%** now, all of it tracked
+capitals.
+
+- **The bottom four type steps move up one below 700px** — 12 / 14 / 15 / 16,
+  Material's own label and body sizes — and `--ctl-sm` / `--ctl` go to 40 / 44.
+  Titles and the clock stay put. 16 is also where iOS stops zooming the page
+  into an input, which it did on the finder's first tap.
+- **11px means tracked capitals, and only them.** Eleven rules had drifted
+  onto it, including the stop card's departure times. Six legitimate uses
+  remain.
+- **A card is a sheet**: the head stays, the body scrolls, the filled action is
+  pinned in `.detail-actions`. On a phone the action a stop or vehicle card
+  exists for sat below the card's own fold — the audit's real clicks landed
+  under the screen. Every size, not only phones; on desktop the visible change
+  is that *Ikuti kendaraan ini* now sits under *Jelajahi rute ini*.
+- **A size change broke two layouts, both caught by the audit, neither by
+  eye.** A long headsign pushed "6 mnt" onto two lines (times are `nowrap`
+  now), and the open clock, at 44px controls, flex-shrank the folded Layanan bar
+  to half its height (a folded bar never shrinks now).
+- **Layanan's header is a control**, not a caption: a `<button>` with a glyph,
+  *Layanan* at body size and a summary — *151 dari 249 rute* when a filter is
+  on — so the folded bar says what it is holding. It was a clickable `<div>`,
+  which no keyboard could reach.
+- **`.sorts` had no rules for three weeks.** It was deleted with the journey
+  planner while the reach budget, the follow framings and the map theme still
+  used it, and each drew as loose buttons. *Hanya rute gratis* had the same
+  kind of drift: old markup with no `.switch`, so it showed no state at all.
+  Neither failed anything — a class with no rule is not an error — which is
+  why the audit now lists every rendered class no stylesheet mentions.
+- **Not covered: a phone in landscape.** The rules go by width, like the rest
+  of the phone layout, and a landscape phone is 844px wide, so it keeps the
+  desktop sizes. `(pointer: coarse)` is the likely answer once that layout is
+  measured.
 **The basemap theme is the rider's to choose** — Warna / Pudar / Mono in
 Layanan, mapping to Mapbox Standard's `default` / `faded` / `monochrome`. It is
 what the README has meant since the basemap stopped being a private style: the
@@ -2110,17 +2150,15 @@ rotation and search-result flights (2026-10-01). On the M4 nothing stalls and
 rotation is the slow move; what is missing is the same run on a phone, which is
 what closes the ticket. *Bus terakhir* still has no arm.
 
-After that: **JAKAR-65** (mobile type and controls — the clock panel's controls
-and the follow HUD were put on the `.btn` scale on the way past, the rest of the
-app was not), and the open design question on *Jejak kendaraan*, which works
-but reads subtly at the default zoom and may not be worth its row.
+**JAKAR-65** (mobile type and controls) is done — see "On a phone" — except
+for landscape. What remains is the open design question on *Jejak kendaraan*,
+which works but reads subtly at the default zoom and may not be worth its row.
 
 **Open work is in Plane.** Start a session by reading the project's
-**"Next Session — Start Here"** page, which is kept current. Next up are
-**JAKAR-65** (mobile type and controls are still undersized — the scale is
-currently identical on a phone and a desktop) and **JAKAR-66** (*"sekitar sini"*
-opens over the part of the map being navigated on a phone), both raised by the
-owner at the end of the 2026-09-11 session. **JAKAR-50** is done: the line
+**"Next Session — Start Here"** page, which is kept current. **JAKAR-65** and
+**JAKAR-66**, both raised by the owner at the end of the 2026-09-11 session,
+are done: the phone has its own type and control sizes, and *"sekitar sini"*
+is a press on a touch screen. **JAKAR-50** is done: the line
 codes, the line colours and the mode glyphs are in, and the licence question
 that blocked it turned out to have an answer. **JAKAR-67** recorded the licence
 audit of all nineteen sources.

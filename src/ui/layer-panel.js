@@ -45,7 +45,7 @@ const LAYER_TOGGLES = [
     {layer: 'lastbus', icon: 'terakhir', label: 'Bus terakhir'}
 ];
 
-const CAMERA_TOGGLE = {layer: 'cameras', icon: 'cctv', label: 'CCTV', className: 'cam-toggle'};
+const CAMERA_TOGGLE = {layer: 'cameras', icon: 'cctv', label: 'CCTV'};
 
 /*
    Icon and label on the left, the switch on the right.
@@ -98,11 +98,34 @@ export default class LayerPanel {
             counts = me._countRoutes(),
             groups = me._groupByMode(counts);
 
+        // What the summary counts against: the routes this panel can filter,
+        // which is every route a listed category holds.
+        me._counts = counts;
+        me._total = groups.reduce((total, group) => total + group.count, 0);
+
         el.className = 'panel';
         el.id = 'layers';
+        /*
+           The header is the panel's control, not its caption.
+
+           Folded on a phone it is the whole panel — a 50px bar — and it was
+           drawn as an 11px tracked-capital label like the section headings
+           inside, so the one thing that opens the filters read as a heading
+           rather than as something to press (JAKAR-65). It is a button now:
+           what it is, in sentence case at body size, and a summary of what it
+           is holding, so the folded bar still says whether a filter is on.
+           A <button>, because a clickable <div> was the only way into these
+           filters and no keyboard could reach it.
+        */
         el.innerHTML = `
-            <div class="panel-title js-fold">Layanan<span class="chevron"></span></div>
-            <div class="layer-body">
+            <button class="layers-head js-fold" type="button" aria-expanded="true"
+                    aria-controls="layer-body">
+                ${icon('lapisan', 'layers-icon')}
+                <span class="layers-title">Layanan</span>
+                <span class="layers-summary js-summary"></span>
+                <span class="chevron" aria-hidden="true"></span>
+            </button>
+            <div class="layer-body" id="layer-body">
             ${groups.map(group => `
                 <div class="mode-group" data-mode="${group.id}">
                     <div class="mode-head js-mode">
@@ -138,6 +161,7 @@ export default class LayerPanel {
         document.body.appendChild(el);
 
         el.querySelector('.js-fold').addEventListener('click', () => me.toggle());
+        me._summarise();
 
         // A mode header turns its whole group off, or back on. "All off"
         // means the next click turns everything on, which is what people
@@ -159,6 +183,7 @@ export default class LayerPanel {
                     }
                 }
                 group.classList.toggle('off', !turningOn);
+                me._summarise();
             });
         }
 
@@ -171,6 +196,7 @@ export default class LayerPanel {
                 row.classList.toggle('off', !visible);
                 me.onCategoryToggle(category, visible);
                 me._syncGroup(row.closest('.mode-group'));
+                me._summarise();
             });
         }
         for (const box of el.querySelectorAll('input[data-layer]')) {
@@ -233,6 +259,7 @@ export default class LayerPanel {
         if (row) {
             row.classList.toggle('off', !visible);
         }
+        this._summarise();
         return this;
     }
 
@@ -273,7 +300,30 @@ export default class LayerPanel {
     /** Folds the panel down to its title bar, or back open. */
     toggle(folded = !this.el.classList.contains('folded')) {
         this.el.classList.toggle('folded', folded);
+        this.el.querySelector('.js-fold').setAttribute('aria-expanded', String(!folded));
         return this;
+    }
+
+    /**
+     * How much of the network the filters are holding, for the header.
+     *
+     * "249 rute" when nothing is hidden, "180 dari 249 rute" when something
+     * is — so a folded panel still says that a filter is on, which is the one
+     * thing worth knowing about it without opening it.
+     */
+    _summarise() {
+        const me = this,
+            summary = me.el.querySelector('.js-summary');
+        let shown = 0;
+
+        for (const row of me.el.querySelectorAll('.cat[data-cat]')) {
+            if (me.fleet.isCategoryVisible(row.dataset.cat)) {
+                shown += me._counts.get(row.dataset.cat) || 0;
+            }
+        }
+        summary.textContent = shown === me._total ?
+            `${me._total} rute` :
+            `${shown} dari ${me._total} rute`;
     }
 
     /** Greys a mode header once every category under it is off. */

@@ -237,6 +237,11 @@ const SPRITE = `
     <path fill="currentColor" d="M9 6.5h8.5v2H9Z"/>
     <path fill="currentColor" d="M14.5 6a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm.6 7.5h6.4v2h-6.4Z"/>
   </symbol>
+  <symbol id="kf-lapisan" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 2.6 21.6 8 12 13.4 2.4 8Z"/>
+    <path fill="currentColor" d="M2.4 12.1 4.3 11 12 15.4 19.7 11l1.9 1.1L12 17.6Z"/>
+    <path fill="currentColor" d="M2.4 16.1 4.3 15 12 19.4 19.7 15l1.9 1.1L12 21.6Z"/>
+  </symbol>
   <symbol id="kf-lrt" viewBox="0 0 24 24">
     <path fill="currentColor" fill-rule="evenodd" d="M10 5h4a4.5 4.5 0 0 1 4.5 4.5V18a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2V9.5A4.5 4.5 0 0 1 10 5Zm-2.3 4.2h8.6v4.4H7.7Zm0 6.1h3v1.5h-3Zm5.6 0h3v1.5h-3ZM5.5 21.2h13v1.3h-13Z"/>
   </symbol>

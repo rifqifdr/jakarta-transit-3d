@@ -32,3 +32,6 @@ scratchpad/bench-local.json
 #                      for every data bug this project has found, so a fresh
 #                      clone has to be able to run it. Regenerate with
 #                      `npm run build-data`.
+
+# Screenshots from `mobile-audit.mjs`; audit.json beside them is the record.
+scratchpad/mobile-audit/

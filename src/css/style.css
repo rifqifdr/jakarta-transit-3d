@@ -87,7 +87,9 @@
 
   /* ---- type. A 15px base stepped at ~1.2, replacing fifteen sizes that were
      each chosen on their own. 11px survives only for tracked capitals, which
-     read a size larger than they measure. */
+     read a size larger than they measure — and only them. Eleven rules had
+     drifted onto it for times, notes and labels in sentence case, including
+     the departure times on a stop card; they are `--text-xs` now. */
   --text-2xs: 11px;
   --text-xs: 13px;
   --text-sm: 14px;
@@ -131,6 +133,39 @@
   /* Entering and interactive. ease-in delays the first frame, which is the
      one the finger is watching. */
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/*
+   A phone is held at arm's length, often in daylight, and a 1440px window at
+   a desk is not (JAKAR-65). The scale was the same on both, and 57% of the
+   text on a 390px screen was under 14px — measured across every panel state
+   with `scratchpad/mobile-audit.mjs`, not eyeballed.
+
+   The bottom four steps move up one pixel each, which lands them on the sizes
+   the audience's own phones set their interface in: Material's 12 / 14 / 16
+   for label, body and large body. 16 is also where iOS stops zooming the page
+   into an input, so the finder no longer jumps on its first tap. The top
+   three — titles and the clock — were never the problem and stay put, so the
+   steps between them and the body close a little and weight and ink carry
+   more of the hierarchy, as the scale intended.
+
+   Controls step to 44 and 40: 44 is the floor this project already sets for
+   anything a thumb has to hit, and on a phone there is no mouse to excuse a
+   40px button. `--ctl-lg` was already 48.
+
+   By width, like the rest of the phone layout. A phone in landscape is wider
+   than this and keeps the desktop rail and its sizes — worth revisiting with
+   `(pointer: coarse)` once that layout is measured too.
+*/
+@media (max-width: 700px) {
+  :root {
+    --text-2xs: 12px;
+    --text-xs: 14px;
+    --text-sm: 15px;
+    --text-md: 16px;
+    --ctl-sm: 40px;
+    --ctl: 44px;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -328,6 +363,34 @@ html, body {
 
 .btn-block { width: 100%; margin-top: var(--s3); }
 
+/*
+   A segmented control, not three loose buttons: one inset track with the
+   choice filled inside it, which is how iOS, Google Maps and Moovit all say
+   "pick one of these". The track is what makes it read as a single control —
+   as separate outlines they read as three unrelated actions.
+
+   Restored (JAKAR-65). It was deleted with the journey planner, whose sort
+   order was its first user, while three others still depended on it: the
+   reach budget, the follow HUD's framings and the map theme. For three weeks
+   each drew as loose buttons — the follow HUD's framings bunched at the left
+   of a row they were meant to fill — and nothing failed, because a class with
+   no rule is not an error. Same shape as trap 15: correct in the markup,
+   absent where it is drawn.
+*/
+.sorts {
+  display: flex; gap: var(--s1); margin-top: var(--s4);
+  padding: var(--s1); background: var(--sink);
+  border: 1px solid var(--border-soft); border-radius: 12px;
+}
+.sorts .btn {
+  flex: 1; min-width: 0; padding: 0 var(--s2);
+  min-height: var(--ctl-sm); font-size: var(--text-xs);
+  background: none; border-color: transparent; border-radius: 8px;
+  text-wrap: balance;
+}
+.sorts .btn:hover { background: var(--raise); border-color: transparent; }
+.sorts .btn.on { background: var(--brand); border-color: var(--brand); }
+
 @media (prefers-reduced-motion: reduce) {
   .btn { transition: background-color 140ms linear, color 140ms linear; }
   .btn:active { transform: none; }
@@ -443,7 +506,7 @@ button.icon:hover { background: var(--press); }
 
 .speed-row {
   display: flex; align-items: center; gap: 8px;
-  margin-top: 9px; font-size: var(--text-2xs); color: var(--text-3);
+  margin-top: 9px; font-size: var(--text-xs); color: var(--text-3);
 }
 .speed-row output { font-family: var(--mono); color: var(--text); min-width: 46px; }
 
@@ -532,7 +595,7 @@ input[type=range]::-moz-range-thumb {
 .tour-meta { min-width: 0; }
 .tour-line { display: flex; align-items: center; font-weight: 600; }
 .tour-sub {
-  font-size: var(--text-2xs);
+  font-size: var(--text-xs);
   color: var(--text-3);
   white-space: nowrap;
   overflow: hidden;
@@ -586,9 +649,56 @@ input[type=range]::-moz-range-thumb {
 /* ------------------------------------------------------------- layers */
 
 #layers { padding: var(--s4); }
-#layers .panel-title { cursor: pointer; display: flex; align-items: center; margin-bottom: 0; }
+/* The headings inside the panel are headings, not controls. */
+#layers .panel-title { margin-bottom: 0; }
 #layers .layer-body { margin-top: 10px; }
 #layers.folded .layer-body { display: none; }
+
+/*
+   The panel's own control (JAKAR-65). It reaches out over the panel's padding
+   so the whole bar is the target — folded, it *is* the panel, 48px tall, the
+   same height it was as a caption with padding round it — and the summary
+   sits at the trailing edge beside the chevron, where the eye checks state.
+*/
+.layers-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  width: calc(100% + 2 * var(--s4));
+  min-height: var(--ctl-lg);
+  margin: calc(-1 * var(--s4)) calc(-1 * var(--s4)) 0;
+  padding: 0 var(--s4);
+  border: 0;
+  border-radius: var(--r-panel);
+  background: none;
+  color: var(--text);
+  font-family: var(--font);
+  text-align: left;
+  cursor: pointer;
+  transition: color 140ms var(--ease);
+}
+#layers.folded .layers-head { margin-bottom: calc(-1 * var(--s4)); }
+.layers-head:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: -4px; }
+.layers-icon {
+  width: 18px; height: 18px; flex: none; color: var(--text-2);
+}
+.layers-title {
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+/* A count, set like one: tabular, and an ink level down from the title so
+   the bar reads as a name and then its state. */
+.layers-summary {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.layers-head .chevron { margin-left: 0; color: var(--text-3); }
+.layers-head:hover .chevron,
+.layers-head:hover .layers-icon { color: var(--text); }
 .chevron {
   display: block;
   margin-left: auto;
@@ -761,6 +871,32 @@ input[type=range]::-moz-range-thumb {
   max-height: none;
   min-height: 0;
   flex: 0 1 auto;
+  overflow-y: auto;
+}
+/*
+   A card is a sheet: the head stays, the body scrolls, and the action the card
+   exists for stays in reach (JAKAR-65).
+
+   The whole card used to scroll as one, and on a phone that put the filled
+   action below the fold of every card long enough to matter — a stop with six
+   departures, a vehicle with its stop list. The one thing the card is for was
+   the one thing you could not see without scrolling, and a probe aimed at it
+   clicked empty space under the screen. Both reference apps pin it.
+
+   Every size, not only a phone: a short laptop window hits the same fold, and
+   one structure is easier to keep right than two. Cards without a
+   `.detail-actions` — reachability, a camera — simply scroll their body.
+*/
+#left-rail > #detail.open {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#detail .detail-head,
+#detail .detail-actions { flex: none; }
+#detail .detail-body {
+  flex: 0 1 auto;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -985,7 +1121,7 @@ input[type=range]::-moz-range-thumb {
 .fare { font-weight: 650; }
 /* Free services are the larger half of the network; worth calling out. */
 .fare.free { color: var(--live); }
-.fare-note { font-size: var(--text-2xs); color: var(--text-3); margin-top: 2px; font-weight: 400; }
+.fare-note { font-size: var(--text-xs); color: var(--text-3); margin-top: 2px; font-weight: 400; }
 
 .progress { height: 4px; border-radius: 2px; background: var(--track); margin: 11px 0 4px; }
 .progress span { display: block; height: 100%; border-radius: 2px; background: var(--brand-lift); }
@@ -1002,7 +1138,18 @@ input[type=range]::-moz-range-thumb {
 .stoprow.done { opacity: 0.42; }
 .stoprow.now { color: var(--text); font-weight: 600; }
 .stoprow.now .tick { background: var(--here-fill); border-color: var(--here); box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.22); }
-.stoprow .t { margin-left: auto; font-family: var(--mono); font-size: var(--text-2xs); }
+.stoprow .t { margin-left: auto; font-family: var(--mono); font-size: var(--text-xs); }
+/* A time is one unit. At 11px it always fitted beside a headsign; at a
+   phone's 14 a long one — "Kali Besar Barat via Kebon Sirih" — pushed "6 mnt"
+   onto two lines, number above unit. The headsign wraps instead. */
+.stoprow .t,
+.near-top .t,
+.reach-row .t { flex: none; white-space: nowrap; }
+/* A departure board, not a list of stops behind you: the headsign is read and
+   the wait is the reason the card was opened, so both sit an ink level above
+   the stop list's grey, and the wait is the darkest thing in the row. */
+.stoprow.dep { color: var(--text-2); }
+.stoprow.dep .t { color: var(--text); font-weight: 600; }
 
 .access-tag { color: #0f7a4a; }
 
@@ -1033,9 +1180,9 @@ input[type=range]::-moz-range-thumb {
 .near { padding: var(--s3) 0; border-bottom: 1px solid var(--border-soft); }
 .near-top { display: flex; align-items: baseline; gap: 10px; font-size: var(--text-sm); }
 .near-name { flex: 1; }
-.near-top .t { font-family: var(--mono); font-size: var(--text-2xs); color: var(--text-3); }
+.near-top .t { font-family: var(--mono); font-size: var(--text-xs); color: var(--text-3); }
 .near-deps { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-.near-wait { font-size: var(--text-2xs); color: var(--text-3); margin-right: 8px; }
+.near-wait { font-size: var(--text-xs); color: var(--text-2); font-weight: 600; margin-right: 8px; }
 
 /* --------------------------------------------------------------- misc */
 
@@ -1085,6 +1232,12 @@ input[type=range]::-moz-range-thumb {
     bottom: 34px;
     max-height: 58vh;
   }
+
+  /* Folded, Layanan is one 50px bar and the only way into the panel, so it
+     never gives up height. It used to shrink to fit under an open clock, and
+     once the clock's controls reached 44px (JAKAR-65) that cut the bar in
+     half. Spilling a few pixels past the header's 45vh is the lesser harm. */
+  #right-rail > #layers.folded { flex-shrink: 0; }
 
   /* Layanan was `display: none` here, which removed the mode filters, the
      live camera layer, the accessibility filter and Gedung 3D from every
@@ -1139,19 +1292,71 @@ input[type=range]::-moz-range-thumb {
 .clock-fold { display: none; }
 
 @media (max-width: 700px) {
+  /* The only way to open the clock on a phone, and it was an 18x14 target.
+     44 square, with the margins taken back so the row stays the height the
+     time sets. */
   .clock-fold {
-    display: block;
-    margin-left: auto;
+    display: grid;
+    place-items: center;
+    width: var(--ctl);
+    height: var(--ctl);
+    margin: -12px -12px -12px auto;
     flex: none;
-    padding: 4px 2px 4px 10px;
+    padding: 0;
     background: none;
     border: 0;
     cursor: pointer;
     color: var(--text-3);
     align-self: center;
   }
+  .clock-fold .chevron { margin: 0; }
   #clock.folded > :not(.clock-top) { display: none; }
   #clock.folded .chevron { transform: rotate(-135deg) translate(-1px, -1px); }
+
+  /*
+     What a thumb has to hit (JAKAR-65).
+
+     The audit listed every control under 44px across eleven panel states, and
+     these are the ones the token change cannot reach, because their size was
+     set on the control itself. Each gets 44 in paint or in reach — reach, via
+     `::after`, wherever growing the paint would push something else off a
+     390px row, which is the rule `.btn-sm` already follows.
+  */
+  .clock-live { position: relative; }
+  .clock-live::after { content: ''; position: absolute; inset: -12px -4px; }
+
+  /* Play and pause: the clock's own primary control was 30px. */
+  button.icon { width: var(--ctl); height: var(--ctl); }
+
+  /* A slider's box is its hit area, and these were 4px tall — the track was
+     the whole input. The track moves into the pseudo-element and the input
+     becomes a band the height of a control around it. */
+  input[type=range],
+  .scrub-wrap input[type=range] { height: var(--ctl); background: transparent; }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px; border-radius: 2px; background: var(--track);
+  }
+  input[type=range]::-moz-range-track {
+    height: 4px; border-radius: 2px; background: var(--track);
+  }
+  input[type=range]::-webkit-slider-thumb { width: 20px; height: 20px; margin-top: -8px; }
+  input[type=range]::-moz-range-thumb { width: 20px; height: 20px; }
+
+  .detail-close { width: var(--ctl); height: var(--ctl); margin-top: -8px; margin-right: -8px; }
+
+  .credits-ctrl button { position: relative; }
+  .credits-ctrl button::after { content: ''; position: absolute; inset: -9px -2px; }
+
+  /* Mapbox's own buttons. Pinching is a two-finger gesture and these are the
+     single-pointer way to zoom and turn the map — the alternative WCAG asks
+     for — so they get the floor rather than being hidden, as a phone map
+     might otherwise do. */
+  .mapboxgl-ctrl-group button { width: var(--ctl); height: var(--ctl); }
+
+  /* Filter rows are a list, stacked with no gap between them, so the row
+     itself is the reach. The mode heading toggles a whole mode and was 22px. */
+  .cat,
+  .mode-head { min-height: var(--ctl); }
 }
 
 /* --------------------------------------------------- line preview card */
@@ -1207,7 +1412,7 @@ input[type=range]::-moz-range-thumb {
 }
 .fh-speed {
   flex: 1; display: flex; align-items: center; gap: 8px;
-  font-size: var(--text-2xs); color: var(--text-3); min-width: 0;
+  font-size: var(--text-xs); color: var(--text-3); min-width: 0;
 }
 .fh-speed output { font-family: var(--mono); color: var(--text); min-width: 46px; }
 /* The speed slider is the only thing here allowed to take up slack. */
@@ -1304,7 +1509,7 @@ body.navigating #left-rail { display: none; }
 
 .cam-credit {
   margin: 8px 0 0;
-  font-size: var(--text-2xs);
+  font-size: var(--text-xs);
   color: var(--text-3);
   opacity: 0.75;
 }
@@ -1317,7 +1522,7 @@ body.navigating #left-rail { display: none; }
    anything yet. */
 .cam-hint,
 .row-hint {
-  font-size: var(--text-2xs);
+  font-size: var(--text-xs);
   color: var(--text-3);
   padding: 0 0 4px 27px;
   margin-top: -3px;
@@ -1353,7 +1558,7 @@ body.navigating #left-rail { display: none; }
   border-left: 3px solid var(--brand-lift);
   background: var(--brand-tint);
   border-radius: 0 6px 6px 0;
-  font-size: var(--text-2xs);
+  font-size: var(--text-xs);
   line-height: 1.45;
   color: var(--text-3);
 }
@@ -1368,7 +1573,7 @@ body.navigating #left-rail { display: none; }
   border-left: 2px solid #e0a340;
   background: rgba(224, 163, 64, 0.1);
   border-radius: 0 6px 6px 0;
-  font-size: var(--text-2xs);
+  font-size: var(--text-xs);
   line-height: 1.45;
   color: var(--text-3);
 }

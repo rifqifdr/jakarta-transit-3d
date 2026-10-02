@@ -244,8 +244,9 @@ export default class Reach {
             </button>
             <div class="detail-body">
                 <label class="toggle free-toggle">
+                    <span class="toggle-label">Hanya rute gratis</span>
                     <input type="checkbox" class="js-free" ${me.freeOnly ? 'checked' : ''}>
-                    Hanya rute gratis
+                    <span class="switch" aria-hidden="true"></span>
                 </label>
                 <div class="reach-legend">
                     ${counts.filter(c => c.minutes <= me.budget).map(c => `

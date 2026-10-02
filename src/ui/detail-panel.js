@@ -184,8 +184,10 @@ export default class DetailPanel {
                 </div>
                 <div class="progress"><span class="js-progress"></span></div>
                 <div class="stoplist js-stoplist"></div>
-                <button class="btn btn-accent btn-lg btn-block js-track" type="button"></button>
                 <button class="btn btn-lg btn-block js-tour" type="button">Jelajahi rute ini</button>
+            </div>
+            <div class="detail-actions">
+                <button class="btn btn-accent btn-lg btn-block js-track" type="button"></button>
             </div>
         `;
 
@@ -310,6 +312,8 @@ export default class DetailPanel {
             </div>
             <div class="detail-body">
                 <div class="line-stops" style="--line-color:${color}">${list}</div>
+            </div>
+            <div class="detail-actions">
                 <button class="btn btn-accent btn-lg btn-block js-tour" type="button">
                     Jelajahi jalur ini
                 </button>
@@ -464,14 +468,14 @@ export default class DetailPanel {
             </div>
             <div class="detail-body">
                 ${rows}
-                ${nearby.stops.length ?
-                    // The handler has set a reach origin since the journey planner went;
-                    // the label still said *Mulai perjalanan*, which is a promise
-                    // this map no longer makes. Same wording as the stop card's
-                    // own filled action, because it is the same action.
-                    '<button class="btn btn-accent btn-lg btn-block js-from-point" type="button">Lihat jangkauan dari sini</button>' :
-                    ''}
             </div>
+            ${nearby.stops.length ?
+                // The handler has set a reach origin since the journey planner went;
+                // the label still said *Mulai perjalanan*, which is a promise
+                // this map no longer makes. Same wording as the stop card's
+                // own filled action, because it is the same action.
+                '<div class="detail-actions"><button class="btn btn-accent btn-lg btn-block js-from-point" type="button">Lihat jangkauan dari sini</button></div>' :
+                ''}
         `;
     }
 
@@ -529,6 +533,8 @@ export default class DetailPanel {
                 ${me._hours(service)}
                 <div class="panel-title" style="margin-top:14px">Rute</div>
                 <div class="chips">${chips}</div>
+            </div>
+            <div class="detail-actions">
                 <button class="btn btn-accent btn-lg btn-block js-reach" type="button">Lihat jangkauan</button>
             </div>
         `;
@@ -577,7 +583,7 @@ export default class DetailPanel {
 
     _updateDepartures(departures) {
         this._el.departures.innerHTML = departures.length ? departures.map(d => `
-            <div class="stoprow">
+            <div class="stoprow dep">
                 ${routeMark(d.route)}
                 <span>${d.headsign}</span>
                 <span class="t">${d.wait <= 0 ? 'tiba' : formatDuration(d.wait)}</span>

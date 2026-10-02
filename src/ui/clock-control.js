@@ -122,7 +122,7 @@ export default class ClockControl {
             <div class="clock-actions">
                 <button class="btn timelapse js-timelapse" type="button"
                         title="Putar 24 jam dalam 60 detik">
-                    <span class="tl-label">Tonton 24 jam</span>
+                    <span class="js-tl-label">Tonton 24 jam</span>
                     <span class="tl-progress"></span>
                 </button>
                 <button class="btn js-showreel" type="button"
@@ -141,7 +141,7 @@ export default class ClockControl {
         me._count = el.querySelector('.clock-count b');
         me._profileCanvas = el.querySelector('.js-profile');
         me._timelapseBtn = el.querySelector('.js-timelapse');
-        me._timelapseLabel = el.querySelector('.tl-label');
+        me._timelapseLabel = el.querySelector('.js-tl-label');
         me._timelapseProgress = el.querySelector('.tl-progress');
         me._showreelBtn = el.querySelector('.js-showreel');
         me._timelapse = null;
