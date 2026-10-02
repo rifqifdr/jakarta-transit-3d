@@ -1,0 +1,41 @@
+{
+  "ticket": "JAKAR-63",
+  "device": "Samsung Galaxy S25, Chrome 154, Android",
+  "servedBy": "netlify",
+  "bench": 2,
+  "only": "motion",
+  "when": "2026-10-02T17:37:39.356Z",
+  "env": {
+    "ua": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36",
+    "dpr": 3,
+    "viewport": [360, 674],
+    "canvas": [1080, 2025],
+    "cores": 10,
+    "memoryGb": 8,
+    "renderer": "ANGLE (Samsung Electronics Co. Ltd., ANGLE ((Samsung Xclipse 940) on Vulkan 1.3.279), OpenGL ES 3.2)",
+    "vendor": "Google Inc. (Samsung Electronics Co., Ltd.)",
+    "frameBudgetMs": 16.6,
+    "observedCeilingHz": 60,
+    "wakeLock": true
+  },
+  "results": [
+    {"kind": "motion", "view": "pan", "arm": "first", "interrupted": false, "samples": 235, "fps": 58.8, "p50": 16.7, "p90": 16.8, "p99": 33.3, "max": 33.5, "droppedPct": 2.1, "long": 0, "tiles": 76, "loaf": {"count": 0, "blockingMs": 0}, "moved": {"km": 1.63, "zoom": 0, "bearing": 0}, "fleet": 6071, "clockSpeed": 1},
+    {"kind": "motion", "view": "pan", "arm": "shipped", "interrupted": false, "samples": 238, "fps": 59.5, "p50": 16.7, "p90": 16.8, "p99": 17.9, "max": 33.3, "droppedPct": 0.8, "long": 0, "tiles": 35, "loaf": {"count": 0, "blockingMs": 0}, "moved": {"km": 1.63, "zoom": 0, "bearing": 0}, "fleet": 6071, "clockSpeed": 1},
+    {"kind": "motion", "view": "pan", "arm": "no3d", "interrupted": false, "samples": 239, "fps": 60, "p50": 16.7, "p90": 16.8, "p99": 16.8, "max": 16.8, "droppedPct": 0, "long": 0, "tiles": 23, "loaf": {"count": 0, "blockingMs": 0}, "moved": {"km": 1.63, "zoom": 0, "bearing": 0}, "fleet": 6072, "clockSpeed": 1},
+    {"kind": "motion", "view": "zoom", "arm": "first", "interrupted": false, "samples": 199, "fps": 50, "p50": 16.7, "p90": 33.3, "p99": 66.7, "max": 83.1, "droppedPct": 16.7, "long": 7, "tiles": 194, "loaf": {"count": 6, "blockingMs": 47}, "moved": {"km": 0, "zoom": 4, "bearing": 0}, "fleet": 6072, "clockSpeed": 1},
+    {"kind": "motion", "view": "zoom", "arm": "shipped", "interrupted": false, "samples": 217, "fps": 54.3, "p50": 16.7, "p90": 17, "p99": 49.9, "max": 50.1, "droppedPct": 9.6, "long": 1, "tiles": 101, "loaf": {"count": 1, "blockingMs": 0}, "moved": {"km": 0, "zoom": 4, "bearing": 0}, "fleet": 6072, "clockSpeed": 1},
+    {"kind": "motion", "view": "zoom", "arm": "no3d", "interrupted": false, "samples": 233, "fps": 58.3, "p50": 16.7, "p90": 16.8, "p99": 33.4, "max": 33.5, "droppedPct": 2.9, "long": 0, "tiles": 82, "loaf": {"count": 0, "blockingMs": 0}, "moved": {"km": 0, "zoom": 4, "bearing": 0}, "fleet": 6072, "clockSpeed": 1},
+    {"kind": "motion", "view": "rotate", "arm": "first", "interrupted": false, "samples": 214, "fps": 54, "p50": 16.7, "p90": 33.1, "p99": 33.5, "max": 50.1, "droppedPct": 10.1, "long": 1, "tiles": 89, "loaf": {"count": 2, "blockingMs": 0}, "moved": {"km": 0, "zoom": 0, "bearing": 170}, "fleet": 6071, "clockSpeed": 1},
+    {"kind": "motion", "view": "rotate", "arm": "shipped", "interrupted": false, "samples": 218, "fps": 55, "p50": 16.7, "p90": 17, "p99": 33.4, "max": 33.5, "droppedPct": 8.4, "long": 0, "tiles": 45, "loaf": {"count": 0, "blockingMs": 0}, "moved": {"km": 0, "zoom": 0, "bearing": 170}, "fleet": 6072, "clockSpeed": 1},
+    {"kind": "motion", "view": "rotate", "arm": "no3d", "interrupted": false, "samples": 203, "fps": 51, "p50": 16.7, "p90": 33.3, "p99": 49.9, "max": 50, "droppedPct": 15.1, "long": 2, "tiles": 32, "loaf": {"count": 5, "blockingMs": 0}, "moved": {"km": 0, "zoom": 0, "bearing": 170}, "fleet": 6072, "clockSpeed": 1},
+    {"kind": "motion", "view": "flyTo", "arm": "first", "interrupted": false, "samples": 195, "fps": 49.4, "p50": 16.7, "p90": 33.3, "p99": 50, "max": 50.1, "droppedPct": 17.7, "long": 3, "tiles": 272, "loaf": {"count": 2, "blockingMs": 11}, "moved": {"km": 24.68, "zoom": 0, "bearing": 0}, "fleet": 6070, "clockSpeed": 1},
+    {"kind": "motion", "view": "flyTo", "arm": "shipped", "interrupted": false, "samples": 174, "fps": 45, "p50": 16.7, "p90": 33.3, "p99": 66.7, "max": 83.1, "droppedPct": 25, "long": 2, "tiles": 269, "loaf": {"count": 3, "blockingMs": 42}, "moved": {"km": 24.68, "zoom": 0, "bearing": 0}, "fleet": 6070, "clockSpeed": 1},
+    {"kind": "motion", "view": "flyTo", "arm": "no3d", "interrupted": false, "samples": 176, "fps": 45.3, "p50": 16.7, "p90": 33.4, "p99": 49.9, "max": 66.7, "droppedPct": 24.5, "long": 1, "tiles": 224, "loaf": {"count": 3, "blockingMs": 18}, "moved": {"km": 24.68, "zoom": 0, "bearing": 0}, "fleet": 6070, "clockSpeed": 1},
+    {"kind": "motion", "view": "tour", "arm": "first", "interrupted": false, "samples": 152, "fps": 38.2, "p50": 16.8, "p90": 49.9, "p99": 50.1, "max": 50.5, "droppedPct": 36.4, "long": 13, "tiles": 58, "loaf": {"count": 17, "blockingMs": 0}, "moved": {"km": 1.42, "zoom": 0, "bearing": 121}, "fleet": 6070, "clockSpeed": 1},
+    {"kind": "motion", "view": "tour", "arm": "shipped", "interrupted": false, "samples": 157, "fps": 39.3, "p50": 25, "p90": 41.5, "p99": 50, "max": 58.3, "droppedPct": 39.8, "long": 5, "tiles": 34, "loaf": {"count": 8, "blockingMs": 0}, "moved": {"km": 1.43, "zoom": 0, "bearing": 120}, "fleet": 6070, "clockSpeed": 1},
+    {"kind": "motion", "view": "tour", "arm": "no3d", "interrupted": false, "samples": 210, "fps": 52.7, "p50": 16.7, "p90": 33.2, "p99": 49.9, "max": 50.1, "droppedPct": 12.1, "long": 1, "tiles": 18, "loaf": {"count": 4, "blockingMs": 0}, "moved": {"km": 1.41, "zoom": 0, "bearing": 121}, "fleet": 6070, "clockSpeed": 1},
+    {"kind": "motion", "view": "navigasi", "arm": "first", "interrupted": false, "samples": 154, "fps": 38.5, "p50": 25, "p90": 41.7, "p99": 50, "max": 50.1, "droppedPct": 41.4, "long": 9, "tiles": 154, "loaf": {"count": 8, "blockingMs": 0}, "moved": {"km": 0.31, "zoom": 0, "bearing": 70}, "fleet": 5976, "clockSpeed": 16},
+    {"kind": "motion", "view": "navigasi", "arm": "shipped", "interrupted": false, "samples": 151, "fps": 37.9, "p50": 16.8, "p90": 49.9, "p99": 50.4, "max": 74.8, "droppedPct": 37.6, "long": 12, "tiles": 146, "loaf": {"count": 19, "blockingMs": 0}, "moved": {"km": 0.31, "zoom": 0, "bearing": 68}, "fleet": 5976, "clockSpeed": 16},
+    {"kind": "motion", "view": "navigasi", "arm": "no3d", "interrupted": false, "samples": 158, "fps": 39.8, "p50": 16.8, "p90": 49.9, "p99": 50.1, "max": 50.2, "droppedPct": 35, "long": 12, "tiles": 129, "loaf": {"count": 19, "blockingMs": 0}, "moved": {"km": 0.3, "zoom": 0, "bearing": 68}, "fleet": 5976, "clockSpeed": 16}
+  ]
+}

@@ -125,7 +125,16 @@ export class Snapshot {
                     // for the rest of the run rather than only for this
                     // request. Measured against kci.id: 150 ms survives a
                     // hundred requests and fails well before a thousand.
-                    me.interval = Math.min(Math.round(me.interval * 1.5), MAX_INTERVAL_MS);
+                    //
+                    // Never *lowered*, though. The cap is for sources paced in
+                    // milliseconds; an adapter that starts slower than it —
+                    // Open-Meteo's elevation API needed 11 s, because it
+                    // counts every point as a call (JAKAR-77, now on the
+                    // `jakar-77-elevation` branch) — was being sped up to the
+                    // cap by its first 429, which is the opposite of what
+                    // one means.
+                    me.interval = Math.max(me.interval,
+                        Math.min(Math.round(me.interval * 1.5), MAX_INTERVAL_MS));
                     me.throttled++;
                     throw new Error(`HTTP 429 rate limited (interval now ${me.interval} ms)`, {
                         cause: {backoff: retryAfter > 0 ? retryAfter * 1000 : RATE_LIMIT_BACKOFF_MS * attempt}

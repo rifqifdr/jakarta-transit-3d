@@ -90,12 +90,22 @@ Columns every row now carries, static rows included:
 | File | Device | Pan | Zoom | Rotate | flyTo | Tour | Navigasi |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `2026-10-01-m4-motion.json` | Apple M4, 120 Hz, Chrome, 2880x1602 | 90 / 102 | 90 / 99 | 74 / 83 | 89 / 105 | 86 / 102 | 82 / 97 |
+| `2026-10-02-galaxy-s25-motion.json` | Samsung S25, Chrome 154, 60 Hz, 1080x2025 | 60 / 60 | 54 / 58 | 55 / 51 | 45 / 45 | 39 / 53 | 38 / 40 |
 
 fps as shipped / with Gedung 3D off. On the M4, nothing stalls: one frame over
 50 ms in eighteen rows, no main-thread blocking to speak of. Rotate is the slow
 move — its median frame is 15-16 ms, half the display's rate, in every clean
 run — and Gedung 3D off brings that back to 9 ms. 3D off is worth 10-16 fps in
 every motion.
+
+**On the S25 the gestures hold and the automatic cameras do not.** Panning
+stays at 60 with nothing dropped; zoom and rotate lose about one refresh in
+ten. The tour and Navigasi lose more than a third, with 5-13 frames over 50 ms
+in four seconds, and a search flight a quarter. Gedung 3D off rescues the tour
+(39 to 53 fps) and does nothing for Navigasi or flyTo, so what those two pay
+for is not the buildings — Navigasi loaded ~150 tiles in its sample, at pitch
+78. None of it is our script: the long animation frames carry almost no
+blocking time, which puts the cost in rendering, where the basemap lives.
 
 `2026-10-01-m4-motion-first-launch.json` is kept for one reason: it was the
 first run after Chrome launched, and it was far worse than any later one —
@@ -105,6 +115,7 @@ nothing here proves it. It predates `moved` and `interrupted` and ran Navigasi
 at 1x. **It matters because it is what a first visit is**, so look for it in
 the `first` rows on a phone.
 
-**Still missing: a mid-range Android.** And a scripted camera is not a finger:
+**Still missing: a mid-range Android** — the S25 is the good case, and it is
+the one that drops a third of its frames in Navigasi. And a scripted camera is not a finger:
 no touch events, no input latency, no refresh-rate boost a phone may grant
 while a finger is down. These rows measure rendering under motion.
