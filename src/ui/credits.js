@@ -63,6 +63,18 @@ const SOURCES = [
         ]
     },
     {
+        group: 'Suara',
+        items: [
+            {
+                // CC0 asks for no credit. Given anyway, as everything else is.
+                name: 'Freesound — Yoyodaman234',
+                detail: 'Suara kabin kereta listrik (EMU) saat mengikuti kereta, di bawah CC0. ' +
+                    'Pengumuman stasiun dibacakan suara bawaan perangkat',
+                url: 'https://freesound.org/people/Yoyodaman234/sounds/341208/'
+            }
+        ]
+    },
+    {
         group: 'Perpindahan jalan kaki',
         items: [
             {

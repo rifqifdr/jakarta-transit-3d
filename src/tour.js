@@ -178,6 +178,23 @@ export default class Tour {
         `;
         document.body.appendChild(el);
 
+        /*
+           You are here, without a vehicle to be it.
+
+           The tour flies the path itself, so the point it has reached is the
+           camera's centre — which is *not* the centre of the screen. A line
+           preview frames its route with padding to keep it clear of the card,
+           and the padding stays: measured, the camera's centre sat at x=840 of
+           a 1440px window, and a mark fixed at the screen's middle stood
+           120px off the line it was meant to be on. So it is placed where the
+           map projects that point, once a frame. Hazard yellow, because that
+           is the one thing it means in this interface: here, now.
+        */
+        me._here = document.createElement('div');
+        me._here.className = 'tour-here';
+        me._here.hidden = true;
+        document.body.appendChild(me._here);
+
         me._caption = el.querySelector('.js-tour-caption');
         me._lineEl = el.querySelector('.js-tour-line');
         me._subEl = el.querySelector('.js-tour-sub');
@@ -197,9 +214,14 @@ export default class Tour {
      * same path, so the caption can name each one as the camera reaches it.
      * `title` is markup — the line's own `routeMark`, so a tour of the Bogor
      * line opens on the pedoman's red C rather than on a feed label.
+     *
+     * `onProgress` is told, every frame, how far along the path the camera is
+     * and where the next stop is, both as fractions of the path — what the map
+     * needs to draw the route as done, under way and ahead. `onEnd` fires
+     * however the tour stops: run to the end, Berhenti, or a hand on the map.
      */
     start(coordinates, {zoom = 14.5, pitch = 60, title = '', subtitle = '',
-        stops = [], onDone, onCancel} = {}) {
+        stops = [], onDone, onProgress, onEnd} = {}) {
         const me = this;
 
         me.stop();
@@ -219,11 +241,11 @@ export default class Tour {
         me._duration = Math.max(MIN_DURATION,
             Math.min(MAX_DURATION, total / GROUND_SPEED * 1000));
         me._onDone = onDone || null;
-        // Distinguished from `onDone` because a cancel and a completion mean
-        // opposite things to a showreel: one is the user taking the map back
-        // and must end the reel, the other is the cue for the next line.
-        me._onCancel = onCancel || null;
-        me._completed = false;
+        me._onProgress = onProgress || null;
+        me._onEnd = onEnd || null;
+        // Public, so a caller can turn its own distances along the same path
+        // into the fractions `onProgress` speaks in.
+        me.total = total;
         me._start = performance.now();
         me._lastFrame = me._start;
         me._bearing = null;
@@ -238,6 +260,7 @@ export default class Tour {
         me._subEl.textContent = subtitle;
         me._progress.style.width = '0%';
         me.el.classList.add('open');
+        me._here.hidden = false;
         me._showCaption(title, TITLE_MS, true);
 
         // `dragstart` is a Mapbox map event fired by user panning only;
@@ -321,6 +344,10 @@ export default class Tour {
             pitch: me._pitch
         });
 
+        const here = me.map.project(center);
+
+        me._here.style.transform = `translate(${here.x.toFixed(1)}px, ${here.y.toFixed(1)}px)`;
+
         me._progress.style.width = `${(raw * 100).toFixed(1)}%`;
 
         // Name each stop as the camera reaches it. The title holds its own
@@ -340,10 +367,18 @@ export default class Tour {
             me._caption.hidden = true;
         }
 
+        const next = me._stops[me._nextStop];
+
+        me._onProgress?.({
+            progress: travelled / me._total,
+            next: next ? next.distance / me._total : 1,
+            // Index into the stops as sorted here, by distance.
+            nextIndex: me._nextStop
+        });
+
         if (raw >= 1) {
             const done = me._onDone;
 
-            me._completed = true;
             me.stop();
             done?.();
         } else {
@@ -360,14 +395,16 @@ export default class Tour {
         me.active = false;
         me.el.classList.remove('open');
         me._caption.hidden = true;
+        me._here.hidden = true;
         me._onDone = null;
+        me._onProgress = null;
 
-        // Taken before the listeners come off, and fired last: `onCancel`
-        // tears down a showreel, which calls back into `stop()`. Clearing the
-        // handle first is what makes that re-entry a no-op rather than a loop.
-        const cancelled = me._completed ? null : me._onCancel;
+        // Taken first and fired last, so whatever it restores is restored
+        // after the tour has let go of the camera, and a callback that calls
+        // `stop()` again finds nothing left to end.
+        const end = me._onEnd;
 
-        me._onCancel = null;
+        me._onEnd = null;
         if (me._raf) {
             cancelAnimationFrame(me._raf);
             me._raf = null;
@@ -380,7 +417,7 @@ export default class Tour {
             canvas.removeEventListener('wheel', me._cancel);
             me._cancel = null;
         }
-        cancelled?.();
+        end?.();
     }
 
 }

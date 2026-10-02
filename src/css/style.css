@@ -329,10 +329,15 @@ html, body {
 /* Stopping something is not destroying it, so the warning lives in the hover
    rather than in a red button sitting there asking to be pressed. */
 .btn-danger { color: var(--text); }
+/* The warning, in the paper palette. This was still the dark theme's —
+   pale pink type on a white button, about 1.6:1 — and a phone keeps hover
+   wherever the finger last was: the tour bar appears exactly where
+   "Jelajahi jalur ini" was tapped, so the button that stops a tour was the one
+   that could not be read. */
 .btn-danger:hover {
-  background: rgba(255, 106, 106, 0.16);
-  border-color: rgba(255, 106, 106, 0.45);
-  color: #ffb3b3;
+  background: rgba(201, 42, 42, 0.08);
+  border-color: rgba(201, 42, 42, 0.4);
+  color: var(--danger);
 }
 
 .btn-sm {
@@ -446,7 +451,11 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - 24px);
+  /* Stops above the zoom buttons and the credit strip in the corner under
+     it. Two open panels reach the bottom of a 900px window, and a rail that
+     runs to the bottom puts the map's own controls underneath it — the reason
+     the credits once had to be moved out of this corner altogether. */
+  max-height: calc(100vh - 24px - 180px);
   pointer-events: none;
 }
 #right-rail > .panel {
@@ -456,7 +465,11 @@ html, body {
   pointer-events: auto;
   flex: 0 0 auto;
 }
-#right-rail > #layers { flex: 0 1 auto; overflow-y: auto; }
+/* The panels that fold are the ones that grow, so they are the ones that
+   scroll. Folded, each is one 48px bar and the only way into it, so it never
+   gives up height — an open clock once flex-shrank Layanan's bar to half. */
+#right-rail > .fold-panel { flex: 0 1 auto; overflow-y: auto; min-height: 0; }
+#right-rail > .fold-panel.folded { flex-shrink: 0; }
 .clock-top { display: flex; align-items: baseline; gap: 10px; }
 .clock-time {
   font-family: var(--mono);
@@ -532,36 +545,10 @@ input[type=range]::-moz-range-thumb {
 }
 .clock-count b { color: var(--text); font-family: var(--mono); font-size: var(--text-sm); }
 
-/* The day's four moments, and the two things the clock can perform.
-   Both rows are `.btn` — intent and size on the class, layout on the
-   container, which is the rule the six pill buttons were collapsed into. */
-.clock-jumps,
-.clock-actions { display: flex; gap: var(--s2); margin-top: var(--s3); }
-.clock-jumps > .btn,
-.clock-actions > .btn { flex: 1; min-width: 0; }
-
-/* One-tap day-in-a-minute. The button is the trigger and the progress bar is
-   the state, so a single element says both what it does and how far through
-   it is — which is also why the progress line is inside the button rather
-   than under the row. */
-.timelapse { position: relative; overflow: hidden; }
-.timelapse.on {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-ink);
-}
-.tl-progress {
-  position: absolute;
-  left: 0; bottom: 0;
-  height: 2px; width: 0;
-  background: var(--brand);
-}
-.timelapse.on .tl-progress { background: var(--brand-ink); opacity: 0.7; }
-.js-showreel.on {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--brand-ink);
-}
+/* The day's four moments. `.btn` — intent and size on the class, layout on
+   the container, which is the rule the six pill buttons were collapsed into. */
+.clock-jumps { display: flex; gap: var(--s2); margin-top: var(--s3); }
+.clock-jumps > .btn { flex: 1; min-width: 0; }
 
 /* ------------------------------------------------------------- tour */
 
@@ -636,8 +623,36 @@ input[type=range]::-moz-range-thumb {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
+/*
+   Here, on a tour: the point of the line the camera has reached, placed by the
+   tour where the map projects it (see `Tour._render` for why not the centre).
+   The platform-edge yellow in its ink-dark collar, as on the current stop of a
+   ride — the one thing that pairing means in this interface. The pulse says it
+   is live rather than a marker someone left on the map.
+*/
+.tour-here {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 15;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border-radius: 50%;
+  background: var(--here-fill);
+  border: 3px solid var(--here);
+  pointer-events: none;
+  animation: tour-here-pulse 1.6s var(--ease) infinite;
+}
+.tour-here[hidden] { display: none; }
+@keyframes tour-here-pulse {
+  from { box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.6); }
+  to { box-shadow: 0 0 0 16px rgba(245, 197, 24, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .tour-caption { animation: none; }
+  .tour-here { animation: none; box-shadow: 0 0 0 6px rgba(245, 197, 24, 0.3); }
 }
 
 /* A phone has no room for the line's name beside a button and a label. */
@@ -648,11 +663,10 @@ input[type=range]::-moz-range-thumb {
 
 /* ------------------------------------------------------------- layers */
 
-#layers { padding: var(--s4); }
-/* The headings inside the panel are headings, not controls. */
-#layers .panel-title { margin-bottom: 0; }
-#layers .layer-body { margin-top: 10px; }
-#layers.folded .layer-body { display: none; }
+/* Layanan and Lapisan peta: a header that folds the panel, and a body. */
+.fold-panel { padding: var(--s4); }
+.fold-body { margin-top: 10px; }
+.fold-panel.folded .fold-body { display: none; }
 
 /*
    The panel's own control (JAKAR-65). It reaches out over the panel's padding
@@ -660,7 +674,7 @@ input[type=range]::-moz-range-thumb {
    same height it was as a caption with padding round it — and the summary
    sits at the trailing edge beside the chevron, where the eye checks state.
 */
-.layers-head {
+.fold-head {
   display: flex;
   align-items: center;
   gap: var(--s3);
@@ -677,28 +691,28 @@ input[type=range]::-moz-range-thumb {
   cursor: pointer;
   transition: color 140ms var(--ease);
 }
-#layers.folded .layers-head { margin-bottom: calc(-1 * var(--s4)); }
-.layers-head:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: -4px; }
-.layers-icon {
+.fold-panel.folded .fold-head { margin-bottom: calc(-1 * var(--s4)); }
+.fold-head:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: -4px; }
+.fold-icon {
   width: 18px; height: 18px; flex: none; color: var(--text-2);
 }
-.layers-title {
+.fold-title {
   font-size: var(--text-md);
   font-weight: 600;
   letter-spacing: -0.005em;
 }
 /* A count, set like one: tabular, and an ink level down from the title so
    the bar reads as a name and then its state. */
-.layers-summary {
+.fold-summary {
   margin-left: auto;
   font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--text-3);
   white-space: nowrap;
 }
-.layers-head .chevron { margin-left: 0; color: var(--text-3); }
-.layers-head:hover .chevron,
-.layers-head:hover .layers-icon { color: var(--text); }
+.fold-head .chevron { margin-left: 0; color: var(--text-3); }
+.fold-head:hover .chevron,
+.fold-head:hover .fold-icon { color: var(--text); }
 .chevron {
   display: block;
   margin-left: auto;
@@ -708,7 +722,7 @@ input[type=range]::-moz-range-thumb {
   transform: rotate(45deg) translate(-2px, -2px);
   transition: transform 0.18s ease;
 }
-#layers.folded .chevron { transform: rotate(-135deg) translate(-1px, -1px); }
+.fold-panel.folded .chevron { transform: rotate(-135deg) translate(-1px, -1px); }
 .panel-title {
   font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.1em;
   text-transform: uppercase; color: var(--text-3); margin-bottom: 10px;
@@ -747,7 +761,6 @@ input[type=range]::-moz-range-thumb {
 .mode-icon { width: 16px; height: 16px; flex: none; color: var(--text-3); }
 .mode-head:hover .mode-icon { color: var(--text-2); }
 .cat.off { opacity: 0.38; }
-.layer-sep { height: 1px; background: var(--border); margin: 10px 0; }
 /* While colouring by frequency the category swatches no longer describe the
    lines, so they step back to being filters rather than a key. */
 #layers.by-headway .cat .dot { opacity: 0.35; }
@@ -768,11 +781,9 @@ input[type=range]::-moz-range-thumb {
 .mode-group.off .mode-name, .mode-group.off .mode-head .n { opacity: 0.4; }
 /* Categories sit under their mode, so they are indented to read as children. */
 .mode-group .cat { padding-left: 3px; }
-/* By frequency the categories stop meaning anything, and so do their modes. */
-#layers.by-headway .mode-group { display: none; }
-.headway-legend:not(:empty) {
-  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
-}
+/* A legend sits under the switch it explains, indented to its label, so the
+   colours are read beside the row that turned them on. */
+.layer-legend:not(:empty) { padding: 0 0 var(--s2) 30px; }
 .cat.static { cursor: default; }
 /* A filter row is a tap target, so it is one all the way across — the label is
    part of the control, not a caption beside it. */
@@ -855,7 +866,10 @@ input[type=range]::-moz-range-thumb {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  max-height: calc(100vh - 24px);
+  /* Stops above the Tampilan peta thumbnail and the Mapbox wordmark in the
+     corner under it, for the same reason the right rail stops above the zoom
+     buttons: a long card would otherwise lie over both. */
+  max-height: calc(100vh - 24px - 120px);
   /* The gaps between panels must not swallow clicks meant for the map. */
   pointer-events: none;
 }
@@ -1233,11 +1247,43 @@ input[type=range]::-moz-range-thumb {
     max-height: 58vh;
   }
 
-  /* Folded, Layanan is one 50px bar and the only way into the panel, so it
-     never gives up height. It used to shrink to fit under an open clock, and
-     once the clock's controls reached 44px (JAKAR-65) that cut the bar in
-     half. Spilling a few pixels past the header's 45vh is the lesser harm. */
-  #right-rail > #layers.folded { flex-shrink: 0; }
+  /*
+     Two folded bars side by side, under the clock.
+
+     Lapisan peta split out of Layanan, and a third full-width bar would have
+     pushed the map down another 58px of a 844px screen. Folded, the two are
+     each just a name and a state, which fits in half the width; open, a panel
+     takes the whole row, because what is inside it does not fit in half.
+  */
+  #right-rail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-content: start;
+  }
+  #right-rail > #clock,
+  #right-rail > .fold-panel:not(.folded) { grid-column: 1 / -1; }
+  #right-rail > .fold-panel:not(.folded) { max-height: 48vh; }
+  /* Half a 390px screen is 178px, and "Lapisan peta" beside "3 aktif" does
+     not fit in it: the name wrapped onto two lines and Layanan's chevron was
+     cut off. So a folded bar stacks its count under its name, and the width
+     only has to hold the longer of the two. */
+  #right-rail > .fold-panel.folded .fold-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "icon title chevron" "icon summary chevron";
+    column-gap: var(--s2);
+    align-content: center;
+    padding: 0 var(--s3);
+  }
+  #right-rail > .fold-panel.folded .fold-icon { grid-area: icon; }
+  #right-rail > .fold-panel.folded .fold-title { grid-area: title; line-height: 1.25; }
+  #right-rail > .fold-panel.folded .fold-summary {
+    grid-area: summary;
+    margin-left: 0;
+    font-size: var(--text-xs);
+    line-height: 1.25;
+  }
+  #right-rail > .fold-panel.folded .chevron { grid-area: chevron; }
 
   /* Layanan was `display: none` here, which removed the mode filters, the
      live camera layer, the accessibility filter and Gedung 3D from every
@@ -1260,7 +1306,7 @@ input[type=range]::-moz-range-thumb {
      full-width header covered them, and at 130px an unfolded Layanan did. */
   .mapboxgl-ctrl-bottom-right,
   .mapboxgl-ctrl-bottom-left {
-    top: 130px;
+    top: 142px;
     bottom: auto;
   }
 
@@ -1270,20 +1316,38 @@ input[type=range]::-moz-range-thumb {
      "most" is not what ODbL and Mapbox's terms ask for. This is also why the
      sheet stops at 34px rather than 12. */
   .mapboxgl-ctrl-logo,
-  .mapboxgl-ctrl-attrib,
-  /* Mapbox styles the collapsed badge as `.mapboxgl-ctrl-attrib.mapboxgl-compact`
-     — two classes — and sets `position: relative` on it. A single-class rule
-     loses to that and silently does nothing: the badge stayed up at y=285
-     while the wordmark, whose own rule is single-class too, moved as asked. */
-  .mapboxgl-ctrl-attrib.mapboxgl-compact {
+  /* The strip lives in the bottom-right corner, which on a phone has moved up
+     under the header with the zoom buttons; pinned, it stays down here with
+     the wordmark. The class is doubled for the same reason the attribution
+     badge's once had to be: Mapbox's own corner rules are two classes deep,
+     and a single-class rule loses to them and silently does nothing. */
+  .mapboxgl-ctrl.credit-strip {
     position: fixed;
     top: auto;
     bottom: 7px;
     margin: 0;
   }
   .mapboxgl-ctrl-logo { left: 14px; }
-  .mapboxgl-ctrl-attrib,
-  .mapboxgl-ctrl-attrib.mapboxgl-compact { right: 12px; }
+  .mapboxgl-ctrl.credit-strip { right: 12px; }
+  /* Opened upward from a button that now sits under the header, the picker
+     would slide under the header; on a phone it opens downward instead. */
+  .map-style-picker { top: 0; bottom: auto; }
+
+  /*
+     Following, the card cannot stay at the bottom: the follow HUD is there,
+     and the vehicle itself sits low in the frame, where Navigasi puts a
+     driver's own bonnet. So it moves up under the header, short, and clear of
+     the map's buttons on the right edge. The map-style thumbnail it would lie
+     over steps aside with the finder — not something anyone changes while
+     riding along.
+  */
+  body.following #left-rail {
+    top: 146px;
+    bottom: auto;
+    right: 68px;
+    max-height: 34vh;
+  }
+  body.following .map-style { display: none; }
 }
 
 /* The clock's fold button is a phone control. It is hidden rather than not
@@ -1344,8 +1408,8 @@ input[type=range]::-moz-range-thumb {
 
   .detail-close { width: var(--ctl); height: var(--ctl); margin-top: -8px; margin-right: -8px; }
 
-  .credits-ctrl button { position: relative; }
-  .credits-ctrl button::after { content: ''; position: absolute; inset: -9px -2px; }
+  .credit-strip-link { position: relative; }
+  .credit-strip-link::after { content: ''; position: absolute; inset: -14px -4px; }
 
   /* Mapbox's own buttons. Pinching is a two-finger gesture and these are the
      single-pointer way to zoom and turn the map — the alternative WCAG asks
@@ -1386,7 +1450,9 @@ input[type=range]::-moz-range-thumb {
    controls belong under it rather than out at the side. */
 #follow-hud {
   left: 50%; transform: translateX(-50%); bottom: 16px;
-  width: min(560px, calc(100% - 24px)); padding: 11px 14px; display: none;
+  /* 640, not 560: with Suara added the four controls left the speed slider
+     about ten pixels long, which is a readout rather than a control. */
+  width: min(640px, calc(100% - 24px)); padding: 11px 14px; display: none;
   z-index: 30;
 }
 #follow-hud.open { display: block; }
@@ -1418,20 +1484,40 @@ input[type=range]::-moz-range-thumb {
 /* The speed slider is the only thing here allowed to take up slack. */
 .fh-controls .btn { flex: none; }
 
-/* While navigating, the HUD is the whole interface.
+/*
+   Following a vehicle: the finder steps aside, and the card stays as the
+   journey — the progress bar and the run of stops (`#detail.riding`).
 
-   The card's job moves to the HUD (they say the same things), and the rail
-   that held it would otherwise be an empty column whose finder lands under the
-   HUD on a phone — present, visible and unreachable. Hidden rather than
-   nudged: "if a panel must move, say where" (trap 13), and the honest place
-   for a finder while you are riding a bus is nowhere. */
-body.navigating #left-rail { display: none; }
+   The finder used to be left in the rail while following, and on a 390px
+   screen it landed at y=744, directly under a HUD that starts at 637 and sits
+   at `z-index: 30` — still there, still `visible`, and completely unreachable:
+   trap 13's shape exactly. Hidden outright, which is also the honest answer to
+   what a finder is for while you are riding something.
+*/
+body.following #search { display: none; }
+#detail.riding .detail-head,
+#detail.riding .detail-body > .row,
+#detail.riding .detail-actions,
+#detail.riding .js-tour { display: none; }
+#detail.riding .detail-body { margin-top: 0; }
+#detail.riding .progress { margin-top: var(--s1); }
+
+/* A tour of a line is a view where the camera travels and the map is the
+   subject, and on a phone its card covered most of the flight. */
+body.touring #left-rail { display: none; }
 
 /* The three framings, as one segmented track. `.sorts` supplies the inset
    well; this only says how it sits in the row, which is the rule the six pill
    buttons were collapsed into — intent and size on the class, layout on the
    container. */
 .fh-cameras { flex: none; margin: 0; }
+/* Suara: the speaker struck through until it is on, then filled like any
+   other toggle that is on (`.btn.on`). */
+.fh-sound { flex: none; padding: 0 var(--s3); }
+.fh-sound-icon { width: 18px; height: 18px; flex: none; }
+.fh-sound .fh-sound-on,
+.fh-sound.on .fh-sound-off { display: none; }
+.fh-sound.on .fh-sound-on { display: block; }
 .fh-cameras .btn { white-space: nowrap; }
 
 @media (max-width: 700px) {
@@ -1448,7 +1534,17 @@ body.navigating #left-rail { display: none; }
   .fh-controls { flex-wrap: wrap; }
   .fh-cameras { order: -1; width: 100%; }
   .fh-cameras .btn { flex: 1; min-width: 0; }
-  .fh-speed { flex: 1 1 auto; }
+  /* From nothing, not from its own width: at `auto` the slider claimed its
+     full length first and pushed Berhenti onto a row of its own. */
+  .fh-speed { flex: 1 1 0; min-width: 0; }
+  /* Speed, sound and stop share the second row, and with "Suara" written out
+     Berhenti fell to a third — the bar a row taller over the road. The word
+     goes; the speaker says it, and the name stays for a screen reader. */
+  .fh-sound { width: var(--ctl); padding: 0; }
+  .fh-sound span {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip-path: inset(50%); white-space: nowrap;
+  }
 }
 
 /* ---------------------------------------------------------------- cameras */
@@ -1635,39 +1731,117 @@ body.navigating #left-rail { display: none; }
 /* ------------------------------------------------------------- credits */
 
 /*
-   Who the data belongs to, as a panel.
+   Who the data belongs to, as a strip and a panel.
 
-   The trigger sits inside Mapbox's attribution, so it has to look like the
-   text around it rather than like a button dropped into a credit line — the
-   only thing marking it as operable is that it underlines and takes the
+   The strip is Mapbox's attribution with `Sumber data` beside it, in the
+   bottom-right corner. The trigger sits in a credit line, so it has to look
+   like the text around it rather than like a button dropped into one — what
+   marks it as operable is its weight, and that it underlines and takes the
    accent on hover.
 */
-/*
-   The trigger sits with the map's own controls, so it borrows their ground
-   rather than the panel's: a small pill that reads as part of the credit
-   furniture instead of as an action the map wants you to take.
-*/
-/* Clear of the wordmark it shares the corner with, and clear of the credit
-   strip that neither of them may be pushed out of (trap 13). */
-.credits-ctrl { margin: 0 0 26px var(--s3); }
-.credits-ctrl button {
-  font-family: var(--font);
-  font-size: var(--text-2xs);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  min-height: 26px;
-  padding: 0 var(--s3);
-  cursor: pointer;
-  box-shadow: var(--ring);
-  transition: background-color 140ms var(--ease), color 140ms var(--ease);
+.credit-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 0 var(--s2) 0 0;
+  background: rgba(255, 255, 255, 0.82);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 20px;
 }
-.credits-ctrl button:hover { color: var(--text); background: var(--panel-solid); }
-.credits-ctrl button:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: 2px; }
+/* Mapbox's control, inside ours: its own corner float and margins would
+   push it out of the line it now shares. */
+.credit-strip .mapboxgl-ctrl-attrib {
+  float: none;
+  margin: 0 !important;
+  background: none !important;
+}
+.credit-strip-link {
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.credit-strip-link::before { content: '·'; margin-right: var(--s2); color: var(--text-4); font-weight: 400; }
+.credit-strip-link:hover { color: var(--brand-lift); text-decoration: underline; }
+.credit-strip-link:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: 2px; }
+
+/*
+   Tampilan peta: a thumbnail of the map as it is, in the bottom-left corner,
+   that opens the three styles beside it — the way Google Maps offers its own.
+   Each style is drawn as a small picture of itself: a sea, a park, two roads,
+   in that style's colours. CSS rather than images, so it costs no request and
+   cannot go stale against a token.
+*/
+.map-style { position: relative; }
+.map-style-toggle,
+.map-style-option {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 64px;
+  padding: 3px 3px 4px;
+  font-family: var(--font);
+  background: var(--panel-solid);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 140ms var(--ease), transform 100ms var(--ease);
+}
+.map-style-toggle { box-shadow: var(--shadow); }
+.map-style-toggle:hover,
+.map-style-option:hover { border-color: var(--border-strong); }
+.map-style-toggle:active,
+.map-style-option:active { transform: scale(0.97); }
+.map-style-toggle:focus-visible,
+.map-style-option:focus-visible { outline: 2px solid var(--brand-lift); outline-offset: 2px; }
+.map-style-name {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-2);
+  text-align: center;
+}
+.map-style-picker {
+  left: calc(100% + var(--s2));
+  bottom: 0;
+  display: flex;
+  gap: var(--s2);
+  padding: var(--s2);
+  border-radius: var(--r-card);
+}
+.map-style-picker[hidden] { display: none; }
+.map-style-option { border-width: 2px; border-color: transparent; }
+.map-style-option[aria-pressed="true"] { border-color: var(--brand); }
+.map-style-option[aria-pressed="true"] .map-style-name { color: var(--brand-lift); }
+
+.map-swatch {
+  display: block;
+  height: 40px;
+  border-radius: 9px;
+  background-color: var(--swatch-ground);
+  background-image:
+    radial-gradient(circle at 84% 18%, var(--swatch-water) 0 30%, transparent 31%),
+    radial-gradient(circle at 14% 86%, var(--swatch-park) 0 27%, transparent 28%),
+    linear-gradient(112deg, transparent 44%, var(--swatch-road) 44% 52%, transparent 52%),
+    linear-gradient(18deg, transparent 58%, var(--swatch-major) 58% 65%, transparent 65%);
+}
+.map-swatch[data-theme="default"] {
+  --swatch-ground: #eef0e3; --swatch-water: #9fd0f2; --swatch-park: #c3e2a6;
+  --swatch-road: #ffffff; --swatch-major: #f6cf73;
+}
+.map-swatch[data-theme="faded"] {
+  --swatch-ground: #f1f1ec; --swatch-water: #cfe1ea; --swatch-park: #dde7d3;
+  --swatch-road: #ffffff; --swatch-major: #ebe1c6;
+}
+.map-swatch[data-theme="monochrome"] {
+  --swatch-ground: #eaebed; --swatch-water: #cdd0d5; --swatch-park: #dcdee1;
+  --swatch-road: #ffffff; --swatch-major: #d3d5d9;
+}
 
 .credits-scrim {
   position: fixed;
@@ -1783,7 +1957,4 @@ body.navigating #left-rail { display: none; }
 @media (max-width: 700px) {
   .credits-scrim { padding: var(--s3); align-items: end; }
   .credits { max-height: 88vh; }
-  /* The left corner is relocated below the header on a phone, where there is
-     no wordmark to clear. */
-  .credits-ctrl { margin: 0 0 0 var(--s1); }
 }

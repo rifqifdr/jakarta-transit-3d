@@ -227,15 +227,23 @@ const SPRITE = `
   <symbol id="kf-frekuensi" viewBox="0 0 24 24">
     <path fill="currentColor" fill-rule="evenodd" d="M12 2.2a9.8 9.8 0 1 1 0 19.6 9.8 9.8 0 0 1 0-19.6Zm0 2.4a7.4 7.4 0 1 0 0 14.8 7.4 7.4 0 0 0 0-14.8Zm-1 2.5h2v5.2h3.7v2H11Z"/>
   </symbol>
-  <symbol id="kf-terakhir" viewBox="0 0 24 24">
-    <path fill="currentColor" fill-rule="evenodd" d="M12 2.4a9.6 9.6 0 1 1 0 19.2 9.6 9.6 0 0 1 0-19.2Zm0 2.3a7.3 7.3 0 1 0 0 14.6 7.3 7.3 0 0 0 0-14.6Z"/>
-    <path fill="currentColor" d="M11 6.6h2v6l4 2.3-1 1.7-5-2.9Z"/>
-  </symbol>
   <symbol id="kf-jejak" viewBox="0 0 24 24">
     <path fill="currentColor" d="M3 14.5h6.5v2H3Z"/>
     <path fill="currentColor" d="M5.5 10.5H13v2H5.5Z"/>
     <path fill="currentColor" d="M9 6.5h8.5v2H9Z"/>
     <path fill="currentColor" d="M14.5 6a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm.6 7.5h6.4v2h-6.4Z"/>
+  </symbol>
+  <symbol id="kf-suara" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M2.5 9h4l5-4.2v14.4l-5-4.2h-4Z"/>
+    <path fill="currentColor" d="m14.6 8.3 1.4-1.4a7.2 7.2 0 0 1 0 10.2l-1.4-1.4a5.2 5.2 0 0 0 0-7.4Z"/>
+    <path fill="currentColor" d="m17.4 5.5 1.4-1.4a11.2 11.2 0 0 1 0 15.8l-1.4-1.4a9.2 9.2 0 0 0 0-13Z"/>
+  </symbol>
+  <symbol id="kf-senyap" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M2.5 9h4l5-4.2v14.4l-5-4.2h-4Z"/>
+    <path fill="currentColor" d="m14.4 9.4 1.4-1.4 2.6 2.6 2.6-2.6 1.4 1.4-2.6 2.6 2.6 2.6-1.4 1.4-2.6-2.6-2.6 2.6-1.4-1.4 2.6-2.6Z"/>
+  </symbol>
+  <symbol id="kf-saring" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M2.6 4h18.8l-7.3 8.6v6.2l-4.2 2.4v-8.6Z"/>
   </symbol>
   <symbol id="kf-lapisan" viewBox="0 0 24 24">
     <path fill="currentColor" d="M12 2.6 21.6 8 12 13.4 2.4 8Z"/>

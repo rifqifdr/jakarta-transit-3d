@@ -63,8 +63,11 @@ export default {
     // than whichever mode happens to be listed first.
     acceleration: 1.0,
 
-    // Playback speeds offered by the clock control.
-    speeds: [1, 2, 4, 8, 16, 32, 64, 128, 300, 600, 1200],
+    // Playback speeds offered by the clock control and the follow HUD. It went
+    // to 1200x while the timelapse needed a day in a minute; with that gone,
+    // 128x — a day in about eleven minutes — is the most anything here asks
+    // for, and the top three stops only made the slider harder to aim.
+    speeds: [1, 2, 4, 8, 16, 32, 64, 128],
 
     // Mode labels, in the order they head the layer panel. Mode sits above
     // category because they are different axes: category is an operator's

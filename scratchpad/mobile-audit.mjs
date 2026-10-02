@@ -199,7 +199,9 @@ window.__audit = label => {
         // Only where the box actually cuts its content off. Content that
         // spills past a box with visible overflow is not hidden — and an
         // absolutely positioned hit-area extension spills by design.
-        if (el.scrollWidth > el.clientWidth + 1 &&
+        // A 1px box is visually hidden on purpose — a label kept for screen
+        // readers, like the phone's icon-only Suara — not text cut off.
+        if (el.scrollWidth > el.clientWidth + 1 && r.width > 2 &&
                 (cs.overflowX === 'hidden' || cs.overflowX === 'clip') && el.textContent.trim()) {
             clipped.add(name(el) + ' "' + el.textContent.trim().replace(/\\s+/g, ' ').slice(0, 24) + '"');
         }
@@ -207,7 +209,7 @@ window.__audit = label => {
 
     // One line means one line. Counted from the text's own line boxes, because
     // a wrapped label inside a 44px button does not make the button taller.
-    for (const el of document.querySelectorAll('.t, .btn, .badge, output, .n, .near-wait')) {
+    for (const el of document.querySelectorAll('.t, .btn, .badge, output, .n, .near-wait, .fold-title, .map-style-name')) {
         if (skip(el) || !shown(el)) {
             continue;
         }
@@ -287,6 +289,14 @@ const STEPS = [
     click('#layers .js-fold'),
     click('#layers .cat[data-cat="Mikrotrans"]'),
     click('#layers .js-fold'),
+
+    // Lapisan peta, split out of Layanan: open, look, fold again.
+    ...state('03c-map-layers', click('#map-layers .js-fold')),
+    click('#map-layers .js-fold'),
+
+    // Tampilan peta, the corner thumbnail: open the picker, look, close it.
+    ...state('03d-map-style', click('.js-style-toggle')),
+    click('.js-style-toggle'),
 
     ...state('04-search', {_eval: "window.__type('Blok M'); return 'typed';"}),
 

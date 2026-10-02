@@ -79,17 +79,12 @@ rebuilding then changed the network the routing checks ran over.
 ## What it does
 
 - **Live or replayed.** The clock follows real Jakarta time, or you can scrub to
-  any time of day and run it at up to 1200×. The basemap's lighting follows the
+  any time of day and run it at up to 128×. The basemap's lighting follows the
   sun over Jakarta — its altitude, not a round hour — so dawn and dusk land
   where the sky actually changes and replaying a day takes the city from dawn
   through to night. A faint tint over the map follows the sun continuously
   between those four steps: nothing at noon, pink at dawn, amber at dusk, a
   cool wash at night.
-- **Watch a whole day in a minute.** *Tonton 24 jam* sweeps 04:00 to 04:00,
-  paced by the fleet's own service curve: it dwells on the morning and evening
-  peaks and passes the small hours about three times faster, because a linear
-  sweep spends a fifth of its run on an empty, dark city. The scrubber's
-  profile fills as it goes.
 - **Jump to a moment** — Fajar, Pagi, Siang, Sore — without hunting along the
   scrubber.
 - **Click a bus** for its route, headsign, fare, progress along the trip, and a
@@ -99,54 +94,58 @@ rebuilding then changed the network the routing checks ran over.
   Pan or rotate by hand to take the wheel back.
 - **Click a stop** for the routes calling there, the next departures, and any
   official interchange walks.
-- **Fly a line end to end.** *Jelajahi jalur ini*, on a vehicle's card or a
-  line's, takes the camera along the route's real geometry at a steady ground
-  speed, turning into the bends and naming each stop as it passes. Touch the
-  map and you have the wheel back.
-- **Let it run itself.** *Putar otomatis* previews a line, flies it, and moves
-  on to the next, at the evening peak where there is most to watch. Any gesture
-  ends it.
+- **Fly a line end to end, as a journey.** *Jelajahi jalur ini*, on a
+  vehicle's card or a line's, takes the camera from the line's first stop to
+  its last along the real geometry at a steady ground speed, naming each stop
+  as it passes. The line is drawn as navigation draws a route — grey behind,
+  yellow to the next stop, the line's own colour ahead — while the other lines,
+  the stops and the fleet step out of the way. Touch the map and you have the
+  wheel back.
 - **Ride it like a navigation system.** Following a vehicle opens an egocentric
   view: the camera sits behind and just above it at a strong forward pitch, the
   road ahead is drawn as a route ribbon running from the vehicle to the
   horizon, and the surrounding city is pulled back — POI labels off, other
   routes faded, roads dimmed — so what you read is vehicle, then route, then
-  street. *Peta* restores the map-that-follows framing, and *Dari dalam* rides
-  on the roof.
+  street. *Dari dalam* rides on the roof instead. Either way the card shrinks to
+  the journey: the progress along the line and the stops around the vehicle.
+- **Hear the ride.** *Suara* plays the cabin of an electric train and announces
+  every station as it is reached — "Tiba di Stasiun Cilebut" — in the device's
+  own Indonesian voice. The cabin is a CC0 recording of a generic EMU, because
+  no KRL recording is openly licensed; buses get the announcer only.
 - **See how far you can get** — and watch it arrive. Pick a stop, choose a
   budget, and the map releases everything reachable in 15/30/45/60 minutes *in
   arrival order*, so the frontier crawls along the corridors and jumps down the
   rail lines instead of appearing all at once. Restrict it to the 101 free
   routes and it answers a question few networks can: how far can you travel
   without paying anything?
-- **Share any view — or any performance.** The URL carries the time, camera,
-  selection, reachability and filters, so "look at Koridor 1 at 07:30" is a
-  link rather than a set of instructions. `?tl=1` opens playing the day,
-  `?tour=<route>` opens flying a line, and `?show=1` opens running the reel.
+- **Share any view.** The URL carries the time, camera, selection,
+  reachability and filters, so "look at Koridor 1 at 07:30" is a link rather
+  than a set of instructions, and `?tour=<route>` opens flying a line.
 - **Tap anywhere**, not just a dot. Open map answers with the stops within
   walking distance, their next departures, and how far you can get from that
   exact point. On a touch screen it is a press rather than a tap, so panning
   never throws the card over the map.
 - **First and last bus** on every stop card, with a warning when the last one
-  is close or already gone — and *Bus terakhir* puts the same fact on the whole
-  map at once, colouring every stop by how long is left. Run it forward from
-  nine in the evening and the network goes dark from the edges inward: 51 stops
-  finished at 20:00, 3,826 by 23:00.
+  is close or already gone.
 - **See the shape of the day** on the time scrubber, filled up to the moment
   being shown, and **colour the network by live frequency** instead of by
   service type.
 - **Streak the fleet.** *Jejak kendaraan* draws a comet behind every vehicle
   whose length is its speed, so a city-wide view shows at a glance where the
   network runs freely and where it crawls.
-- **Watch the real street.** Switch on *Kamera langsung* and 801 public CCTV
+- **Watch the real street.** Switch on *CCTV* in *Lapisan peta* and 798 public CCTV
   cameras appear on the network — 658 city cameras beside stops, and 143 on the
   toll roads the Royaltrans and Transjabodetabek services actually drive. Click one and it
   plays live; click the picture and it fills the map. The map beside it is a *schedule*, not a position feed, so the two
   will disagree — the card says so rather than implying the bus on screen is the
   bus in the camera. Live mode only, for the same reason.
 - **Search** routes by number or name, and stops by name.
-- **Filter** by service category: BRT corridors, Angkutan Umum Integrasi,
-  Mikrotrans, Transjabodetabek, Royaltrans, Rusun, Bus Wisata.
+- **Filter** in *Layanan* by mode and by service category: BRT corridors,
+  Angkutan Umum Integrasi, Mikrotrans, Transjabodetabek, Royaltrans, Rusun,
+  Bus Wisata, and each rail line.
+- **Choose how the city looks.** The *Tampilan peta* thumbnail in the map's
+  bottom-left corner switches between *Warna*, *Pudar* and *Mono* — full
+  colour, faded, or no colour at all so the fleet has it to itself.
 - **Accessible stops only** empties the map down to 39 of 7,488 drawn stops —
   every one a BRT corridor station. See below.
 
@@ -437,7 +436,7 @@ fetched only when the layer is switched on; `hls.js` is a dynamic import and
 code-splits accordingly, so a viewer who never opens a camera downloads neither.
 
 The layer is available **only in live mode**. A camera shows the street now, and
-the clock can be replaying a Tuesday in March at 1200x; there is no honest way to
+the clock can be replaying a Tuesday in March at 128x; there is no honest way to
 show both at once. Mini Tokyo 3D's camera plugin makes the same call, declaring
 `clockModes: ['realtime']`.
 
@@ -679,8 +678,8 @@ Code is MIT — see `LICENSE`. Bundled third-party components carry their own
 notices in `THIRD-PARTY-NOTICES.md`. The data is not the author's to license
 and stays under its own terms.
 
-The running map credits these in **Sumber data**, a panel opened from the
-control in its bottom-left corner.
+The running map credits these in **Sumber data**, a panel opened from the end
+of the credit line in its bottom-right corner, beside Mapbox's own.
 
 ### Data sources and their terms
 
@@ -690,6 +689,7 @@ control in its bottom-left corner.
 | KAI Commuter, MRT Jakarta, LRT Jakarta, LRT Jabodebek | Timetables | Published openly; read from unauthenticated public endpoints, no licence stated |
 | OpenStreetMap | Route geometry, station positions | **ODbL 1.0** — © OpenStreetMap contributors |
 | Transitland (Interline) | Pedestrian routing for the walk table | [transit.land/terms](https://www.transit.land/terms) — attribution required, and given |
+| Freesound — Yoyodaman234 | The EMU cabin sound under *Suara* | **CC0 1.0** — no credit required, given anyway; see `public/sounds/SOURCES.md` |
 | ITDP Indonesia & TfJ-FDTJ | Line codification and colours | Lampiran to Kepgub DKI Jakarta 31/2022 |
 | JakCCTV / Dishub DKI, BPJT, Bina Marga | Camera positions and streams | Public government sources; streams are embedded live, never recorded or restreamed |
 | Plus Jakarta Sans | The typeface | **SIL OFL 1.1** — `public/fonts/OFL.txt` |

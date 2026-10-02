@@ -123,7 +123,7 @@ export default class DetailPanel {
 
         me.mode = null;
         me._key = null;
-        me.el.classList.remove('open');
+        me.el.classList.remove('open', 'riding');
     }
 
     /** Shows a vehicle, updating in place as it moves along its route. */
@@ -139,6 +139,19 @@ export default class DetailPanel {
             me.el.scrollTop = 0;
         }
         me._updateVehicle(info, tracking);
+
+        /*
+           Riding: the card is the journey and nothing else.
+
+           While a vehicle is being followed, the bar at the bottom of the
+           screen already says which line, where it is headed and how to stop;
+           what it cannot show is where the vehicle is along its line. So the
+           card keeps the progress bar and the run of stops around the vehicle
+           — the one behind, the one it is at, the ones coming — and drops the
+           rest: status, destination, departure, stop count and fare are all
+           either in the bar already or not what anyone riding along is asking.
+        */
+        me.el.classList.toggle('riding', !!tracking);
     }
 
     // The parts of a bus card that hold still for the whole run.
@@ -258,6 +271,7 @@ export default class DetailPanel {
             me._buildStop(stop, service);
             me._key = key;
             me.mode = 'stop';
+            me.el.classList.remove('riding');
             me.el.classList.add('open');
             me.el.scrollTop = 0;
         }
@@ -275,6 +289,7 @@ export default class DetailPanel {
             key = `route:${route.id}`;
 
         me.mode = 'route';
+        me.el.classList.remove('riding');
         me.el.classList.add('open');
         if (me._key === key) {
             return;
@@ -345,6 +360,7 @@ export default class DetailPanel {
             key = `camera:${camera.id}:${notice ? 1 : 0}`;
 
         me.mode = 'camera';
+        me.el.classList.remove('riding');
         me.el.classList.add('open');
         if (me._key === key) {
             return;
@@ -429,6 +445,7 @@ export default class DetailPanel {
             key = `nearby:${nearby.point[0].toFixed(4)},${nearby.point[1].toFixed(4)}`;
 
         me.mode = 'nearby';
+        me.el.classList.remove('riding');
         me.el.classList.add('open');
         if (me._key === key) {
             return;
@@ -485,6 +502,7 @@ export default class DetailPanel {
             key = `reach:${reach.origin.id}:${reach.budget}:${reach.freeOnly}:${Math.floor(reach.time)}`;
 
         me.mode = 'reach';
+        me.el.classList.remove('riding');
         me.el.classList.add('open');
         if (me._key !== key) {
             me._key = key;

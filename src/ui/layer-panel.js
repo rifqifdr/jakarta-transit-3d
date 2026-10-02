@@ -1,22 +1,6 @@
 import configs from '../configs';
 import {icon} from '../kodefikasi';
-
-/**
- * Mapbox Standard's own themes. Three, not four — `custom` is in the schema but
- * needs a `theme-data` payload, which is a style-authoring feature rather than
- * something to put in front of a rider.
- *
- * This is a legibility control, not a performance one. `monochrome` was
- * measured as no help at all to a phone's frame times (JAKAR-60); what it does
- * is take the colour out of the city so six thousand vehicles have it to
- * themselves, which is the trade the README has described since the basemap
- * stopped being a private style.
- */
-const BASEMAP_THEMES = [
-    {id: 'default', label: 'Warna', hint: 'Peta Mapbox Standard apa adanya'},
-    {id: 'faded', label: 'Pudar', hint: 'Kota diredam, armada lebih menonjol'},
-    {id: 'monochrome', label: 'Mono', hint: 'Kota tanpa warna — armada paling menonjol'}
-];
+import {foldHead, setFolded} from './fold-head';
 
 /** A mode's glyph, for the group header. Same four the fleet is drawn with. */
 const MODE_GLYPH = {
@@ -26,48 +10,14 @@ const MODE_GLYPH = {
     light_rail: 'lrt'
 };
 
-/*
-   The map layers, as rows.
-
-   Each carries an icon because a column of identical checkboxes gives a reader
-   nothing to aim at — the eye lands on the icon and the label confirms it,
-   which is how both reference apps build this list. `CCTV` and `Halte
-   aksesibel` are named the way a rider would say them rather than the way the
-   layer is implemented.
-*/
-const LAYER_TOGGLES = [
-    {layer: 'routes', icon: 'jalur', label: 'Jalur rute', on: true},
-    {layer: 'stops', icon: 'halte', label: 'Halte', on: true},
-    {layer: 'buildings', icon: 'gedung', label: 'Gedung 3D', on: true},
-    {layer: 'accessible', icon: 'aksesibel', label: 'Halte aksesibel'},
-    {layer: 'headway', icon: 'frekuensi', label: 'Warnai per frekuensi'},
-    {layer: 'trails', icon: 'jejak', label: 'Jejak kendaraan'},
-    {layer: 'lastbus', icon: 'terakhir', label: 'Bus terakhir'}
-];
-
-const CAMERA_TOGGLE = {layer: 'cameras', icon: 'cctv', label: 'CCTV'};
-
-/*
-   Icon and label on the left, the switch on the right.
-
-   A native checkbox sat between the icon and the words and made every row
-   start with the same 18px square; moved to the trailing edge the switches
-   line up in one column and the row reads left to right as a thing and then
-   its state. The input is still there and still what the handler binds to —
-   it is visually hidden, not replaced, so the label, the keyboard and the
-   accessibility tree all keep working.
-*/
-function toggle({layer, icon: name, label, on, className = ''}) {
-    return `<label class="toggle ${className}">
-        ${icon(name, 'toggle-icon')}
-        <span class="toggle-label">${label}</span>
-        <input type="checkbox" data-layer="${layer}"${on ? ' checked' : ''}>
-        <span class="switch" aria-hidden="true"></span>
-    </label>`;
-}
-
 /**
- * Toggles for the service categories and the supporting map layers.
+ * Layanan: which services the map shows.
+ *
+ * Only that. The map's own layers — route lines, stops, buildings, cameras —
+ * were in this panel too, under the filters and the map style, and a panel
+ * holding three different kinds of thing read as a settings dump. They have a
+ * panel of their own now (`map-layers.js`), and the map style is a control in
+ * the map's corner (`map-style.js`), where Google Maps keeps it.
  *
  * Categories are how an operator segments its own network — BRT corridors,
  * feeder Mikrotrans, commuter Transjabodetabek — so they stay the thing you
@@ -81,14 +31,11 @@ function toggle({layer, icon: name, label, on, className = ''}) {
  */
 export default class LayerPanel {
 
-    constructor(fleet, {onCategoryToggle, onLayerToggle, onBasemapTheme, basemapTheme}) {
+    constructor(fleet, {onCategoryToggle}) {
         const me = this;
 
         me.fleet = fleet;
         me.onCategoryToggle = onCategoryToggle;
-        me.onLayerToggle = onLayerToggle;
-        me.onBasemapTheme = onBasemapTheme;
-        me.basemapTheme = basemapTheme || 'default';
         me._render();
     }
 
@@ -103,29 +50,11 @@ export default class LayerPanel {
         me._counts = counts;
         me._total = groups.reduce((total, group) => total + group.count, 0);
 
-        el.className = 'panel';
+        el.className = 'panel fold-panel';
         el.id = 'layers';
-        /*
-           The header is the panel's control, not its caption.
-
-           Folded on a phone it is the whole panel — a 50px bar — and it was
-           drawn as an 11px tracked-capital label like the section headings
-           inside, so the one thing that opens the filters read as a heading
-           rather than as something to press (JAKAR-65). It is a button now:
-           what it is, in sentence case at body size, and a summary of what it
-           is holding, so the folded bar still says whether a filter is on.
-           A <button>, because a clickable <div> was the only way into these
-           filters and no keyboard could reach it.
-        */
         el.innerHTML = `
-            <button class="layers-head js-fold" type="button" aria-expanded="true"
-                    aria-controls="layer-body">
-                ${icon('lapisan', 'layers-icon')}
-                <span class="layers-title">Layanan</span>
-                <span class="layers-summary js-summary"></span>
-                <span class="chevron" aria-hidden="true"></span>
-            </button>
-            <div class="layer-body" id="layer-body">
+            ${foldHead({id: 'layers', glyph: 'saring', title: 'Layanan'})}
+            <div class="fold-body" id="layers-body">
             ${groups.map(group => `
                 <div class="mode-group" data-mode="${group.id}">
                     <div class="mode-head js-mode">
@@ -142,20 +71,6 @@ export default class LayerPanel {
                     `).join('')}
                 </div>
             `).join('')}
-            <div class="layer-sep"></div>
-            <div class="panel-title">Tampilan peta</div>
-            <div class="sorts js-basemap">
-                ${BASEMAP_THEMES.map(t => `
-                    <button class="btn btn-sm js-theme${t.id === me.basemapTheme ? ' on' : ''}"
-                            type="button" data-theme="${t.id}" title="${t.hint}">${t.label}</button>
-                `).join('')}
-            </div>
-            <div class="layer-sep"></div>
-            ${LAYER_TOGGLES.map(t => toggle(t)).join('')}
-            <div class="headway-legend"></div>
-            <div class="lastbus-legend"></div>
-            ${toggle(CAMERA_TOGGLE)}
-            <div class="cam-hint" hidden>Hanya tersedia dalam mode LIVE</div>
             </div>
         `;
         document.body.appendChild(el);
@@ -199,56 +114,19 @@ export default class LayerPanel {
                 me._summarise();
             });
         }
-        for (const box of el.querySelectorAll('input[data-layer]')) {
-            box.addEventListener('change', () => {
-                me.onLayerToggle(box.dataset.layer, box.checked);
-            });
-        }
-
-        el.querySelector('.js-basemap').addEventListener('click', event => {
-            const button = event.target.closest('.js-theme');
-
-            if (!button || button.classList.contains('on')) {
-                return;
-            }
-            for (const other of el.querySelectorAll('.js-theme')) {
-                other.classList.toggle('on', other === button);
-            }
-            me.basemapTheme = button.dataset.theme;
-            me.onBasemapTheme?.(me.basemapTheme);
-        });
-    }
-
-    /** Swaps the panel between explaining categories and explaining frequency. */
-    setMode(mode, bands) {
-        const me = this,
-            legend = me.el.querySelector('.headway-legend'),
-            showing = mode === 'headway';
-
-        me.el.classList.toggle('by-headway', showing);
-        legend.innerHTML = showing ? bands.map(b => `
-            <div class="cat static">
-                <span class="dot" style="background:${b.color}"></span>
-                <span class="name">${b.label}</span>
-            </div>
-        `).join('') : '';
-        return me;
     }
 
     /**
-     * The last-departure legend. Same shape as `setMode`'s, deliberately: two
-     * colour ramps in one panel that explained themselves differently would
-     * read as two unrelated features.
+     * While the lines are coloured by frequency, the category swatches no
+     * longer describe them, so they step back.
+     *
+     * The whole list used to be hidden instead, which was fine while the
+     * frequency legend sat in this panel to take its place. With the legend
+     * gone to Lapisan peta, hiding the filters would leave Layanan empty — and
+     * the filters still filter, whatever colour the lines are.
      */
-    setLastBus(on, bands) {
-        const legend = this.el.querySelector('.lastbus-legend');
-
-        legend.innerHTML = on ? bands.map(b => `
-            <div class="cat static">
-                <span class="dot" style="background:${b.color}"></span>
-                <span class="name">${b.label}</span>
-            </div>
-        `).join('') : '';
+    setColouring(byHeadway) {
+        this.el.classList.toggle('by-headway', byHeadway);
         return this;
     }
 
@@ -263,44 +141,9 @@ export default class LayerPanel {
         return this;
     }
 
-    /**
-     * Whether the live camera layer can be switched on at all.
-     *
-     * A camera is showing the street *now*; the clock can be replaying a
-     * Tuesday in March at 1200x. There is no honest way to put those together,
-     * so outside live mode the toggle is disabled rather than left to produce
-     * a view that quietly means nothing. Mini Tokyo 3D's camera plugin makes
-     * the same call — it declares `clockModes: ['realtime']` and switches
-     * itself off otherwise.
-     */
-    setCamerasAvailable(available) {
-        const me = this,
-            box = me.el.querySelector('input[data-layer="cameras"]'),
-            hint = me.el.querySelector('.cam-hint');
-
-        if (!box) {
-            return me;
-        }
-        box.disabled = !available;
-        box.closest('.toggle').classList.toggle('disabled', !available);
-        hint.hidden = available;
-        return me;
-    }
-
-    /** Reflects a layer toggle in the UI, without firing callbacks. */
-    setLayerUI(layer, on) {
-        const box = this.el.querySelector(`input[data-layer="${layer}"]`);
-
-        if (box) {
-            box.checked = on;
-        }
-        return this;
-    }
-
-    /** Folds the panel down to its title bar, or back open. */
-    toggle(folded = !this.el.classList.contains('folded')) {
-        this.el.classList.toggle('folded', folded);
-        this.el.querySelector('.js-fold').setAttribute('aria-expanded', String(!folded));
+    /** Folds the panel down to its header bar, or back open. */
+    toggle(folded) {
+        setFolded(this.el, folded);
         return this;
     }
 

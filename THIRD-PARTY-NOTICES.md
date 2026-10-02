@@ -52,6 +52,17 @@ Designed by Gumpita Rahayu for Tokotype, commissioned for the Jakarta
 Provincial Government's *+Jakarta City of Collaboration* programme — which is
 the reason it is the typeface here rather than a default.
 
+### "train interior ambience 1a" — CC0 1.0
+
+By Yoyodaman234 on Freesound.
+<https://freesound.org/people/Yoyodaman234/sounds/341208/>
+
+Served at `public/sounds/emu-interior.mp3` (the site's 128 kbps preview of the
+original recording) as the cabin under *Suara*. CC0 is a public-domain
+dedication and asks for nothing; it is listed so the register is complete, and
+credited in the map's *Sumber data*. Why it is a generic electric train rather
+than a KRL recording is in `public/sounds/SOURCES.md`.
+
 ---
 
 ## Build-time only, not redistributed

@@ -1,22 +1,20 @@
 import configs from '../configs';
-import {routeColor} from '../kodefikasi';
+import {icon, routeColor} from '../kodefikasi';
 
 /*
-   Three framings, as a segmented control rather than a toggle.
+   Two framings, as a segmented control.
 
-   It was one button flipping between two states, which stops working the
-   moment there are three — and three loose outline buttons would read as three
-   unrelated actions. `.sorts` is the app's segmented control: one inset track
-   with the current choice filled inside it, the same shape the reachability
-   budgets and the basemap themes use.
+   There were three, and the middle one — `Peta`, a map at 65 degrees that
+   happened to be following something — went: it was the bird's-eye view this
+   mode kept being mistaken for, and following a vehicle is a navigation task.
+   Two choices could be one toggle button, but a toggle labelled with one state
+   says nothing about the other; `.sorts`, the app's segmented control, shows
+   both and fills the one in use, the same shape the reach budgets use.
 
-   **Navigasi is the default.** Following a vehicle is a navigation task, and
-   the bird's-eye framing was the thing this view kept being mistaken for; the
-   old `chase` framing stays a click away for anyone who wants the map back.
+   **Navigasi is the default.**
 */
 const CAMERAS = [
         {id: 'nav', label: 'Navigasi', hint: 'Pandangan mengemudi dari belakang kendaraan'},
-        {id: 'chase', label: 'Peta', hint: 'Peta yang mengikuti kendaraan'},
         {id: 'onboard', label: 'Dari dalam', hint: 'Dari atap kendaraan'}
     ],
     DEFAULT_CAMERA = 'nav';
@@ -30,10 +28,11 @@ export {CAMERAS, DEFAULT_CAMERA};
  * vehicle — but every control for it lived in the detail card at the side, so
  * driving along meant reading one corner and reaching to another. This is the
  * same shape as the ride HUD, minus the things that only a planned journey has:
- * there is no leg to skip and no itinerary to leave, so it carries the three
- * that do apply — where the camera sits, how fast time runs, and stopping.
+ * there is no leg to skip and no itinerary to leave, so it carries the four
+ * that do apply — where the camera sits, how fast time runs, whether you hear
+ * the ride, and stopping.
  *
- * Speed offers `configs.speeds`, the same eleven the clock panel offers, rather
+ * Speed offers `configs.speeds`, the same eight the clock panel offers, rather
  * than the ride HUD's four. Two controls for one value that disagree about what
  * values exist is worse than either.
  *
@@ -43,13 +42,15 @@ export {CAMERAS, DEFAULT_CAMERA};
  */
 export default class FollowHUD {
 
-    constructor({clock, onStop, onCamera, onSpeed}) {
+    constructor({clock, onStop, onCamera, onSpeed, onSound}) {
         const me = this;
 
         me.clock = clock;
         me.onStop = onStop;
         me.onCamera = onCamera;
         me.onSpeed = onSpeed;
+        me.onSound = onSound;
+        me.sound = false;
         me.camera = DEFAULT_CAMERA;
         me.visible = false;
         me._key = null;
@@ -84,6 +85,12 @@ export default class FollowHUD {
                            max="${configs.speeds.length - 1}" step="1" value="0">
                     <output>1&times;</output>
                 </div>
+                <button class="btn fh-sound js-fh-sound" type="button" aria-pressed="false"
+                        title="Suara di dalam kendaraan dan pengumuman stasiun">
+                    ${icon('senyap', 'fh-sound-icon fh-sound-off')}
+                    ${icon('suara', 'fh-sound-icon fh-sound-on')}
+                    <span>Suara</span>
+                </button>
                 <button class="btn btn-danger js-fh-stop" type="button">Berhenti</button>
             </div>
         `;
@@ -101,6 +108,11 @@ export default class FollowHUD {
 
             if (event.target.closest('.js-fh-stop')) {
                 me.onStop();
+            } else if (event.target.closest('.js-fh-sound')) {
+                // Inside the tap, which is the only place a browser lets
+                // sound start.
+                me.setSound(!me.sound);
+                me.onSound?.(me.sound);
             } else if (camera) {
                 me.setCamera(camera.dataset.camera);
                 me.onCamera(me.camera);
@@ -113,6 +125,17 @@ export default class FollowHUD {
             me._speedOut.innerHTML = `${speed}&times;`;
             me.onSpeed(speed);
         });
+    }
+
+    /** Reflects whether sound is on, without firing the callback. */
+    setSound(on) {
+        const me = this,
+            button = me.el.querySelector('.js-fh-sound');
+
+        me.sound = on;
+        button.setAttribute('aria-pressed', String(on));
+        button.classList.toggle('on', on);
+        return me;
     }
 
     setCamera(mode) {
@@ -173,6 +196,9 @@ export default class FollowHUD {
         me.el.classList.remove('open');
         me._key = null;
         me.setCamera(DEFAULT_CAMERA);
+        // Sound ends with the ride: following another vehicle later should not
+        // start talking without being asked.
+        me.setSound(false);
         return true;
     }
 

@@ -10,6 +10,7 @@
  * chat, and anything malformed is ignored rather than fatal: a half-typed URL
  * should open the map, not a blank screen.
  */
+import configs from './configs';
 
 const WRITE_INTERVAL_MS = 500;
 
@@ -71,12 +72,11 @@ export function readState() {
     state.access = params.get('access') === '1';
     state.camera = params.get('cam');
     state.hidden = (params.get('hide') || '').split(',').filter(Boolean);
-    // Three links that *do* something on arrival rather than describing a
-    // view: play the day, fly a line, run the reel. A link nobody has to
-    // operate after opening is worth more than one that lands on a still.
-    state.timelapse = params.get('tl') === '1';
+    // A link that *does* something on arrival rather than describing a view:
+    // fly a line. `tl` (play the day) and `show` (the showreel) did too, until
+    // both features were removed; a link carrying either now just opens the
+    // map, which is what an unknown parameter has always done.
     state.tour = params.get('tour');
-    state.showreel = params.get('show') === '1';
     return state;
 }
 
@@ -150,12 +150,8 @@ export function serialise(app) {
     if (map.__accessibleOnly) {
         params.set('access', '1');
     }
-    // The reel is a mode somebody is in, so it belongs in the link; a
-    // timelapse and a tour are one-shots that would be over before the link
-    // was pasted, so they are accepted on the way in and never written out.
-    if (app.showreel) {
-        params.set('show', '1');
-    }
+    // A tour is a one-shot that would be over before the link was pasted, so
+    // it is accepted on the way in and never written out.
     return params.toString();
 }
 
@@ -188,7 +184,11 @@ export function applyState(app, state, handlers) {
     if (state.time !== null) {
         clock.setTimeOffset(state.time);
         if (state.speed) {
-            clock.setSpeed(state.speed);
+            // Capped at the fastest speed the controls offer. Links made when
+            // the slider went to 1200x still carry it, and a clock running
+            // past anything the slider can show is the disagreement
+            // `syncSpeed` exists to prevent.
+            clock.setSpeed(Math.min(state.speed, configs.speeds[configs.speeds.length - 1]));
             // The panels are built before this runs, so the clock control has
             // already drawn its slider at 1x. Without this a reloaded 128x link
             // showed a 1x slider over a clock running at 128x, and only
@@ -246,22 +246,9 @@ export function applyState(app, state, handlers) {
         handlers.onCamera?.(state.camera, {framed: !!state.center});
     }
 
-    /*
-       The three that act, last of all and in this order, because each takes
-       the camera and the later one should win if a link somehow carries two.
-
-       A tour and a timelapse compose — flying a corridor while the day runs
-       over it is the best thing this map does — so both may fire. The reel
-       sets its own time and its own line, so it comes last and overrides.
-    */
-    if (state.timelapse) {
-        handlers.onTimelapse?.();
-    }
+    // Last of all, because it takes the camera.
     if (state.tour && network.routes.has(state.tour)) {
         handlers.onTour?.(network.routes.get(state.tour));
-    }
-    if (state.showreel) {
-        handlers.onShowreel?.();
     }
 }
 

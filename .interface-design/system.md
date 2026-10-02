@@ -1,6 +1,7 @@
 # Jakarta Transit 3D — interface system
 
-Panels over a dark 3D map. Vanilla JS, hand-written CSS in `src/css/style.css`.
+Paper panels over a 3D map whose light follows the clock. Vanilla JS,
+hand-written CSS in `src/css/style.css`.
 No framework, no utility classes.
 
 ## Direction and feel
@@ -39,7 +40,7 @@ second palette invented for the UI.
 | `--brand-lift` | `#0d5eaf` | The readable tint — text, edges, focus rings. On paper the enamel blue already is it. |
 | `--live` | `#0f9d57` | The clock is on real time. Nothing else. |
 | `--here` | `#b8860b` | You are here, now. The ink-dark collar. |
-| `--here-fill` | `#f5c518` | The platform-edge yellow itself, for the tick. |
+| `--here-fill` | `#f5c518` | The platform-edge yellow itself: the tick on the current stop, and on a line tour the stretch to the next stop and the "here" mark. |
 | `--danger` | `#c92a2a` | Hover-only warning on `.btn-danger`. |
 
 Ink is four levels: `--text`, `--text-2`, `--text-3`, `--text-4`. Two is flat.
@@ -78,9 +79,11 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
 - `.btn-lg` — 48px h · 0 20px pad · 12px radius · 15px. Primary actions.
 - `.btn-sm` — 36px h · 0 12px pad · 8px radius · 13px, hit area extended
 - `.sorts` — the segmented control: one inset `--sink` track, 4px padding, the
-  choice filled inside it. Reach budget, follow framings, map theme. It lost
-  its rules once with the journey planner while all three still used it, and
-  nothing failed — see `unstyled` in `scratchpad/mobile-audit.mjs`.
+  choice filled inside it. The reach budget and the follow framings (*Navigasi*
+  / *Dari dalam* — two, and still a segmented control, because a toggle names
+  only one state). It lost its rules once with the journey planner while three
+  controls still used it, and nothing failed — see `unstyled` in
+  `scratchpad/mobile-audit.mjs`.
 - `.field` — 48px h, `--sink` fill, `--brand-lift` border + 3px tint ring on
   focus-within
 - `.result` — 52px min, 15px/500. The most-tapped row in the app.
@@ -105,14 +108,39 @@ progress bar, a ride segment, a scrollbar — are `--track`, `--track-done` and
   scrolls, then `.detail-actions`, which holds the filled action and does not.
   The whole card used to scroll as one, and on a phone that put the action a
   card exists for below the fold of every card long enough to matter.
-- `.layers-head` — Layanan's header is its control, a `<button>` with
-  `aria-expanded`: glyph, *Layanan* at `--text-md`/600, a summary (*249 rute*,
-  or *151 dari 249 rute* when a filter is on) at the trailing edge, chevron.
-  It spans the panel's padding, so folded it is the whole 48px bar.
-- `.credits-scrim` / `.credits` — the data-source panel, opened from the
-  `Sumber data` control in the map's bottom-left corner. Scrim closes, panel
-  does not; Escape closes; the close control takes focus on open.
-- `.sorts` — a segmented control: one inset track, the choice filled inside it
+- `.fold-head` (`src/ui/fold-head.js`) — the header of both folding panels,
+  Layanan and *Lapisan peta*: a `<button>` with `aria-expanded` — glyph, name
+  at `--text-md`/600, a summary at the trailing edge (*249 rute*, *151 dari
+  249 rute* when a filter is on, *3 aktif*), chevron. It spans the panel's
+  padding, so folded it is the whole 48px bar. On a phone the two folded bars
+  sit side by side and stack the summary under the name.
+- `.map-style` — *Tampilan peta*, a Mapbox control in the bottom-left corner:
+  a 64px thumbnail of the map as it is, labelled with its style, opening
+  Warna / Pudar / Mono beside it, each a `.map-swatch` drawn in CSS (a sea, a
+  park, two roads) in that style's colours. Closes on a choice, a press
+  elsewhere or Escape, and gives focus back to the thumbnail.
+- `.credit-strip` — one line in the bottom-right corner: Mapbox's attribution
+  control, wrapped rather than rewritten, then `Sumber data` in weight 600.
+  Pinned to the bottom strip on a phone, where Mapbox folds its part behind an
+  `(i)`.
+- `.credits-scrim` / `.credits` — the data-source panel, opened from
+  `Sumber data`. Scrim closes, panel does not; Escape closes; the close control
+  takes focus on open.
+- `#detail.riding` — the vehicle card while it is being followed: only the
+  progress bar and the run of stops (one behind, the current with its yellow
+  tick, four ahead, with times). Every other kind of card clears the class,
+  because `#detail` is one element reused for all of them.
+- **A line tour as progress** — the toured line grey behind the camera,
+  `--here-fill` to the next stop, the line's own colour ahead; stops grey once
+  passed, the next one larger in yellow. `.tour-here` is the mark at the
+  camera's point: `--here-fill` in a `--here` collar, pulsing, still under
+  reduced motion.
+- `.fh-sound` — *Suara* in the follow HUD: the speaker struck through until on,
+  then filled like any toggle that is on. Icon-only on a phone, its name kept
+  for a screen reader.
+- `.btn-danger:hover` — `--danger` on a faint red wash, 4.8:1. It was the dark
+  theme's pale pink on white (~1.6:1), and a phone keeps hover where the finger
+  last was — which is where the tour's *Berhenti* appears.
 - `.field` in `#search` — one search over stops and lines; the row's mark
   says which kind it is, so there are no tabs to choose first
 

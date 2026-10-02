@@ -14,9 +14,14 @@ themes, flood history, population, heritage. There the transport layer is
 
 **The rule for deciding where a piece of work belongs: the subject decides.**
 If the subject is the network, it is here. If the subject is the city, it is
-over there. That is why colouring stops by ground elevation (JAKAR-77) stayed
-and a population choropleth did not — both use city data, but only one is about
-the network.
+over there. That is why a population choropleth went over there — and why
+colouring stops by ground elevation (JAKAR-77) followed it on 2026-10-03. It
+was built here and worked (median 2 m against the station nameboards), and the
+owner judged it to be about the ground rather than the network. The work is
+parked on the branch `jakar-77-elevation` for the thematic map to take
+(JAKARTATHE-12): the
+Open-Meteo adapter, the harvested snapshot, the nameboard check and a palette
+validated for both day and night maps.
 
 **One dependency crosses, in one direction.** JAKAR-78 (how many people this
 network reaches) consumes a population artifact the thematic project publishes.
@@ -159,11 +164,15 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `src/fleet.js` | Expands headways into runs, positions them each frame |
 | `src/layers/vehicle-layer.js` | The fleet, as one instanced three.js mesh per mode |
 | `src/layers/vehicle-geometry.js` | The Kapsul body, built per mode inside one base box |
-| `src/tour.js` | The cinematic flight along a line: pacing, bearing, captions |
+| `src/tour.js` | The cinematic flight along a line: pacing, bearing, captions, the "here" mark, progress for the map to draw |
+| `src/ride-sound.js` | *Suara* while following: the cabin loop and the station announcer |
+| `public/sounds/` | The CC0 cabin recording, with `SOURCES.md` saying where it came from and why nothing else is used |
 | `src/sky.js` | Where the sun is, and the faint tint over the canvas that follows it |
 | `src/kodefikasi.js` | Line codes, line colours and the mode glyph sprite (JAKAR-50) |
 | `src/cameras.js` | Live CCTV: artifact loading, the map pin, and the HLS player |
-| `src/ui/` | Panels: clock, layers, search, detail, reach, follow, credits |
+| `src/ui/` | Panels: clock, Layanan (`layer-panel.js`), Lapisan peta (`map-layers.js`), search, detail, reach, follow, credits |
+| `src/ui/fold-head.js` | The one header both folding panels use: glyph, name, summary, chevron |
+| `src/ui/map-style.js` | *Tampilan peta*: the bottom-left thumbnail and its three styles |
 | `#left-rail` | Search and detail card in one column (JAKAR-25) |
 | `src/data/artifact-loader.js` | Manifest-first loading, mode gating, IndexedDB cache |
 | `src/data/decode.worker.js` | Binary decode, off the main thread |
@@ -319,8 +328,10 @@ capitals.
   of the phone layout, and a landscape phone is 844px wide, so it keeps the
   desktop sizes. `(pointer: coarse)` is the likely answer once that layout is
   measured.
-**The basemap theme is the rider's to choose** — Warna / Pudar / Mono in
-Layanan, mapping to Mapbox Standard's `default` / `faded` / `monochrome`. It is
+**The basemap theme is the rider's to choose** — Warna / Pudar / Mono, from
+the *Tampilan peta* thumbnail in the map's bottom-left corner (it was a row in
+Layanan until 2026-10-03), mapping to Mapbox Standard's `default` / `faded` /
+`monochrome`. It is
 what the README has meant since the basemap stopped being a private style: the
 fleet competes with a full-colour city, and monochrome takes the colour out so
 six thousand vehicles have it to themselves.
@@ -404,55 +415,30 @@ still holds each mode's real size and a service acceleration; a KRL set is
   prefix written each frame is uploaded (`addUpdateRange`), so the waste is
   memory, not bandwidth.
 
-## Playback that performs: timelapse, tours and the showreel
+## Playback: the line tour, and what was taken out
 
-The crowd is gone (it was JAKAR-79, and `src/walkers.js` with it). What
-replaced it answers the same complaint from the other end — the map was
-accurate and static, and a map of six thousand moving vehicles ought to be
-worth watching without being operated.
+The crowd went first (JAKAR-79, and `src/walkers.js` with it). On 2026-10-03
+the timelapse (*Tonton 24 jam*), the showreel (*Putar otomatis*) and *Bus
+terakhir* followed, by the owner's decision — the map had grown more things to
+press than things to look at — and the clock's top speed came down from 1200x
+to **128x**, because only the timelapse ever needed more. Their code is in
+`d8f78ab` if any of them comes back. What stays is *Jelajahi jalur ini*.
 
-**Three things, and they compose.** *Tonton 24 jam* runs the day; *Jelajahi
-jalur ini* flies a line; *Putar otomatis* does the second over and over. All
-three leave the clock and the fleet exactly where they were, because everything
-downstream already follows the clock.
+Two things outlived them:
 
-### The timelapse is paced by the fleet, not by a constant speed
-
-**A constant speed is what makes a day-in-a-minute boring.** The first build
-started at 00:00 and ran at a flat 1440x: twelve of its sixty seconds were a
-dark and very nearly empty city, and ten more crossed the middle of the
-afternoon where nothing changes. It starts at **04:00** now and is paced by
-`fleet.profile` — the same 144-bucket curve already drawn behind the scrubber
-decides how much of the minute each part of the day gets.
-
-- **The clock is driven by `setTimeOffset` per frame, not by a speed.** A speed
-  is one number and this needs a curve. There are no clock listeners, so the
-  per-frame write costs nothing.
-- **Weight is cubed, and that is not a tuning whim.** Jakarta's profile is
-  broad rather than peaked — midday sits at about three quarters of the evening
-  maximum — so a proportional weight gave the peaks 0.317 hours a second
-  against midday's 0.33, a difference nobody can see. At `DWELL_GAMMA` 3 the
-  measured sweep is **1.02 h/s through the small hours against 0.30 h/s at the
-  evening peak**: night passes 3.4x faster than rush hour.
-- **`DWELL_FLOOR` is what stops the quiet hours being skipped outright.** At
-  zero weight they would take no time at all and the sweep would jump, which
-  loses the thing a timelapse is for — watching the city fill up.
-- **It re-shapes itself when a filter hides half the network**, because it is
-  built from the same profile the scrubber draws. Hiding Mikrotrans really
-  should change which part of the day is worth dwelling on.
-- **The speed readout was lying and now is not.** A timelapse drove the clock
-  at 1440x while the panel's `output` went on saying `1x` — the one number
-  whose whole job is to say how fast time is moving. It is differenced off the
-  curve four times a second, so it visibly slows through the peaks, which is
-  also the clearest evidence the pacing does anything.
-- **The profile fills up to now, with a playhead.** Two fills of one traced
-  path, clipped — so the boundary is exact — redrawn only when the 10-minute
-  bucket changes, which is at most 144 redraws over a whole sweep instead of
-  one per frame. It is what turns *Armada beroperasi 6.088* into a visible
-  thing rising and falling.
-- That canvas was still painting itself `rgba(53, 167, 255, …)` — the stock
-  blue the whole interface was repainted away from in JAKAR-64, surviving in a
-  canvas where no stylesheet sweep would ever have found it.
+- **The day profile behind the scrubber**, filled up to now with a playhead.
+  It was built for the timelapse and is a scrubbing aid in its own right — two
+  fills of one traced path, redrawn only when the 10-minute bucket changes,
+  and painted from the `--brand` token (it was still the stock blue the
+  interface had been repainted away from, in a canvas no stylesheet sweep
+  finds).
+- **What *Bus terakhir* measured, which is a fact about the network: it halves
+  between 22:00 and 23:00.** Of 7,633 drawn stops, 410 had seen their last
+  departure by 22:00 and 3,826 by 23:00; the median last departure is 23:00,
+  and 1,386 stops have one past midnight — the feed's `00:00-23:59`
+  declarations showing through, not a bug. If a view like it returns:
+  `STOP_PAINT` restore on exit, the `applyStopTheme` guard (trap 4), and a
+  throttle on the real clock (trap 3).
 
 ### The tour flies a trip, and the trip knows its own shape
 
@@ -472,88 +458,61 @@ decides how much of the minute each part of the day gets.
   being cut corner to corner. Same for the bearing tangent, which looks a fixed
   400 m ahead rather than a fixed number of waypoints.
 - **`network.cum` is kilometres, not metres.** It is compared directly against
-  `trip.offsets`, which the model carries in kilometres. Cost one bug here
-  (a showreel pool that filtered on `cum / 1000 >= 6` and came back empty).
-- **The longest pattern, for a line preview.** A route's patterns include short
-  workings, and a tour of Cikarang that stops at Bekasi is a tour of the wrong
-  thing.
-- **A cancel and a completion mean opposite things**, which is why `Tour`
-  carries both `onDone` and `onCancel`. To a showreel one is the cue for the
-  next line and the other is the user taking the map back. `onCancel` is taken
-  and cleared *before* the listeners come off, because it tears down a reel
-  that calls straight back into `stop()`.
+  `trip.offsets`, which the model carries in kilometres. Cost one bug here (a
+  filter on `cum / 1000 >= 6` that came back empty).
+- **Longest by the journey, not by the track under it.** `longestTrip` measured
+  the *shape*, and patterns share shapes: on the Bogor line the winner was a
+  Manggarai → Bogor working, 17 stops, laid on the whole Jakarta Kota → Bogor
+  track, so the tour flew 9.7 km past nothing that pattern serves. It ranks by
+  the span between first and last stop now (more stops break a tie), and the
+  tour flies **from the first stop to the last** rather than the shape end to
+  end. The line card uses the same pattern, so it says 24 stops when the tour
+  shows 24 — it said 17.
+- **`onDone` and `onEnd` mean different things.** `onDone` fires only when the
+  tour runs to the end; `onEnd` fires however it stops — run out, *Berhenti*,
+  or a hand on the map — and is what puts the map back. `onProgress` reports,
+  each frame, how far along the path the camera is and where the next stop is,
+  as fractions of the path.
 - **The button is on both cards.** It was only on the vehicle card, where you
   have to select a moving bus to fly its corridor; the card where somebody is
   actually looking at a line is the *Jalur* preview, and it knows the route id
   directly.
 
-### The showreel
+### The tour draws its progress
 
-`?show=1`, or *Putar otomatis*. Previews a line, flies it, picks another, at
-the evening peak where there is most to watch. **Ending it needs no code**: a
-tour already cancels on any gesture and only calls `onDone` when it runs to the
-end, so the same drag that takes the camera back breaks the chain.
+The line used to be one flat highlight from the first frame to the last;
+nothing said how far along it the camera was. It is drawn the way a navigation
+view draws a route now (2026-10-03):
 
-- **Every line before any line twice.** A plain random pick repeats about a
-  third of the time, and a reel that shows the same corridor twice running
-  looks broken rather than random.
-- **Filtered to 6–32 km**, so the reel is not stranded on one line for ninety
-  seconds or over before it registers. 187 routes of 249 qualify.
-- **It waits 1.5 s after the preview's `fitBounds`**, or the tour's first
-  `jumpTo` fights a flight still easing in and the opening shot stutters.
-- **Cameras are deliberately not in it.** They are gated to live mode and the
-  reel replays the peak; putting them in would hand the frame loop's live gate
-  exactly the state it exists to tear down (trap 12).
+| | |
+| --- | --- |
+| Behind the camera | grey |
+| From the camera to the next stop | `--here-fill` yellow — the one colour this interface keeps for "here, now" |
+| Ahead | the line's own colour |
+| Stops | grey once passed, the next one larger and yellow, the rest white in the line's colour |
 
-### Can I still get home?
-
-*Bus terakhir* colours every stop by how long is left until its last
-departure — green over three hours, then yellow, orange, red under thirty
-minutes, and grey once it has gone. Run forward from about nine in the evening
-it shows the network **going dark from the edges inward**, which is a spatial
-fact about Jakarta that reading one stop card at a time cannot convey. Measured
-over the drawn stops:
-
-| | 20:00 | 21:00 | 22:00 | 23:00 |
-| --- | --- | --- | --- | --- |
-| over 3 h left | 3,807 | 1,386 | 406 | 146 |
-| under 30 min | 17 | 14 | 1,753 | 1,347 |
-| already gone | 51 | 74 | 410 | **3,826** |
-
-**The network halves between 22:00 and 23:00.** 7,607 of 7,633 drawn stops
-carry a last departure; the earliest is 08:12 (a stop with only a morning
-service), the median 23:00, the latest 31:35 — and 1,386 stops have a last
-departure past midnight, which is the `00:00-23:59` declaration in the feed
-showing through rather than a bug.
-
-- **`serviceSpan` had this the whole time.** It has driven the stop card's
-  first/last since that card was written; nothing had ever put it on the map.
-- **The last value rides on the feature, and only the reference time changes.**
-  That is what lets a repaint be one `setPaintProperty` rather than 7,600
-  feature-state writes or a `setData` of the whole collection.
-- **Throttled on the real clock, not the simulated one** (trap 3). At 1200x a
-  simulated-time throttle fires every frame; this is twice a second.
-- **One scalar decides the service day, not an expression.** GTFS states a bus
-  leaving at 00:44 tomorrow as 24:44, so a stop's last departure can be past
-  86,400 while the clock has wrapped to a small number. Anything before 03:00
-  is read as the previous service day — one JS decision, no branching inside a
-  Mapbox expression.
-- **`applyStopTheme` has to know about it**, exactly as it already knows about
-  `__accessibleOnly`. The theme owns the stop palette and re-applies it on
-  every light-preset change, so without the guard the colours revert at the
-  next hour boundary — which during a timelapse is every couple of seconds.
-  Trap 4's shape, in a new place.
-- **The dot has to become the mark.** The first build kept the resting stop
-  style, and at the city zoom where the emptying is legible at all a stop is
-  1.6 px with a 1 px ring: two screenshots an hour apart were almost
-  indistinguishable. It now drops to z9, drops the ring, and draws every stop
-  at one size — the question is "can I get home from here", which a halte and
-  a stasiun answer alike — with the dead ones dimmed to 45% as well as greyed,
-  because at that zoom the *dimming* is what reads as emptying.
-- **`STOP_PAINT` is named once** because two things restore it: `applyStopTheme`
-  on every light change, and this view when it is switched off. A restore that
-  only puts back the properties somebody remembered is how a layer ends up
-  permanently three pixels bigger than it was.
+- **One `line-gradient`, stepped on `line-progress`, rewritten per frame** —
+  a paint property, like Navigasi's trimmed ribbon, so the boundary moves
+  without the source round-tripping through the worker. Skipped when nothing
+  visible moved; the stops repaint only when one is passed.
+- **"Here" is a mark the tour places with `map.project`, not the middle of the
+  screen.** The camera flies the path itself, so the point reached is the
+  camera's centre — but a line preview frames its route with padding, and that
+  padding persists: measured, the camera's centre sat at x=840 of a 1440px
+  window and a mark at the screen's middle stood 120px off the line.
+- **The padding is cleared when a tour starts and not put back**, because
+  restoring it after a drag would shift the map sideways under the hand that
+  just took it back.
+- **Everything else steps back, captured and restored**: the other lines to 5%,
+  the ordinary stops and the whole fleet hidden, and the left column too
+  (`body.touring`) — on a phone the line card was a sheet over 60% of the
+  screen with the flight running behind it. The capture is taken from whatever
+  was showing, a line preview's own dimming included, so the restore puts back
+  that and not a default.
+- **The tour ends where it started.** Run to the end, it lands back on the line
+  preview with its card: the frame loop reasserts the preview card while a line
+  is previewed, so the tour's own "close the card" has always been undone, and
+  landing on the preview is the right outcome anyway.
 
 ### Reachability arrives instead of appearing
 
@@ -581,12 +540,13 @@ jumps down the rail lines, which is the network working rather than a blob.
   the animation still looks like it works while the radius silently never
   applies.
 
-### Three links that do something on arrival
+### One link that does something on arrival
 
-`?tl=1` plays the day, `?tour=<routeId>` flies a line, `?show=1` runs the reel.
-**Only `show` is serialised back out** — it is a mode somebody is in, where a
-timelapse and a tour are one-shots that would be over before the link was
-pasted.
+`?tour=<routeId>` previews a line and flies it. It is never written back out —
+a tour is a one-shot that would be over before the link was pasted. `?tl=1` and
+`?show=1` from older links are ignored, which is what an unknown parameter has
+always done, and an `?s=` above 128 is capped to it, so the slider and the
+clock never disagree about how fast time is running.
 
 ### Streaks, and why they carry speed
 
@@ -792,6 +752,29 @@ column means. On the M4, vsync on, 120 Hz:
 | as shipped | 90 fps | 90 | 74 | 89 | 86 | 82 |
 | Gedung 3D off | 102 | 99 | 83 | 105 | 102 | 97 |
 
+And on the phone that matters more, a Galaxy S25 against a 60 Hz budget
+(2026-10-02):
+
+| | pan | zoom | rotate | flyTo | tour | Navigasi (16x) |
+| --- | --- | --- | --- | --- | --- | --- |
+| as shipped | 60 fps | 54 | 55 | 45 | **39** | **38** |
+| Gedung 3D off | 60 | 58 | 51 | 45 | 53 | 40 |
+| frames over 50 ms | 0 | 1 | 0-2 | 1-3 | 5-13 | 9-12 |
+
+- **The gestures hold; the automatic cameras do not.** Pan is a flat 60 and
+  zoom and rotate lose about a refresh in ten. The tour and Navigasi lose more
+  than a third — the two features that move the camera *for* you are the two
+  that stutter.
+- **Gedung 3D off fixes the tour and nothing else.** 39 to 53 fps on the tour,
+  no change on Navigasi or a search flight. Those two pay for map data, not
+  buildings: Navigasi loaded ~150 tiles in four seconds at pitch 78, and four
+  flights 270.
+- **It is rendering, not script.** The long animation frames on the phone
+  carry almost no blocking time, so the cost is in drawing — the basemap
+  again, as every static measurement said. The obvious levers for Navigasi are
+  its pitch (78 is what pulls the horizon in) and what it streams, not the
+  fleet.
+
 - **Nothing stalls on the M4.** One frame over 50 ms in eighteen rows, and no
   main-thread blocking to speak of. A moving camera costs frames — the static
   default view holds 120 — but it does not hitch.
@@ -984,16 +967,45 @@ and the frame loop's journey branch.
 ## The two rails, and the finder
 
 **Left is what you do, right is what you read.** `buildRails()` puts the finder
-and the detail card in a left column, the clock and Layanan in a right one.
+and the detail card in a left column; the clock, **Layanan** and **Lapisan peta**
+in a right one. The map's style, *Tampilan peta*, is not in a rail at all.
+
+**Layanan was three panels in one, and is one now** (2026-10-03). It held the
+service filters, the map style and the layer switches, which read as a
+settings dump:
+
+| | Where | Holds |
+| --- | --- | --- |
+| Layanan | right rail, `layer-panel.js` | modes and categories — which services the map shows |
+| Lapisan peta | right rail, `map-layers.js` | route lines, stops, Gedung 3D, accessible stops, frequency colours, trails, CCTV — what is drawn |
+| Tampilan peta | bottom-left map control, `map-style.js` | Warna / Pudar / Mono, as a thumbnail of the map that opens the three, the way Google Maps keeps its own |
+
+- **Both rail panels share one header** (`fold-head.js`): a button with a
+  glyph, the name and a summary — *151 dari 249 rute*, *3 aktif* — so a folded
+  bar still says what it is holding.
+- **On a desk Lapisan peta starts folded.** Both open, each got half the rail's
+  height and both scrolled, cut off mid-list.
+- **Each rail stops short of the corner under it** — the right one above the
+  zoom buttons and the credit strip, the left one above the style thumbnail and
+  the wordmark. Two open panels reach the bottom of a 900px window, and a rail
+  that runs to the bottom puts the map's own controls underneath it.
+- **With the frequency colours on, Layanan keeps its filters and fades its
+  swatches.** It used to hide the whole list while the frequency legend stood
+  in for it; with the legend gone to Lapisan peta, that would leave Layanan
+  empty, and the filters still filter whatever colour the lines are.
 
 **Below 700px there is one column, not two** (JAKAR-62): the same order, stacked
-— read at the top, act at the bottom. Both panels in the header start folded, so
+— read at the top, act at the bottom. Every panel in the header starts folded, so
 it stays short and the map remains the largest thing on screen; Layanan folds to
 its title bar rather than being hidden, because `display: none` there had quietly
 removed the mode filters, the cameras, the accessibility filter and Gedung 3D
 from every phone at once. See trap 13 for what the first attempt did instead.
-Layanan moved right because it is a filter you set once, not a step in finding
-or planning anything.
+
+**The two folded bars sit side by side under the clock**, each with its count
+stacked under its name. A third full-width bar would have pushed the map down
+another 58px of an 844px screen; open, a panel takes the whole row. The style
+thumbnail and the map's buttons sit under the header, where a phone's map
+controls already were.
 
 **The finder is one field over everything.** It was two tabs, because a mixed
 list made every query ambiguous — typing "Bogor" returned a corridor and eleven
@@ -1020,22 +1032,23 @@ says which without a tab having to be chosen first.
 
 ## Navigasi: the egocentric view
 
-The default framing when you follow something is now an automotive navigation
-view rather than a map that happens to be tracking. `chase` — 65 degrees, the
-whole district in frame — is still one click away as *Peta*, and *Dari dalam*
-is unchanged.
+The default framing when you follow something is an automotive navigation view
+rather than a map that happens to be tracking. **There are two framings,
+*Navigasi* and *Dari dalam*.** The third, `chase` (*Peta*) — 65 degrees, the
+whole district in frame — was removed on 2026-10-03: it was the bird's-eye view
+this mode kept being mistaken for.
 
 **The difference is not where the camera is, it is what is on screen.** Chase
-already followed the vehicle geographically; what makes a nav view is pitch,
+followed the vehicle geographically too; what makes a nav view is pitch,
 hierarchy and subtraction.
 
 - **Pitch 78 of Mapbox's 85 maximum.** This is where the ground plane stops
   reading as a tilted map and starts reading as road surface receding towards a
   horizon. 65 is a bird looking down at a city.
-- **The ego sits low in the frame**, via a larger `lookAhead` fraction (0.46
-  against chase's 0.34): the camera centres on a point ahead, so the vehicle
-  lands where a driver's own bonnet would be. `onboard`'s 0.75 pushes it off
-  the bottom entirely, which is a different shot.
+- **The ego sits low in the frame**, via a `lookAhead` fraction of 0.46 (chase
+  used 0.34): the camera centres on a point ahead, so the vehicle lands where a
+  driver's own bonnet would be. `onboard`'s 0.75 pushes it off the bottom
+  entirely, which is a different shot.
 - **The road ahead is a trimmed line, not a rebuilt one.** The followed trip's
   whole shape goes into `nav-route` once, when the vehicle is picked up; what
   moves every frame is **`line-trim-offset`**, which paints the travelled part
@@ -1059,28 +1072,33 @@ hierarchy and subtraction.
   Measured across three vehicles and nine mode switches: the restored state is
   byte-identical to the pre-follow state. A view that restores only what
   somebody remembered is how a map ends up permanently missing its POI labels.
-- **The card's job moves to the HUD, and the rail is hidden with it.** They say
-  the same things — line, headsign, next stop — and on a 390px screen the pair
-  of them left the road ahead as a strip across the middle. Hiding the card
-  then put the finder at y=744 *underneath* a HUD starting at 637 at
-  `z-index: 30`: present, `visible`, and completely unreachable. **Trap 13's
-  shape in a new place**, and the reason `body.navigating` hides the whole left
-  rail rather than nudging it.
-- **Three framings need a segmented control, not a toggle.** One button
-  flipping between two states does not extend to three, and three loose
-  outlines read as three unrelated actions. At 390px the three plus a slider
-  plus a stop do not fit on one line — measured, the track wrapped inside
-  itself and the speed row collapsed to **zero width** — so the row becomes
-  two, which is what the ride HUD already does at that width.
+- **While following, the card is the journey and nothing else** (`#detail.riding`,
+  both framings). The bar at the bottom already says which line, where it is
+  headed and how to stop; what it cannot show is where along the line the
+  vehicle is. So the card keeps the progress bar and the run of stops around
+  the vehicle — one behind, the one it is at, four coming, with times — and
+  drops status, destination, departure, stop count and fare. Navigasi used to
+  close the card outright, which left nothing on screen saying where the
+  vehicle was. `#detail` is one element reused for every card, so every other
+  kind of card clears `riding` when it takes over.
+- **The finder is hidden while following** (`body.following`). Left in the
+  rail it once landed at y=744 *underneath* a HUD starting at 637 at
+  `z-index: 30`: present, `visible`, and completely unreachable — trap 13's
+  shape. On a phone the card moves up under the header, clear of the map's
+  buttons, because the HUD is at the bottom and the vehicle sits low in the
+  frame.
+- **Two framings are still a segmented control, not a toggle.** A toggle
+  labelled with one state says nothing about the other. At 390px the framings
+  take their own row and speed, sound and stop share the second — which only
+  fits with the speed group growing from nothing (`flex: 1 1 0`); at `auto` it
+  claimed its full length and pushed *Berhenti* onto a third row.
 - **A vehicle at its terminus draws no ribbon**, because there is no road
   ahead. Correct rather than broken, and worth knowing before chasing it.
 
-**Following a vehicle has its own controls**, in the ride HUD's slot at the
-bottom — the two are never open together, and both are the same kind of view:
-the camera is locked to something moving, so the controls belong under it rather
-than out at the side. It carries only what applies to following — camera (`Dari
-dalam` / `Dari luar`), speed, and `Berhenti` — because there is no leg to skip
-and no itinerary to leave.
+**Following a vehicle has its own controls**, in the HUD at the bottom: the
+camera is locked to something moving, so the controls belong under it rather
+than out at the side. It carries only what applies to following — framing
+(*Navigasi* / *Dari dalam*), speed, *Suara* and *Berhenti*.
 
 - **Speed offers `configs.speeds`, not the ride HUD's four.** Two controls for
   one value that disagree about what values exist is worse than either, so the
@@ -1090,8 +1108,42 @@ and no itinerary to leave.
   mid-gesture snaps the handle out from under the pointer. Both sliders check
   `document.activeElement` first.
 - **`hide()` is idempotent** because the frame loop calls it, and it restores the
-  chase camera: stopping while on board would otherwise leave the vehicle
-  scaled away and invisible.
+  default framing: stopping while on board would otherwise leave the vehicle
+  scaled away and invisible. It also switches *Suara* off — following another
+  vehicle later should not start talking without being asked.
+
+### Suara: the cabin and the announcer
+
+*Suara* in the follow HUD (2026-10-03, piloted on the KRL Bogor line). Off until
+pressed — browsers allow audio, and iOS allows speech, only from a tap — and
+nothing is fetched before then.
+
+- **No KRL recording is ours to use.** KAI Commuter's announcements are its own
+  and the recordings of them online are their uploaders'; a YouTube video was
+  offered as a source and ruled out for exactly that. No openly licensed KRL
+  recording exists that a search could find.
+- **So the cabin is a CC0 recording of an electric multiple unit**
+  (`public/sounds/emu-interior.mp3`, Freesound, credited in *Sumber data* and
+  `public/sounds/SOURCES.md`) — KRL runs ex-Japanese EMUs, so it is the right
+  kind of train. 1 MB, fetched on the first tap only. Looped by overlapping two
+  copies with a 3 s crossfade, so the 48 s clip has no seam; quieter while the
+  train stands or the clock is paused, ducked while the announcer speaks.
+  Trains only: there is no openly licensed Jakarta bus recording, and an EMU's
+  hum under a bus would be wrong.
+- **The announcer is the device's own Indonesian voice** — "Tiba di Stasiun
+  Cilebut", or "Tiba di Halte …" on a bus — after a two-note chime synthesised
+  here, not copied from KRL's. A voice that reads any name announces every
+  station on every line. Its quality is the device's: most phones carry an
+  Indonesian voice, and the browser's default speaks otherwise.
+- **Arrival is a change of stop index, not the vehicle standing.** Rail
+  timetables built from departure boards often give a stop no dwell, so a
+  train can reach a station and leave in the same instant and never be
+  "standing"; `stopIndex` moves at the moment of arrival either way, and
+  `atStop` then names the stop just reached.
+- **One announcement at a time.** At a fast clock the next station can arrive
+  before the last name is finished, so a new one cancels the old.
+- **On a phone *Suara* is icon-only**, its name kept for a screen reader; with
+  the word written out, *Berhenti* fell to a third row.
 
 Absolutely positioned panels cannot stack, so they are **re-parented** into
 flex columns at boot. Two things that matters for:
@@ -1185,12 +1237,16 @@ equivalent for Netlify.
     `<button>` came through as bare text and an `<a class="js-credits">` lost
     its class, both of which look operable and are not. Only `<a href="http…">`
     survives intact. So the trigger is a control of our own.
-  - **It is in `bottom-left`, not `bottom-right`**, where a credits link would
-    more naturally sit: an unfolded Layanan reaches the bottom of a 900px
-    window, so the right-hand control stack is *underneath* the rail at desktop
-    heights. Measured rather than guessed — `elementFromPoint` over the trigger
-    returned `.panel-title`. Worth knowing for anything else put in that
-    corner.
+  - **It is one strip with Mapbox's line, bottom-right** (2026-10-03):
+    "Simulasi terjadwal … | © Mapbox © OpenStreetMap Improve this map ·
+    Sumber data". The trigger sat bottom-left beside the wordmark before,
+    because an unfolded Layanan reached the bottom of a 900px window and
+    covered the right-hand corner; the rails now stop above both corners, so
+    the corner is free and the credit reads as one thing. **Mapbox's control is
+    wrapped, not rewritten** — its text comes from the style's sources and its
+    feedback link follows the view, so copying the words out would be a licence
+    condition kept by hand. On a phone Mapbox folds its part behind an `(i)`, as
+    its own control always did, and *Sumber data* stays beside it.
   - **The simulation line stays out in the attribution.** It is the one thing a
     casual visitor has to see without opening anything, which is why it did not
     move into the panel with everything else.
@@ -1484,7 +1540,7 @@ and the last of them is filtered on a different rule entirely.
   its own chunk. A viewer who never opens the layer pays for neither.
 - **The layer is gated on live mode**, exactly as the Mini Tokyo 3D plugin gates
   itself with `clockModes: ['realtime']`. A camera shows the street now; the
-  clock can be replaying a Tuesday in March at 1200x. Leaving live unchecks the
+  clock can be replaying a Tuesday in March at 128x. Leaving live unchecks the
   toggle, hides the layer, closes the card and tears the stream down.
 - **The card says the map and the camera disagree**, because they do. There is
   no realtime feed for any Jakarta operator, so a vehicle on the map is where
@@ -2019,22 +2075,21 @@ KB of artifacts (JAKAR-61), the layout is one column below 700px (JAKAR-62), and
 the render path has been measured on hardware somebody actually rides the bus
 with (JAKAR-60).
 
-**And it performs rather than just running.** *Tonton 24 jam* sweeps a whole
-day in a minute, paced by the fleet's own profile so the peaks are dwelt on and
-the small hours blink past; *Jelajahi jalur ini* flies any line end to end,
-naming its stops; *Putar otomatis* does that line after line, unattended. All
-three are shareable as links. The crowd that used to stand on the pavements
-(JAKAR-79) was removed to get here.
+**And a ride reads as a journey.** *Jelajahi jalur ini* flies any line from
+its first stop to its last and draws the route as navigation does — grey
+behind, yellow to the next stop, the line's colour ahead. Following a vehicle
+keeps a card of just the progress and the stops around it, and *Suara* adds the
+cabin and a station announcer. The timelapse, the showreel and *Bus terakhir*
+were removed on 2026-10-03 to get here, as the crowd (JAKAR-79) was before them.
 
-The app can: run live or replay a day, sweep a whole day in a minute, follow a
-vehicle in three framings — an egocentric navigation view, a map that follows,
-or from the roof — fly any line end to end and do that unattended line after
-line, preview a line and watch only its vehicles run, show
-how far you can get from any stop or any point in a time budget, answer "what
-is near this point", show first/last departure, colour by live frequency, and
-share any view as a link — a camera included — and watch the actual street, or
-the actual toll carriageway, through a public CCTV camera beside the simulated
-fleet.
+The app can: run live or replay a day at up to 128x, follow a vehicle in two
+framings — an egocentric navigation view, or from the roof — with the cabin's
+sound and an announcer at every station, fly any line end to end as a journey
+in progress, preview a line and watch only its vehicles run, show how far you
+can get from any stop or any point in a time budget, answer "what is near this
+point", show first/last departure, colour by live frequency, and share any view
+as a link — a camera included — and watch the actual street, or the actual toll
+carriageway, through a public CCTV camera beside the simulated fleet.
 
 It deliberately does **not** plan a journey from A to B any more.
 
@@ -2044,7 +2099,23 @@ type sits on a seven-step scale where fifteen ad-hoc sizes used to be, and the
 controls are the size Google Maps makes them. The rider can also choose what the
 map underneath looks like — Warna, Pudar or Mono.
 
-**Everything the 2026-09-15/16 session changed**, so it is not re-derived:
+**Everything the 2026-10-01/03 sessions changed**, so it is not re-derived:
+
+| | |
+| --- | --- |
+| Motion bench | `?bench=motion` — six camera moves, four passes each; run on the M4 and the S25 (JAKAR-63) |
+| Phone sizes | 12/14/15/16 type and 40/44 controls below 700px; text under 14px 58% → 10%; cards are sheets with the action pinned (JAKAR-65) |
+| Removed | *Tonton 24 jam*, *Putar otomatis*, *Bus terakhir*, `?tl` and `?show`; the clock's top speed is 128x |
+| Panels | Layanan holds only the service filters; *Lapisan peta* is its own panel; *Tampilan peta* is a bottom-left thumbnail |
+| Credits | One strip, bottom-right: Mapbox's attribution wrapped, with *Sumber data* beside it |
+| Tour | Flies first stop to last of the longest *journey*; drawn as progress; fleet, stops and the left column step aside |
+| Following | Two framings; the card shows only progress and stops; *Suara* — CC0 cabin loop and an Indonesian voice announcer |
+| Fixed on the way | `.sorts` had no CSS for three weeks; *Hanya rute gratis* had no switch; the danger hover was still dark-theme pink |
+| Elevation | JAKAR-77 built, then moved to the thematic map as JAKARTATHE-12 — parked on branch `jakar-77-elevation` |
+
+**Everything the 2026-09-15/16 session changed**, so it is not re-derived (the
+timelapse, the showreel, *Bus terakhir* and their links were removed on
+2026-10-03):
 
 | | |
 | --- | --- |
@@ -2132,30 +2203,21 @@ That is the pattern to expect, and the reason two things stay: the legacy path,
 which was clean in every data case, and `scratchpad/probe.mjs`, which is the only
 thing that has ever caught the interaction ones.
 
-**JAKAR-63 is the blocking one, and this session made it sharper.**
-Interaction is still unmeasured — every frame number this project has is a
-static camera — and there are now four things that drive the camera or repaint
-continuously and have never been run on hardware:
+**JAKAR-63 is done: interaction has been measured on a phone.** On the S25 the
+gestures hold (pan 60 fps, zoom and rotate ~55) and the camera views the app
+drives itself do not — Jelajahi jalur and Navigasi drop over a third of their
+frames. That is **JAKAR-87**, the next performance question: Gedung 3D off fixes
+the tour but not Navigasi, so the levers to measure are Navigasi's pitch and
+what it streams, on a mid-range Android if one can be borrowed.
 
-- **the tour and the showreel**, which move the camera for up to ninety seconds
-  at a stretch, the closest thing to a sustained gesture this map has;
-- **Navigasi**, which jumps the camera every frame at pitch 78 *and* writes two
-  paint properties per frame for the route ribbon;
-- **Jejak kendaraan**, one extra draw call and a second pass over the fleet,
-  never culled by zoom;
-- **Bus terakhir**, which rebuilds a paint expression twice a second.
-
-`?bench=motion` now covers the tour and Navigasi, alongside a pan, a zoom, a
-rotation and search-result flights (2026-10-01). On the M4 nothing stalls and
-rotation is the slow move; what is missing is the same run on a phone, which is
-what closes the ticket. *Bus terakhir* still has no arm.
-
-**JAKAR-65** (mobile type and controls) is done — see "On a phone" — except
-for landscape. What remains is the open design question on *Jejak kendaraan*,
-which works but reads subtly at the default zoom and may not be worth its row.
+Also open: **JAKAR-86** (a phone in landscape keeps desktop sizes), **JAKAR-88**
+(the selection ring is a white oval across the road in Navigasi), and
+**JAKAR-85** (does *Jejak kendaraan* earn its row — an owner decision).
 
 **Open work is in Plane.** Start a session by reading the project's
-**"Next Session — Start Here"** page, which is kept current. **JAKAR-65** and
+**"Next Session — Start Here"** page, which is kept current. The 2026-10-03
+work is recorded as JAKAR-89 (the panels), JAKAR-90 (what was removed), JAKAR-91
+(the tour as progress) and JAKAR-92 (following, and *Suara*). **JAKAR-65** and
 **JAKAR-66**, both raised by the owner at the end of the 2026-09-11 session,
 are done: the phone has its own type and control sizes, and *"sekitar sini"*
 is a press on a touch screen. **JAKAR-50** is done: the line
@@ -2208,12 +2270,13 @@ audit of all nineteen sources.
   that arm as a floor for a slow device and never as a phone. And **a mid-range
   Android is still unmeasured**: an S25 is the good case, and `?bench` makes
   the next device a one-minute job.
-- **Interaction is unmeasured on a phone.** `?bench=motion` exists and has
-  run on the M4 (see "While the camera moves"), but every *device* number this
-  project has is still a static camera. A map is used by panning and
-  pinching, and that is the most likely home for "feels bad on a phone" — an
-  external review raised it and was right. Even on a phone the bench measures
-  a scripted camera, not a finger: input latency stays unmeasured.
+- **Interaction is measured on one phone, the good one.** `?bench=motion` ran
+  on the S25 (see "While the camera moves"): gestures hold, and Navigasi and
+  the tour drop a third of their frames (JAKAR-87). A mid-range Android is
+  still unmeasured. An external review guessed panning and pinching would be where a
+  phone felt bad; measured, they are the part that holds, and the camera the
+  app drives itself is what does not. Even on a phone the bench measures a
+  scripted camera, not a finger: input latency stays unmeasured.
 - **The basemap is the expensive half, and on a slow CPU it is the whole
   problem.** At street level Mapbox Standard alone is ~95% of the frame, and at
   4x CPU throttle it is 52 ms of a 59 ms frame with the fleet removed entirely.
