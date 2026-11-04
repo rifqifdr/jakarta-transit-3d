@@ -187,6 +187,7 @@ proves nothing — it is how the MRT short working at Blok M stayed hidden.
 | `scratchpad/bench-local.mjs` | `?bench` in a real Chrome on this machine, vsync on, nothing patched — the shipped bundle as a visitor runs it. `PHONE=1` for a phone's viewport |
 | `scratchpad/device-bench/` | `?bench` output from real devices, one file per run, and what each column means. A number without its device is not a measurement |
 | `scripts/plane*.mjs` | Plane issue tracker sync (see below) |
+| `exports/` | Standalone data cuts handed to other people, each with its own README and `metadata.json`. Nothing in the app or the pipeline reads them. `mikrotrans-gtfs-2026-10-30/` is the Mikrotrans routes as their own GTFS feed |
 
 ## Project management
 

@@ -1,0 +1,113 @@
+{
+  "name": "Mikrotrans GTFS",
+  "description": "The Mikrotrans routes of the Transjakarta GTFS Schedule feed, cut out as a standalone, internally consistent GTFS feed.",
+  "spec": "GTFS Schedule (https://gtfs.org/schedule/reference/)",
+  "filter": {
+    "table": "routes.txt",
+    "column": "route_desc",
+    "equals": "Mikrotrans",
+    "rule": "Rows are copied verbatim. Only rows are removed; no value is changed."
+  },
+  "source": {
+    "publisher": "PT Transportasi Jakarta (Transjakarta)",
+    "url": "https://gtfs.transjakarta.co.id/files/file_gtfs.zip",
+    "lastModified": "2026-10-30T09:51:57Z",
+    "fetchedAt": "2026-11-04T07:48:36Z",
+    "bytes": 2498913,
+    "sha256": "376b11f72ac30f9f4eb972ae32c7f1a3251b416dc3cd77cc573475a3b2676b9c"
+  },
+  "license": {
+    "stated": null,
+    "note": "Transjakarta publishes no licence for this feed. Credit Transjakarta as the source. Ask Transjakarta before redistributing or using it commercially."
+  },
+  "timezone": "Asia/Jakarta",
+  "serviceCalendar": {
+    "start": "2004-01-15",
+    "end": "2027-12-31"
+  },
+  "boundingBox": {
+    "west": 106.68406,
+    "south": -6.372529,
+    "east": 106.99536,
+    "north": -6.095764
+  },
+  "counts": {
+    "routes": 98,
+    "tripPatterns": 227,
+    "stops": 5866,
+    "shapes": 227,
+    "runsPerDay": {
+      "monday": 33785,
+      "saturday": 33734,
+      "sunday": 33785
+    }
+  },
+  "fare": {
+    "fare_id": "GR",
+    "price": 0,
+    "currency": "IDR",
+    "note": "Every Mikrotrans route is free in this feed."
+  },
+  "files": {
+    "agency.txt": {
+      "rows": 1,
+      "sha256": "46342fb59f22f53ee2f7cd3379c90703eac6ff386c260665da69e155d355be1b"
+    },
+    "calendar.txt": {
+      "rows": 3,
+      "sha256": "823df59a448d729728f8a283b7d1f4b8b2e2fe5bd7654db2d5bccf624a310e87"
+    },
+    "fare_attributes.txt": {
+      "rows": 1,
+      "sha256": "e586bce0aee86843ec2b9bb093d4dd797d062188bdd166e0f0f52551d109b9fd"
+    },
+    "fare_rules.txt": {
+      "rows": 98,
+      "sha256": "66252027e534e5a3e8a74d1527c5ae4549b932a4b42b04b66e08c1d9f3399702"
+    },
+    "frequencies.txt": {
+      "rows": 227,
+      "sha256": "abe06e409ce4c9d292dcda27ba35226daf4d8eaca06f6bdabeb8e6bfbbd3152f"
+    },
+    "routes.txt": {
+      "rows": 98,
+      "sha256": "da74c273ce7bb7cb118596a5392756530f3ca44a0334fb1da70c089c950bf2de"
+    },
+    "shapes.txt": {
+      "rows": 85548,
+      "sha256": "7ddc164ddb36d181f21fd89b70a13df55149f306bf01a21d81db616765afde11"
+    },
+    "stop_times.txt": {
+      "rows": 12967,
+      "sha256": "0f171bc4fa8f22cffbd7246b3b7ef6eef363aa5e9bfbf6a18ed3b96b943a1486"
+    },
+    "stops.txt": {
+      "rows": 5866,
+      "sha256": "0a838e6dfe46a626be1db8c9320760dfdf78e3581199519c8f478c720768a801"
+    },
+    "ticketing_deep_links.txt": {
+      "rows": 1,
+      "sha256": "d8029a32812540029c27ac4970ffa46af8f6d59d0de49001f04ebf53f312cc90"
+    },
+    "ticketing_identifiers.txt": {
+      "rows": 71,
+      "sha256": "0f654d05cdc980884496023ebc18cf0f3a379fe002e89fe27a0208b743ca32af"
+    },
+    "trips.txt": {
+      "rows": 227,
+      "sha256": "855bcc3e7fae3cbd0c02d411fcadd1097cb608f3c55abbd79784ce742481ee7a"
+    }
+  },
+  "zip": {
+    "file": "mikrotrans-gtfs.zip",
+    "sha256": "23f788856d4ef3e0d318b5b4c9f81e461d1edf5ec0544e12b8f60a1f0873dc70",
+    "note": "The same files as gtfs/, at the root of the zip, as GTFS tools expect."
+  },
+  "omitted": {
+    "transfers.txt": "None of its 14 rows involve a Mikrotrans stop."
+  },
+  "checks": {
+    "referentialIntegrity": "passed: every stop, parent station, shape and service a row refers to is in the cut",
+    "officialValidator": "not run"
+  }
+}
