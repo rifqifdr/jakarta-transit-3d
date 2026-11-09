@@ -8,6 +8,12 @@ scheduled run, moved along its real route by a simulation clock: Transjakarta
 buses, MRT, LRT and KRL Commuter Line — 249 routes, 8,236 stops, and over six
 thousand vehicles at the evening peak.
 
+![The Dukuh Atas interchange at 16:45 on a weekday: Transjakarta corridor 1 along Jalan Sudirman, the MRT, KRL and LRT Jabodebek stations around it, and Mapbox's 3D buildings](docs/screenshot.jpg)
+
+*The Dukuh Atas interchange at 16:45, where BRT, MRT, KRL and LRT meet.
+[Open this view](https://minijakarta3d.netlify.app/?c=106.8215,-6.2005&z=15.4&p=60&b=-25&t=16:45)
+on the live map.*
+
 > **Vision:** make people have visibility regarding public transportation in
 > Jakarta or the Greater Jakarta Area.
 
