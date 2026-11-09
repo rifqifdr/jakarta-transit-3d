@@ -16,9 +16,10 @@ It is a spatial visualisation, not a trip planner. A→B planning was removed on
 traffic. What stays is spatial: the moving fleet, following a vehicle, line
 tours, reachability and live cameras.
 
-Open work is tracked in **Plane** (workspace `jakarta-publictrans-3d`, project
-`JAKAR`); start from its **"Next Session — Start Here"** page. `CLAUDE.md` holds
-the working conventions and the traps this codebase has already fallen into.
+Open work is tracked in a private **Plane** project (`JAKAR`), whose
+**"Next Session — Start Here"** page is where each working session begins.
+`CLAUDE.md` holds the working conventions and the traps this codebase has
+already fallen into.
 
 ## Running it
 
@@ -80,8 +81,9 @@ npm run build-data       # the older path: GTFS -> public/data/
 Transjakarta's feed lists no departures. All 700 of its trips are defined by
 frequency: `frequencies.txt` gives a time window and an interval, and
 `stop_times.txt` gives one sample run per trip. The app turns those into buses
-in three steps. Rail is simpler — its sources publish real departures, so each
-train is a single run and goes through the same code.
+in three steps, and builds each vehicle's speed from the result. Rail is
+simpler — its sources publish real departures, so each train is a single run
+and goes through the same code.
 
 ### 1. An interval becomes a list of departures
 
@@ -134,6 +136,143 @@ train is a single run and goes through the same code.
 - **What it costs.** Four draw calls for the whole fleet, one instanced mesh per
   mode. The simulation itself is about 1 ms a frame for six thousand vehicles on
   an Apple M4; the basemap is the expensive part.
+
+### 4. How speed is built
+
+- **One number per leg:** the leg's length divided by the time the timetable
+  gives it, in metres per second (`src/fleet.js:272`). It is 0 while the
+  vehicle stands.
+- **Length** is the difference between the two stops' distances along the
+  shape. **Time** is the arrival at the next stop minus the departure from this
+  one.
+- **Example:** the first leg of `10A-L02` is 612 m. The legacy path gives it
+  171 s, so 3.6 m/s, about 12.9 km/h. The default path gives it 181 s, because
+  the halt it drops is added to the leg (see *Known limits*), so 12.2 km/h.
+- **Where the time comes from:** for buses, the feed's sample run; for KRL,
+  each train's published times; for MRT and LRT, the track distance, because
+  their departure boards cannot give travel times.
+- **It is the leg's average.** The vehicle itself accelerates, cruises and
+  brakes, so its top speed is the average ÷ (1 − the share of the leg spent
+  accelerating). On that first leg a bus reaches cruising speed in about 3.7 s
+  and tops out at 13.2 km/h.
+- **What uses it:** the speed trails. A trail is 8 seconds of speed, held
+  between 8 and 200 m, and scaled up with the vehicles when zoomed out
+  (`src/layers/vehicle-layer.js:36`). The average is used on purpose: a trail
+  following the speed moment by moment would shrink to nothing at every stop
+  and flicker.
+- **It is scheduled speed.** There is no traffic in it, and a leg has the same
+  speed at 07:30 as at 03:00.
+
+## How each feature works
+
+### The clock and the light
+
+- Live mode follows Jakarta time. Replay picks any time of day and runs it at
+  1× to 128×.
+- The day-and-night look follows the sun's altitude over Jakarta, not the hour,
+  so dawn and dusk land when the sky actually changes. Mapbox Standard has four
+  light presets; a faint tint over the map (`src/sky.js`) fills in between them.
+
+### Stop departures
+
+- The bus feed lists no departures, so the stop card works them out: for each
+  pattern calling at the stop, the next run start after now, plus that stop's
+  offset in the template. The card and the moving fleet use the same arithmetic
+  (`src/routing/timetable.js`), so they always agree.
+- First and last bus are the earliest and latest runs of the day at that stop.
+- Train departures are the published ones.
+
+### Following a vehicle
+
+- **Navigasi** is a navigation-style view: the camera sits behind and above the
+  vehicle at a 78° pitch, with the vehicle low in the frame. The route ahead is
+  drawn as a ribbon that shortens as the vehicle moves, and labels, other routes
+  and other stops are pulled back. Everything it changes is put back when you
+  stop.
+- **Dari dalam** rides on the roof: closer, at an 82° pitch, with the vehicle
+  itself hidden.
+- While following, the card shows only progress and the stops around the
+  vehicle.
+- **Suara** adds sound: a looped cabin recording on trains (a CC0 recording of
+  an electric train), and the device's own Indonesian voice announcing each stop
+  as it is reached.
+
+### Flying a line
+
+- *Jelajahi jalur ini* flies a trip from its first stop to its last. From a
+  vehicle's card it is that vehicle's own trip; from a line's card it is the
+  line's longest journey, measured from first stop to last.
+- The camera moves at a constant ground speed of about 620 m of line per second,
+  held between 14 and 95 seconds, so a short feeder and a 50 km rail line both
+  read well.
+- The line is drawn as navigation draws a route: grey behind, yellow to the next
+  stop, the line's own colour ahead. Other lines dim, the fleet and other stops
+  step aside, and all of it comes back when the flight ends or you touch the map.
+
+### Reachability
+
+- Pick a stop, or a point on the map, and a budget of 15, 30, 45 or 60 minutes.
+  A forward search over the timetable (`src/routing/router.js`, RAPTOR) finds
+  every stop reachable from now, riding and walking between stops.
+- From a point, the search starts at the nearest stops within 800 m, walked at
+  4.8 km/h.
+- Results are released in order of arrival over six seconds, so the edge of
+  what is reachable visibly moves along the corridors and jumps down the rail
+  lines.
+- *Free routes only* restricts the search to the 101 routes that cost nothing.
+
+### Frequency colours
+
+- Colours each route by how often it runs right now: under 5 minutes, 5–15,
+  15–30, or over 30. It changes as the clock moves.
+- A route with several patterns takes its shortest active interval.
+
+### Vehicle sizes on screen
+
+- Each mode has its real size: a bus is 12 m, an LRT set 80 m, an MRT set 120 m,
+  a KRL set 160 m, each with its own body shape.
+- Below zoom 16, vehicles are enlarged so the network stays readable. They are
+  enlarged towards a common on-screen length, so a train is not drawn
+  kilometres long.
+
+### Where train trips come from
+
+- **KRL** publishes each train with its stops and times, which are used
+  directly.
+- **MRT and LRT** publish departures per station, not trains.
+  `scripts/transform/reconstruct.mjs` rebuilds the trains: it estimates each
+  leg's travel time from track distance, then walks the line claiming
+  departures that fit. A departure nobody claims is a train starting at that
+  station, which is how short workings show up.
+- Rail geometry comes from OpenStreetMap route relations, stitched into one
+  continuous path per line.
+
+### Walking between stops
+
+- `transfers.txt` declares only 7 interchange pairs, so the walk table is
+  derived: every pair of stops within 400 m, 40,466 edges in all.
+- Each edge is routed through Transitland's hosted Valhalla for a real walking
+  time. A straight line had been off by more than three minutes on 12.4% of
+  edges, wherever a railway, river or toll road sits between two stops.
+
+### Live cameras
+
+- 798 public CCTV cameras: 658 on streets and 140 on toll roads.
+- Most street cameras have published coordinates. 46 are placed from the street
+  named in their stream id, so their position is an estimate, and the card says
+  so.
+- Toll cameras join two government sources: BPJT gives positions, Bina Marga
+  gives the streams that still play.
+- Cameras play in live mode only, and load only when the layer is switched on.
+  The fleet is a schedule and the camera is the real street, so the two will
+  disagree.
+
+### Links
+
+- The URL carries the time, the camera view, the selection, reachability and
+  filters, so any view can be shared.
+- `?tour=<routeId>` flies a line on arrival. `?cam=<id>` opens a camera and
+  switches the clock to live.
 
 ## How it works
 
